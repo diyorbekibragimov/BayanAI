@@ -16,6 +16,7 @@ tags:
 models:
   - ai4bharat/indic-conformer-600m-multilingual
   - ai4bharat/indic-parler-tts
+  - openai/whisper-large-v3-turbo
 ---
 
 # Bayan AI · GPU voice worker
@@ -24,6 +25,7 @@ A private backend for [`dullgrey/team-qh-129-bayan-app`](https://huggingface.co/
 
 | Endpoint | Model | Job |
 |---|---|---|
+| `/hear` | `openai/whisper-large-v3-turbo` + IndicConformer | Doctor or patient? Then transcribe with the right model |
 | `/transcribe` | `ai4bharat/indic-conformer-600m-multilingual` (MIT) | Patient speech → text (Nepali, Hindi, Urdu, Bengali, Malayalam…) |
 | `/speak` | `ai4bharat/indic-parler-tts` (Apache-2.0) | Text → patient-language speech |
 | `/benchmark` | both | Nepali TTS → ASR round-trip timing |

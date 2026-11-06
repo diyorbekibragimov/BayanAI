@@ -2,9 +2,11 @@
 
 Serves the speech models that no Inference Provider hosts:
   * ASR: ai4bharat/indic-conformer-600m-multilingual (22 Indic languages incl. Nepali)
+  * ASR + role ID (doctor en/ar): openai/whisper-large-v3-turbo
   * TTS: ai4bharat/indic-parler-tts (21 languages incl. Nepali, Hindi, Urdu, Bengali, Malayalam)
 
 API (call from the main Space with gradio_client + HF_TOKEN; this Space is private):
+  /hear(audio_path, patient_lang)          -> {"role", "lang", "text", "engine", "lid", timings}
   /transcribe(audio_path, lang, decoding)  -> {"text", "lang", "seconds", "audio_seconds"}
   /speak(text, lang, description)          -> (wav, {"seconds", "audio_seconds", "rtf"})
   /benchmark()                             -> Nepali TTS -> ASR round-trip timings
@@ -18,7 +20,7 @@ import torch  # import before onnxruntime so CUDA/cuDNN libs from the torch whee
 import numpy as np
 import torchaudio
 import gradio as gr
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer, WhisperForConditionalGeneration, WhisperProcessor
 from parler_tts import ParlerTTSForConditionalGeneration
 
 HF_TOKEN = os.environ.get("HF_TOKEN")
@@ -37,7 +39,23 @@ tts = ParlerTTSForConditionalGeneration.from_pretrained(
 tts_tok = AutoTokenizer.from_pretrained("ai4bharat/indic-parler-tts", token=HF_TOKEN)
 desc_tok = AutoTokenizer.from_pretrained(tts.config.text_encoder._name_or_path, token=HF_TOKEN)
 TTS_SR = tts.config.sampling_rate
+WHISPER_ID = "openai/whisper-large-v3-turbo"
+w_proc = WhisperProcessor.from_pretrained(WHISPER_ID)
+w_model = WhisperForConditionalGeneration.from_pretrained(
+    WHISPER_ID, torch_dtype=torch.float16 if DEVICE.startswith("cuda") else torch.float32
+).to(DEVICE)
+W_DTYPE = w_model.dtype
 LOAD_SECONDS = round(time.time() - t0, 1)
+
+DOCTOR_LANGS = ("en", "ar")
+_W_TOK = w_proc.tokenizer
+_W_UNK = _W_TOK.unk_token_id
+_W_SOT = _W_TOK.convert_tokens_to_ids("<|startoftranscript|>")
+
+
+def _whisper_lang_id(code: str):
+    tid = _W_TOK.convert_tokens_to_ids(f"<|{code}|>")
+    return None if tid in (None, _W_UNK) else tid
 
 # Named speakers from the Indic Parler-TTS card; calm and slow suits patients.
 _CLEAR = "The recording is of very high quality, with the speaker's voice sounding clear and very close up."
@@ -67,6 +85,67 @@ def _transcribe_wave(wav: torch.Tensor, sr: int, lang: str, decoding: str = "ctc
         "seconds": round(time.time() - t, 3),
         "audio_seconds": round(wav.shape[-1] / ASR_SR, 2),
     }
+
+
+def _to_mono16k(wav: torch.Tensor, sr: int) -> torch.Tensor:
+    wav = torch.mean(wav, dim=0, keepdim=True) if wav.dim() == 2 else wav.unsqueeze(0)
+    return torchaudio.functional.resample(wav, sr, ASR_SR) if sr != ASR_SR else wav
+
+
+@torch.inference_mode()
+def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str) -> dict:
+    """Decide doctor vs patient for one utterance, then transcribe it with the right model."""
+    t_all = time.time()
+    wav16 = _to_mono16k(wav, sr)
+    feats = w_proc(wav16.squeeze(0).numpy(), sampling_rate=ASR_SR, return_tensors="pt").input_features
+    feats = feats.to(DEVICE, W_DTYPE)
+
+    # 1) Restricted language ID: score only {en, ar, patient_lang} with one decoder step.
+    t = time.time()
+    cands = [c for c in (*DOCTOR_LANGS, patient_lang) if _whisper_lang_id(c) is not None]
+    ids = [_whisper_lang_id(c) for c in cands]
+    logits = w_model(
+        input_features=feats, decoder_input_ids=torch.tensor([[_W_SOT]], device=DEVICE)
+    ).logits[0, -1]
+    probs = torch.softmax(logits[ids].float(), dim=-1).tolist()
+    lid = dict(zip(cands, [round(p, 4) for p in probs]))
+    lid_seconds = time.time() - t
+    top = max(lid, key=lid.get)
+    role = "doctor" if top in DOCTOR_LANGS else "patient"
+
+    # 2) Transcribe with the right engine.
+    t = time.time()
+    if role == "doctor":
+        lang, engine = top, "whisper-large-v3-turbo"
+        out = w_model.generate(feats, language=lang, task="transcribe", max_new_tokens=220)
+        text = w_proc.batch_decode(out, skip_special_tokens=True)[0].strip()
+    elif patient_lang in asr.language_masks:
+        lang, engine = patient_lang, "indic-conformer-600m"
+        text = asr(wav16, patient_lang, "ctc")
+    else:
+        lang, engine = patient_lang, "whisper-large-v3-turbo"
+        out = w_model.generate(feats, language=lang, task="transcribe", max_new_tokens=220)
+        text = w_proc.batch_decode(out, skip_special_tokens=True)[0].strip()
+    asr_seconds = time.time() - t
+
+    return {
+        "role": role,
+        "lang": lang,
+        "text": text,
+        "engine": engine,
+        "lid": lid,
+        "audio_seconds": round(wav16.shape[-1] / ASR_SR, 2),
+        "lid_seconds": round(lid_seconds, 3),
+        "asr_seconds": round(asr_seconds, 3),
+        "seconds": round(time.time() - t_all, 3),
+    }
+
+
+def hear(audio_path: str, patient_lang: str = "ne") -> dict:
+    if not audio_path:
+        raise gr.Error("No audio received.")
+    wav, sr = torchaudio.load(audio_path)
+    return _hear_wave(wav, sr, patient_lang)
 
 
 def transcribe(audio_path: str, lang: str = "ne", decoding: str = "ctc") -> dict:
@@ -113,19 +192,22 @@ BENCH_SENTENCE_NE = "नमस्ते। म बयान हुँ। तप�
 # "Hello. I am Bayan. I will say what your doctor says in Nepali." (machine draft; verify with a native speaker)
 
 
+BENCH_SENTENCE_EN = "Do you have any allergies to medicines?"
+
+
 def benchmark() -> dict:
-    """Nepali TTS -> ASR round trip; the first call after boot includes CUDA warm-up."""
-    audio, tts_stats = _speak_array(BENCH_SENTENCE_NE, "ne")
-    asr_stats = _transcribe_wave(torch.from_numpy(audio).unsqueeze(0), TTS_SR, "ne", "ctc")
+    """Nepali TTS -> /hear (expect patient) and English TTS -> /hear (expect doctor)."""
+    audio_ne, tts_ne = _speak_array(BENCH_SENTENCE_NE, "ne")
+    hear_ne = _hear_wave(torch.from_numpy(audio_ne).unsqueeze(0), TTS_SR, "ne")
+    audio_en, tts_en = _speak_array(BENCH_SENTENCE_EN, "en")
+    hear_en = _hear_wave(torch.from_numpy(audio_en).unsqueeze(0), TTS_SR, "ne")
     return {
         "device": DEVICE,
         "gpu": torch.cuda.get_device_name(0) if DEVICE.startswith("cuda") else None,
         "tts_dtype": str(TTS_DTYPE),
         "model_load_seconds": LOAD_SECONDS,
-        "input_text": BENCH_SENTENCE_NE,
-        "tts": tts_stats,
-        "asr": asr_stats,
-        "round_trip_seconds": round(tts_stats["seconds"] + asr_stats["seconds"], 3),
+        "nepali": {"input_text": BENCH_SENTENCE_NE, "tts": tts_ne, "hear": hear_ne},
+        "english": {"input_text": BENCH_SENTENCE_EN, "tts": tts_en, "hear": hear_en},
     }
 
 
@@ -143,6 +225,12 @@ with gr.Blocks(title="Bayan voice worker") as demo:
         b_btn = gr.Button("Run Nepali TTS → ASR round trip")
         b_out = gr.JSON()
         b_btn.click(benchmark, None, b_out, api_name="benchmark")
+    with gr.Tab("Hear (role + ASR)"):
+        h_audio = gr.Audio(label="Utterance", type="filepath", sources=["upload", "microphone"])
+        h_lang = gr.Textbox(label="Patient language (dropdown value)", value="ne")
+        h_btn = gr.Button("Hear")
+        h_out = gr.JSON()
+        h_btn.click(hear, [h_audio, h_lang], h_out, api_name="hear")
     with gr.Tab("Speak (TTS)"):
         s_text = gr.Textbox(label="Text", value=BENCH_SENTENCE_NE)
         s_lang = gr.Textbox(label="Language code", value="ne")
