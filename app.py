@@ -25,7 +25,7 @@ if ON_SPACES and TURN_KEYS:
         return await get_cloudflare_turn_credentials_async(hf_token="")
 
     try:
-        SERVER_RTC_CONFIG = get_cloudflare_turn_credentials(hf_token="", ttl=360_000)
+        SERVER_RTC_CONFIG = get_cloudflare_turn_credentials(hf_token="", ttl=86_400)  # Cloudflare rejected 360_000 with 400 "invalid argument"
     except Exception as e:  # noqa: BLE001 - boot anyway and say why audio may not connect
         RTC_CONFIG, RELAY_NOTE = None, f"⚠️ Audio relay (TURN) unavailable: {e}"
 elif ON_SPACES:

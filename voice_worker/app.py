@@ -46,7 +46,7 @@ asr = AutoModel.from_pretrained(
 )
 tts = ParlerTTSForConditionalGeneration.from_pretrained(
     "ai4bharat/indic-parler-tts", token=HF_TOKEN, torch_dtype=TTS_DTYPE,
-    attn_implementation="eager" if TTS_COMPILE else "sdpa",
+    **({"attn_implementation": "eager"} if TTS_COMPILE else {}),  # explicit "sdpa" is rejected by its T5 encoder
 ).to(DEVICE)
 tts_tok = AutoTokenizer.from_pretrained("ai4bharat/indic-parler-tts", token=HF_TOKEN)
 desc_tok = AutoTokenizer.from_pretrained(tts.config.text_encoder._name_or_path, token=HF_TOKEN)
