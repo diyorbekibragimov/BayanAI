@@ -46,7 +46,7 @@
 | Criterion | What judges look for | Our proof point | Where |
 |---|---|---|---|
 | **Impact & relevance** | A real, worthwhile Qatar/ME problem, solved well | The migrant majority, cited evidence on interpreter errors, Qatar heat-illness context, personas | README §Why, [01](01-problem-and-impact.md) |
-| **Use of Hugging Face** | Genuinely built with HF | Fully open-model cascade on Inference Providers and Inference Endpoints, Hub dataset and fine-tuned model, Gradio Space, Fanar from QCRI | README §Built with HF, [04](04-models-and-languages.md), [06](06-fine-tuning-plan.md) |
+| **Use of Hugging Face** | Genuinely built with HF | Fully open-model cascade on Inference Providers and Inference Endpoints, a **smolagents** clinical copilot agent, Hub dataset and fine-tuned model, Gradio Space, Fanar from QCRI | README §Built with HF, [04](04-models-and-languages.md), [06](06-fine-tuning-plan.md) |
 | **Technical execution** | Works end to end | The live golden path: voice → translation → idiom note → safety alert → PDF / WhatsApp / SMS / audio | Space + video, [03](03-architecture.md) |
 | **Efficiency** | Smart use of the compute budget | Cost per consultation, small-model routing, VAD gating, TTS caching, scale-to-zero, final spend vs. $100 | [07](07-compute-budget-and-efficiency.md) |
 | **Demo & pitch** | Clear and compelling | A human hook, a live "silent alert" moment, and a 3-min script that has been rehearsed | [09](09-pitch-and-demo.md) |

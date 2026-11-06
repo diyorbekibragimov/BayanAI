@@ -72,6 +72,7 @@ Times are Doha time. Shift the whole schedule if you start later, but **never mo
 - **Checkpoint:** one spoken English sentence comes out as Nepali audio, and one Nepali sentence comes out as English text and audio.
 
 ### Phase 2 · The "thinking" layer (hours 5–10)
+- [ ] B: **clinical copilot agent** (smolagents) per [11](11-clinical-copilot-agent.md) §11. Its tools cover the items below.
 - [ ] B: idiom retrieval from `data/idiom_lexicon.json` → idiom cards in the UI.
 - [ ] B: state extractor (allergies, meds and doses, symptoms, vitals, investigations, disposition) running in the background every turn.
 - [ ] B: deterministic sentinel over `data/safety_rules.json` → silent alert tray, with acknowledge/override and a reason.

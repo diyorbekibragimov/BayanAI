@@ -59,7 +59,7 @@ Roughly **9 in 10 people living in Qatar are not Qatari** (an estimate; no offic
 
 - 🎧 **Listens.** No buttons and no push-to-talk. It hears the doctor and the patient and works out who is speaking from the language they use.
 - 🗣️ **Talks.** It speaks each sentence aloud to the other person in their own language, within seconds.
-- 🧠 **Thinks.** In the background it:
+- 🧠 **Thinks.** A background **copilot agent** (smolagents + `gpt-oss-120b`) keeps a consultation checklist and proposes what to ask next and what may be missed. In the background it also:
   - interprets **cultural idioms**, e.g. a Nepali worker's *"gyastrik"* (ग्यास्ट्रिक, "gastric") burning chest, which can hide cardiac pain;
   - shows **silent safety alerts** to the doctor only, e.g. a penicillin allergy mentioned early in the visit against an amoxicillin prescription a few minutes later;
   - flags a chest-pain patient being discharged with no ECG or troponin.
@@ -132,7 +132,7 @@ flowchart LR
 | Loop | When it runs | Target speed | What it uses |
 |---|---|---|---|
 | **Talk** | Every sentence | ≤ 3 s to translated speech | Fast models |
-| **Think** | In the background | Never blocks the talk loop | Small extractor plus rules |
+| **Think** | In the background | Never blocks the talk loop | **smolagents copilot agent** + deterministic rules |
 | **Wrap-up** | Once per consultation | — | Biggest model |
 
 Deep dive: [03 · Architecture](docs/03-architecture.md) · [04 · Models & Languages](docs/04-models-and-languages.md).
@@ -145,6 +145,7 @@ Deep dive: [03 · Architecture](docs/03-architecture.md) · [04 · Models & Lang
 |---|---|
 | App | **Gradio Space** `dullgrey/team-qh-129-bayan-app` on `cpu-upgrade` |
 | Clinical brain | `openai/gpt-oss-120b` via **Inference Providers** (Cerebras / Groq), with JSON output |
+| Clinical copilot agent | **smolagents** `ToolCallingAgent` on `gpt-oss-120b`: grounded tools over our rules, idiom lexicon and checklist; proposes questions, missed workup and safety cards ([11](docs/11-clinical-copilot-agent.md)) |
 | Arabic grounding 🇶🇦 | `QCRI/Fanar-1-9B-Instruct`, Qatar's national Arabic LLM from QCRI/HBKU, via Inference Providers |
 | ASR | `whisper-large-v3-turbo` (Providers) · `Voxtral-Mini-4B-Realtime-Arabic` (Gulf, Egyptian and Sudanese Arabic) · `indic-conformer-600m-multilingual` · `omniASR` |
 | TTS | `indic-parler-tts` (Nepali, Hindi, Urdu, Bengali, Malayalam, Tamil, Telugu) · `mms-tts-*` · `Kokoro-82M` · `chatterbox` |
@@ -211,6 +212,7 @@ Details: [05 · Clinical Safety & Cultural Intelligence](docs/05-clinical-safety
 | 08 | [Build Plan](docs/08-build-plan.md) | Roles, repo layout, hour-by-hour plan, go/no-go gates |
 | 09 | [Pitch & Demo](docs/09-pitch-and-demo.md) | 3-minute pitch, demo-video script, backup plan, judge Q&A |
 | 10 | [Submission Checklist](docs/10-submission-checklist.md) | Hackathon rules mapped to proof, deliverables, last-hour checks |
+| 11 | [Clinical Copilot Agent](docs/11-clinical-copilot-agent.md) | The smolagents agent: tools, checklist, doctor-approved cards, guardrails, cost |
 
 Data: [`data/idiom_lexicon.json`](data/idiom_lexicon.json) · [`data/safety_rules.json`](data/safety_rules.json)
 

@@ -91,6 +91,8 @@ sequenceDiagram
 
 ## 4. Think loop: structured state and the safety sentinel
 
+> The think loop is run by the **clinical copilot agent** (smolagents `ToolCallingAgent` on `gpt-oss-120b`). It calls the extractor, the rule engine and the idiom lexicon as tools, and turns the results into doctor-approved cards. Full design: [11 · Clinical Copilot Agent](11-clinical-copilot-agent.md).
+
 ```mermaid
 flowchart TB
     U[New utterance<br/>bilingual transcript] --> X[State extractor<br/>LLM → strict JSON]

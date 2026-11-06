@@ -49,10 +49,26 @@ The doctor may speak English (Arabic text-only for now); Bayan works out who is 
 """
 
 
-def turn(audio: tuple[int, np.ndarray], patient_lang: str):
-    sr, arr = audio
+LANG_CODES = {code for _, code in PATIENT_LANGS}
+_LOGGED_ARGS = False
+
+
+def turn(audio, *args):
+    """FastRTC calls this with the utterance plus the extra inputs; their exact shape varies by
+    version (it may include the component's own WebRTCData), so pick out what we need."""
+    global _LOGGED_ARGS
+    if not _LOGGED_ARGS:
+        print("turn() args:", type(audio).__name__, [type(a).__name__ for a in args], flush=True)
+        _LOGGED_ARGS = True
+    if hasattr(audio, "audio"):  # WebRTCData wrapper
+        audio = audio.audio
     key = get_current_context().webrtc_id
-    sess = talk.session_for(key, patient_lang or "ne")
+    lang = next((a for a in args if isinstance(a, str) and a in LANG_CODES), None)
+    if lang is None:
+        prev = talk.SESSIONS.get(key)
+        lang = prev.patient_lang if prev else "ne"
+    sr, arr = audio
+    sess = talk.session_for(key, lang)
     try:
         for event in talk.run_turn(sess, sr, arr):
             if event[0] == "ui":
