@@ -4,6 +4,7 @@ emoji: 🩺
 colorFrom: green
 colorTo: indigo
 sdk: gradio
+sdk_version: 6.31.0
 app_file: app.py
 pinned: true
 license: apache-2.0
@@ -28,9 +29,9 @@ models:
   - hexgrad/Kokoro-82M
   - ResembleAI/chatterbox
   - speechbrain/lang-id-voxlingua107-ecapa
-  - dullgrey/team-qh-129-bayan
-datasets:
-  - dullgrey/team-qh-129-bayan-idioms
+  # add `dullgrey/team-qh-129-bayan` here once the fine-tune ships
+# datasets:
+#   - dullgrey/team-qh-129-bayan-idioms   # uncomment once the dataset is pushed
 ---
 
 <div align="center">
