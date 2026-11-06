@@ -22,10 +22,21 @@ import torchaudio
 import gradio as gr
 from transformers import AutoModel, AutoTokenizer, WhisperForConditionalGeneration, WhisperProcessor
 from parler_tts import ParlerTTSForConditionalGeneration
+from speechbrain.inference.classifiers import EncoderClassifier
+
+# TorchScript's GPU fuser fails to compile IndicConformer's complex-valued preprocessor
+# ("default_program ... c10::complex" NVRTC errors), so run TorchScript unfused.
+torch._C._jit_override_can_fuse_on_gpu(False)
+torch._C._jit_set_texpr_fuser_enabled(False)
 
 HF_TOKEN = os.environ.get("HF_TOKEN")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
-TTS_DTYPE = getattr(torch, os.environ.get("TTS_DTYPE", "float32"))
+TTS_DTYPE = getattr(torch, os.environ.get("TTS_DTYPE", "bfloat16"))
+# torch.compile + static cache is broken with parler-tts on transformers 4.46.1
+# ("'StaticCache' object has no attribute 'max_batch_size'"), so it is off by default.
+TTS_COMPILE = os.environ.get("TTS_COMPILE", "off")
+TTS_COMPILE = "" if TTS_COMPILE.lower() in ("", "off", "0", "false") else TTS_COMPILE
+DESC_MAX, PROMPT_MAX = 64, 192  # fixed padded lengths so the compiled graph is reused
 ASR_SR = 16_000
 
 # ---------------------------------------------------------------- models
@@ -34,7 +45,8 @@ asr = AutoModel.from_pretrained(
     "ai4bharat/indic-conformer-600m-multilingual", trust_remote_code=True, token=HF_TOKEN
 )
 tts = ParlerTTSForConditionalGeneration.from_pretrained(
-    "ai4bharat/indic-parler-tts", token=HF_TOKEN, torch_dtype=TTS_DTYPE
+    "ai4bharat/indic-parler-tts", token=HF_TOKEN, torch_dtype=TTS_DTYPE,
+    attn_implementation="eager" if TTS_COMPILE else "sdpa",
 ).to(DEVICE)
 tts_tok = AutoTokenizer.from_pretrained("ai4bharat/indic-parler-tts", token=HF_TOKEN)
 desc_tok = AutoTokenizer.from_pretrained(tts.config.text_encoder._name_or_path, token=HF_TOKEN)
@@ -45,6 +57,12 @@ w_model = WhisperForConditionalGeneration.from_pretrained(
     WHISPER_ID, torch_dtype=torch.float16 if DEVICE.startswith("cuda") else torch.float32
 ).to(DEVICE)
 W_DTYPE = w_model.dtype
+# Dedicated spoken-language ID (107 languages incl. Nepali); Whisper's Nepali LID proved unreliable.
+lid_model = EncoderClassifier.from_hparams(
+    source="speechbrain/lang-id-voxlingua107-ecapa", savedir="/tmp/voxlingua107",
+    run_opts={"device": DEVICE},
+)
+VOX_INDEX = {lab.split(":")[0].strip(): idx for lab, idx in lid_model.hparams.label_encoder.lab2ind.items()}
 LOAD_SECONDS = round(time.time() - t0, 1)
 
 DOCTOR_LANGS = ("en", "ar")
@@ -65,6 +83,21 @@ DEFAULT_DESCRIPTIONS = {
     "en": f"A female speaker delivers calm, clear speech at a moderate speed and pitch. {_CLEAR}",
 }
 GENERIC_DESCRIPTION = f"A female speaker delivers calm, clear speech at a slow pace and moderate pitch. {_CLEAR}"
+
+
+_EAGER_FORWARD = tts.forward
+TTS_COMPILED = False
+COMPILE_NOTE = "off"
+
+
+def _tokenize_tts(text: str, description: str, padded: bool):
+    if padded:
+        d = desc_tok(description, return_tensors="pt", padding="max_length", max_length=DESC_MAX, truncation=True)
+        p = tts_tok(text, return_tensors="pt", padding="max_length", max_length=PROMPT_MAX, truncation=True)
+    else:
+        d = desc_tok(description, return_tensors="pt")
+        p = tts_tok(text, return_tensors="pt")
+    return d.to(DEVICE), p.to(DEVICE)
 
 
 def _sync():
@@ -100,16 +133,20 @@ def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str) -> dict:
     feats = w_proc(wav16.squeeze(0).numpy(), sampling_rate=ASR_SR, return_tensors="pt").input_features
     feats = feats.to(DEVICE, W_DTYPE)
 
-    # 1) Restricted language ID: score only {en, ar, patient_lang} with one decoder step.
+    # 1) Restricted language ID with VoxLingua107: score only {en, ar, patient_lang}.
     t = time.time()
-    cands = [c for c in (*DOCTOR_LANGS, patient_lang) if _whisper_lang_id(c) is not None]
-    ids = [_whisper_lang_id(c) for c in cands]
-    logits = w_model(
-        input_features=feats, decoder_input_ids=torch.tensor([[_W_SOT]], device=DEVICE)
-    ).logits[0, -1]
-    probs = torch.softmax(logits[ids].float(), dim=-1).tolist()
+    cands = [c for c in (*DOCTOR_LANGS, patient_lang) if c in VOX_INDEX]
+    out_prob = lid_model.classify_batch(wav16.to(DEVICE))[0][0]  # log-likelihoods over 107 languages
+    probs = torch.softmax(out_prob[[VOX_INDEX[c] for c in cands]].float(), dim=-1).tolist()
     lid = dict(zip(cands, [round(p, 4) for p in probs]))
     lid_seconds = time.time() - t
+    # Whisper's opinion, for diagnostics only.
+    w_cands = [c for c in (*DOCTOR_LANGS, patient_lang) if _whisper_lang_id(c) is not None]
+    w_logits = w_model(
+        input_features=feats, decoder_input_ids=torch.tensor([[_W_SOT]], device=DEVICE)
+    ).logits[0, -1]
+    w_probs = torch.softmax(w_logits[[_whisper_lang_id(c) for c in w_cands]].float(), dim=-1).tolist()
+    lid_whisper = dict(zip(w_cands, [round(p, 4) for p in w_probs]))
     top = max(lid, key=lid.get)
     role = "doctor" if top in DOCTOR_LANGS else "patient"
 
@@ -134,6 +171,7 @@ def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str) -> dict:
         "text": text,
         "engine": engine,
         "lid": lid,
+        "lid_whisper": lid_whisper,
         "audio_seconds": round(wav16.shape[-1] / ASR_SR, 2),
         "lid_seconds": round(lid_seconds, 3),
         "asr_seconds": round(asr_seconds, 3),
@@ -158,8 +196,11 @@ def transcribe(audio_path: str, lang: str = "ne", decoding: str = "ctc") -> dict
 @torch.inference_mode()
 def _speak_array(text: str, lang: str = "ne", description: str = ""):
     description = description or DEFAULT_DESCRIPTIONS.get(lang, GENERIC_DESCRIPTION)
-    d = desc_tok(description, return_tensors="pt").to(DEVICE)
-    p = tts_tok(text, return_tensors="pt").to(DEVICE)
+    fits = len(tts_tok(text).input_ids) <= PROMPT_MAX and len(desc_tok(description).input_ids) <= DESC_MAX
+    use_compiled = TTS_COMPILED and fits
+    tts.forward = _COMPILED_FORWARD if use_compiled else _EAGER_FORWARD
+    tts.generation_config.cache_implementation = "static" if use_compiled else None
+    d, p = _tokenize_tts(text, description, padded=use_compiled)
     _sync()
     t = time.time()
     out = tts.generate(
@@ -177,8 +218,26 @@ def _speak_array(text: str, lang: str = "ne", description: str = ""):
         "audio_seconds": round(audio_seconds, 2),
         "rtf": round(seconds / max(audio_seconds, 1e-6), 3),  # < 1.0 = faster than real time
         "chars": len(text),
+        "compiled": use_compiled,
     }
     return audio, stats
+
+
+_COMPILED_FORWARD = _EAGER_FORWARD
+if TTS_COMPILE and DEVICE.startswith("cuda"):
+    try:
+        t_c = time.time()
+        _COMPILED_FORWARD = torch.compile(_EAGER_FORWARD, mode=TTS_COMPILE)
+        TTS_COMPILED = True
+        for _ in range(2 if TTS_COMPILE == "reduce-overhead" else 1):
+            _speak_array("नमस्ते", "ne")
+        COMPILE_NOTE = f"{TTS_COMPILE} (warm-up {time.time() - t_c:.0f}s)"
+    except Exception as e:  # noqa: BLE001 - never fail boot because of compilation
+        TTS_COMPILED, _COMPILED_FORWARD = False, _EAGER_FORWARD
+        tts.forward = _EAGER_FORWARD
+        tts.generation_config.cache_implementation = None
+        COMPILE_NOTE = f"failed, eager fallback: {type(e).__name__}: {e}"[:300]
+    print("TTS compile:", COMPILE_NOTE, flush=True)
 
 
 def speak(text: str, lang: str = "ne", description: str = ""):
@@ -205,6 +264,7 @@ def benchmark() -> dict:
         "device": DEVICE,
         "gpu": torch.cuda.get_device_name(0) if DEVICE.startswith("cuda") else None,
         "tts_dtype": str(TTS_DTYPE),
+        "tts_compile": COMPILE_NOTE,
         "model_load_seconds": LOAD_SECONDS,
         "nepali": {"input_text": BENCH_SENTENCE_NE, "tts": tts_ne, "hear": hear_ne},
         "english": {"input_text": BENCH_SENTENCE_EN, "tts": tts_en, "hear": hear_en},

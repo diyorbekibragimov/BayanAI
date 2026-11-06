@@ -13,13 +13,24 @@ from fastrtc import AdditionalOutputs, AlgoOptions, ReplyOnPause, SileroVadOptio
 from bayan import talk
 
 ON_SPACES = bool(os.environ.get("SPACE_ID"))
-if ON_SPACES:
+TURN_KEYS = bool(os.environ.get("CLOUDFLARE_TURN_KEY_ID") and os.environ.get("CLOUDFLARE_TURN_KEY_API_TOKEN"))
+RTC_CONFIG, SERVER_RTC_CONFIG, RELAY_NOTE = None, None, ""
+
+if ON_SPACES and TURN_KEYS:
+    # Our own Cloudflare TURN key. hf_token="" forces the Cloudflare-key path: FastRTC otherwise
+    # prefers HF's shared relay (turn.fastrtc.org), whose TLS certificate expired on 2026-10-05.
     from fastrtc import get_cloudflare_turn_credentials, get_cloudflare_turn_credentials_async
 
-    RTC_CONFIG = get_cloudflare_turn_credentials_async
-    SERVER_RTC_CONFIG = get_cloudflare_turn_credentials(ttl=360_000)
-else:
-    RTC_CONFIG, SERVER_RTC_CONFIG = None, None
+    async def RTC_CONFIG():  # noqa: N802 - called per browser connection
+        return await get_cloudflare_turn_credentials_async(hf_token="")
+
+    try:
+        SERVER_RTC_CONFIG = get_cloudflare_turn_credentials(hf_token="", ttl=360_000)
+    except Exception as e:  # noqa: BLE001 - boot anyway and say why audio may not connect
+        RTC_CONFIG, RELAY_NOTE = None, f"⚠️ Audio relay (TURN) unavailable: {e}"
+elif ON_SPACES:
+    RELAY_NOTE = ("⚠️ Audio relay (TURN) not configured: set CLOUDFLARE_TURN_KEY_ID and "
+                  "CLOUDFLARE_TURN_KEY_API_TOKEN as Space secrets. Live audio may not connect.")
 
 PATIENT_LANGS = [
     ("Nepali · नेपाली", "ne"),
@@ -57,6 +68,8 @@ def turn(audio: tuple[int, np.ndarray], patient_lang: str):
 
 with gr.Blocks(title="Bayan AI") as demo:
     gr.Markdown(HEADER)
+    if RELAY_NOTE:
+        gr.Markdown(RELAY_NOTE)
     with gr.Row():
         lang = gr.Dropdown(PATIENT_LANGS, value="ne", label="Patient language", scale=2)
         wake = gr.Button("Wake voice worker", scale=1)

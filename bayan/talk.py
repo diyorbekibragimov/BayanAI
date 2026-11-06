@@ -182,6 +182,34 @@ def translate(text: str, role: str, src: str, tgt: str) -> dict:
     return data
 
 
+_SENT_SPLIT = re.compile(r"(?<=[।.!?؟])\s+")
+
+
+def split_sentences(text: str, max_chars: int = 160) -> list[str]:
+    """Short chunks so the first one can play while the next is synthesised."""
+    out = []
+    for part in _SENT_SPLIT.split(text.strip()):
+        part = part.strip()
+        while len(part) > max_chars:  # very long sentence: cut at the last comma/space
+            cut = max(part.rfind(",", 0, max_chars), part.rfind(" ", 0, max_chars))
+            cut = cut if cut > 20 else max_chars
+            out.append(part[:cut].strip())
+            part = part[cut:].strip(" ,")
+        if part:
+            out.append(part)
+    return out
+
+
+def speak_chunks(text: str, lang: str):
+    """Yield (sample_rate, float32 array) per sentence; yields nothing if no voice for this language yet."""
+    if lang not in WORKER_TTS_LANGS and lang != "en":
+        return
+    for sentence in split_sentences(text):
+        voiced = speak(sentence, lang)
+        if voiced is not None:
+            yield voiced
+
+
 def speak(text: str, lang: str):
     """Return (sample_rate, float32 mono array) or None if no voice for this language yet."""
     if not text.strip():
@@ -284,11 +312,14 @@ def run_turn(sess: Session, sr: int, audio: np.ndarray):
     if held:
         return
     t2 = time.time()
-    voiced = speak(tr["translation"], tgt)
-    if voiced is None:
-        return
-    timings["speak"] = time.time() - t2
-    timings["total"] = time.time() - t0
+    first = True
+    for out_sr, out in speak_chunks(tr["translation"], tgt):
+        if first:  # time to first audio is the number that matters for conversation
+            timings["first_audio"] = time.time() - t0
+            first = False
+        yield ("audio", out_sr, out)
+    if first:
+        return  # no voice for this language yet (text only)
+    timings["speak_total"] = time.time() - t2
     sess.history[-1] = render_row(role, src, text, tr.get("english", ""), tr["translation"], timings, held)
     yield ("ui", list(sess.history), render_alerts(sess.alerts))
-    yield ("audio", voiced[0], voiced[1])
