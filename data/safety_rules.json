@@ -1,0 +1,3670 @@
+{
+  "meta": {
+    "name": "Bayan AI Safety Sentinel rules",
+    "version": "0.1.0",
+    "created": "2026-11-06",
+    "status": "Hackathon prototype. Decision support only; every alert is a prompt for the licensed clinician, who decides.",
+    "authorship_caveat": "Compiled by engineers without clinical training from FDA labels (DailyMed), NICE, AHA/ACC, ESC, ACSM, WMS, WHO, CDC, EMA and peer-reviewed papers. Thresholds must be reviewed by a pharmacist or physician and aligned with the local formulary (e.g., HMC/MoPH Qatar) before any clinical use.",
+    "verification_values": {
+      "label_or_guideline_checked": "Threshold or statement was read from the cited label or guideline text (openFDA / DailyMed / guideline page) on 2026-11-06.",
+      "threshold_is_design_choice": "The cited source supports the concern, but the exact alert threshold is a conservative engineering choice to be confirmed by a clinician."
+    },
+    "severity_levels": {
+      "info": "Collapsed card, no colour flash. Awareness or explicit 'this is OK' rules that suppress false alarms.",
+      "caution": "Amber card on the doctor screen. Needs acknowledge or dismiss before the note is finalised.",
+      "critical": "Red card, pinned. Needs acknowledgement with an override reason before discharge or prescribing is finalised. Never spoken aloud."
+    },
+    "fire_on_values": {
+      "state_change": "evaluated whenever the extracted clinical state changes",
+      "on_prescribe": "evaluated when a prescription is extracted or confirmed",
+      "on_disposition": "evaluated when disposition (discharge/admit/refer) is extracted",
+      "timer": "evaluated on a clock tick against elapsed time since a symptom was first mentioned"
+    },
+    "trigger_language": {
+      "combinators": {
+        "all": "every child true",
+        "any": "at least one child true",
+        "none": "no child true"
+      },
+      "quantifiers": {
+        "exists_in": "true if at least one item of the named collection satisfies 'where' (facts inside 'where' are relative to the item)",
+        "none_in": "true if no item of the named collection satisfies 'where'"
+      },
+      "collections": [
+        "allergies",
+        "current_meds",
+        "prescribed_meds",
+        "all_meds (current + prescribed)",
+        "symptoms",
+        "investigations",
+        "interventions",
+        "assessments",
+        "idiom_hits"
+      ],
+      "global_facts": [
+        "patient.age_years",
+        "patient.sex",
+        "patient.pregnant (true|false|'unknown')",
+        "patient.gestation_weeks",
+        "patient.weight_kg",
+        "patient.egfr",
+        "patient.hepatic_impairment (true|false|'severe')",
+        "patient.chronic_alcohol",
+        "patient.malnourished",
+        "patient.heat_exposure",
+        "patient.heat_illness_suspected",
+        "patient.heat_stroke_suspected",
+        "patient.dehydration (none|mild|moderate|severe)",
+        "patient.travel_malaria_endemic_days",
+        "patient.travel_country",
+        "patient.ancestry_region",
+        "vitals.hr",
+        "vitals.bp_sys",
+        "vitals.rr",
+        "vitals.spo2",
+        "vitals.temp_c",
+        "disposition.type",
+        "elapsed_min_since.symptom.<code>"
+      ],
+      "operators": [
+        "eq",
+        "neq",
+        "in",
+        "not_in",
+        "gt",
+        "gte",
+        "lt",
+        "lte",
+        "exists",
+        "not_exists",
+        "contains_any"
+      ],
+      "missing_data_policy": "A fact that is missing evaluates the comparison to false, except 'not_exists', so a rule never fires on absent data. Missing-workup rules use none_in, which is designed to fire when an investigation is absent.",
+      "placeholders": "message_en may contain {rx.drug}, {rx.daily_dose_mg}, {allergy.evidence} etc. *.evidence expands to the quoted utterance and its timestamp from the transcript."
+    },
+    "drug_classes": {
+      "penicillin": [
+        "amoxicillin",
+        "ampicillin",
+        "co-amoxiclav",
+        "piperacillin-tazobactam",
+        "flucloxacillin",
+        "cloxacillin",
+        "dicloxacillin",
+        "phenoxymethylpenicillin",
+        "benzylpenicillin",
+        "benzathine benzylpenicillin",
+        "nafcillin",
+        "oxacillin"
+      ],
+      "cephalosporin_aminopenicillin_like_R1": [
+        "cephalexin",
+        "cefadroxil",
+        "cefaclor",
+        "cefprozil"
+      ],
+      "cephalosporin": [
+        "cefuroxime",
+        "ceftriaxone",
+        "cefixime",
+        "cefazolin",
+        "cefotaxime",
+        "ceftazidime",
+        "cefepime",
+        "cefdinir",
+        "cefpodoxime"
+      ],
+      "carbapenem": [
+        "meropenem",
+        "imipenem-cilastatin",
+        "ertapenem"
+      ],
+      "sulfonamide_antibiotic": [
+        "co-trimoxazole",
+        "sulfamethoxazole",
+        "sulfadiazine"
+      ],
+      "sulfonamide_nonantibiotic": [
+        "furosemide",
+        "hydrochlorothiazide",
+        "indapamide",
+        "celecoxib",
+        "acetazolamide",
+        "sumatriptan",
+        "glibenclamide",
+        "gliclazide",
+        "glimepiride"
+      ],
+      "nsaid_cox1": [
+        "aspirin",
+        "ibuprofen",
+        "diclofenac",
+        "naproxen",
+        "ketorolac",
+        "mefenamic acid",
+        "indometacin",
+        "ketoprofen",
+        "piroxicam",
+        "meloxicam"
+      ],
+      "coxib": [
+        "celecoxib",
+        "etoricoxib"
+      ],
+      "aromatic_anticonvulsant": [
+        "carbamazepine",
+        "oxcarbazepine",
+        "phenytoin"
+      ],
+      "acei": [
+        "lisinopril",
+        "enalapril",
+        "ramipril",
+        "perindopril",
+        "captopril"
+      ],
+      "arb": [
+        "losartan",
+        "valsartan",
+        "irbesartan",
+        "candesartan",
+        "telmisartan",
+        "olmesartan"
+      ],
+      "diuretic": [
+        "furosemide",
+        "hydrochlorothiazide",
+        "indapamide",
+        "bumetanide",
+        "spironolactone"
+      ],
+      "statin": [
+        "atorvastatin",
+        "simvastatin",
+        "rosuvastatin",
+        "pravastatin"
+      ],
+      "tetracycline": [
+        "doxycycline",
+        "tetracycline",
+        "minocycline"
+      ],
+      "pde5_inhibitor": [
+        "sildenafil",
+        "tadalafil",
+        "vardenafil"
+      ],
+      "nitrate": [
+        "glyceryl trinitrate",
+        "isosorbide mononitrate",
+        "isosorbide dinitrate"
+      ],
+      "ssri": [
+        "sertraline",
+        "fluoxetine",
+        "citalopram",
+        "escitalopram",
+        "paroxetine"
+      ],
+      "snri": [
+        "venlafaxine",
+        "duloxetine"
+      ],
+      "tca": [
+        "amitriptyline",
+        "nortriptyline",
+        "clomipramine"
+      ],
+      "teratogen": [
+        "isotretinoin",
+        "warfarin",
+        "valproate",
+        "divalproex",
+        "methotrexate",
+        "misoprostol",
+        "lisinopril",
+        "enalapril",
+        "ramipril",
+        "losartan",
+        "valsartan"
+      ],
+      "anticholinergic": [
+        "chlorphenamine",
+        "promethazine",
+        "diphenhydramine",
+        "hyoscine butylbromide"
+      ],
+      "beta_blocker": [
+        "atenolol",
+        "metoprolol",
+        "propranolol",
+        "bisoprolol"
+      ],
+      "antipsychotic": [
+        "haloperidol",
+        "olanzapine",
+        "quetiapine",
+        "risperidone"
+      ]
+    },
+    "brand_aliases_examples": {
+      "Panadol": "paracetamol",
+      "Adol": "paracetamol",
+      "Tylenol": "paracetamol",
+      "Brufen": "ibuprofen",
+      "Voltaren": "diclofenac",
+      "Augmentin": "co-amoxiclav",
+      "Amoxil": "amoxicillin",
+      "Zithromax": "azithromycin",
+      "Rocephin": "ceftriaxone",
+      "Flagyl": "metronidazole",
+      "Glucophage": "metformin",
+      "Norvasc": "amlodipine",
+      "Losec": "omeprazole",
+      "Zofran": "ondansetron",
+      "Ventolin": "salbutamol",
+      "Plavix": "clopidogrel",
+      "Zocor": "simvastatin",
+      "Lipitor": "atorvastatin",
+      "Tegretol": "carbamazepine",
+      "Septrin": "co-trimoxazole",
+      "_note": "Illustrative only. Brand availability in Qatar must be confirmed against the local formulary."
+    },
+    "salt_and_naming_note": "Rules use INN/BNF names (paracetamol = acetaminophen, salbutamol = albuterol, adrenaline = epinephrine). The extractor normalises names and converts doses to mg (or mcg for levothyroxine) before evaluation."
+  },
+  "rules": [
+    {
+      "id": "ALG-PEN-01",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "penicillin"
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "penicillin"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Penicillin allergy reported ({allergy.evidence}). {rx.drug} is a penicillin.",
+      "rationale": "Every penicillin, including combination products (co-amoxiclav, piperacillin-tazobactam), carries the penicillin core. A recorded allergy should be confirmed or de-labelled before re-exposure, not overridden silently.",
+      "source_urls": [
+        "https://doi.org/10.1016/j.jaci.2022.08.028",
+        "https://pubmed.ncbi.nlm.nih.gov/30644987/",
+        "https://www.nice.org.uk/guidance/cg183"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-PEN-02",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "any": [
+                {
+                  "fact": "class",
+                  "op": "in",
+                  "value": [
+                    "penicillin"
+                  ]
+                },
+                {
+                  "fact": "substance",
+                  "op": "in",
+                  "value": [
+                    "amoxicillin",
+                    "ampicillin"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "cephalosporin_aminopenicillin_like_R1"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Penicillin/aminopenicillin allergy reported. {rx.drug} shares a similar R1 side chain with amoxicillin/ampicillin.",
+      "rationale": "Cross-reactivity between penicillins and cephalosporins is driven mainly by R1 side-chain similarity. Cephalexin, cefadroxil, cefaclor and cefprozil resemble amoxicillin/ampicillin; prefer a cephalosporin with a dissimilar side chain.",
+      "source_urls": [
+        "https://doi.org/10.1016/j.jaci.2022.08.028",
+        "https://pubmed.ncbi.nlm.nih.gov/30644987/"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "exists_in": "allergies",
+        "where": {
+          "all": [
+            {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "penicillin"
+              ]
+            },
+            {
+              "fact": "severity",
+              "op": "in",
+              "value": [
+                "anaphylaxis",
+                "severe"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ALG-PEN-03",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "all": [
+                {
+                  "fact": "class",
+                  "op": "in",
+                  "value": [
+                    "penicillin"
+                  ]
+                },
+                {
+                  "fact": "severity",
+                  "op": "in",
+                  "value": [
+                    "scar"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "penicillin",
+                "cephalosporin",
+                "cephalosporin_aminopenicillin_like_R1",
+                "carbapenem"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Severe cutaneous reaction (SJS/TEN/DRESS) to a penicillin reported. {rx.drug} is a beta-lactam.",
+      "rationale": "After severe cutaneous adverse reactions, the 2022 practice parameter recommends specialist-guided avoidance rather than routine challenge. Follow the local allergy protocol.",
+      "source_urls": [
+        "https://doi.org/10.1016/j.jaci.2022.08.028"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-PEN-04",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "all": [
+                {
+                  "fact": "class",
+                  "op": "in",
+                  "value": [
+                    "penicillin"
+                  ]
+                },
+                {
+                  "fact": "severity",
+                  "op": "in",
+                  "value": [
+                    "mild",
+                    "moderate",
+                    "unknown"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "cephalosporin"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "info",
+      "message_en": "Penicillin allergy (non-severe) reported; {rx.drug} has a dissimilar side chain. Guidance generally permits use. Shown for awareness only.",
+      "rationale": "The AAAAI/ACAAI 2022 parameter suggests patients with a non-anaphylactic penicillin history can receive cephalosporins, with a dissimilar side chain preferred, without testing. This rule exists so the system does not raise a false 'critical' alert.",
+      "source_urls": [
+        "https://doi.org/10.1016/j.jaci.2022.08.028"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-CEPH-01",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "cephalosporin_aminopenicillin_like_R1"
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "amoxicillin",
+                "ampicillin",
+                "co-amoxiclav",
+                "cephalexin",
+                "cefadroxil",
+                "cefaclor",
+                "cefprozil"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Allergy to {allergy.substance} reported. {rx.drug} shares a similar R1 side chain.",
+      "rationale": "Reactions to a cephalosporin are most likely to recur with beta-lactams that share the same or a similar R1 side chain.",
+      "source_urls": [
+        "https://doi.org/10.1016/j.jaci.2022.08.028"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-SULFA-01",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "sulfonamide_antibiotic"
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "sulfonamide_antibiotic"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Sulfonamide-antibiotic allergy reported. {rx.drug} is a sulfonamide antibiotic.",
+      "rationale": "Re-exposure to the same drug class after a hypersensitivity reaction risks recurrence.",
+      "source_urls": [
+        "https://doi.org/10.1016/j.jaci.2022.08.028",
+        "https://www.nice.org.uk/guidance/cg183"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-SULFA-02",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "sulfonamide_antibiotic"
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "sulfonamide_nonantibiotic"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "info",
+      "message_en": "Sulfa-antibiotic allergy reported. {rx.drug} is a non-antibiotic sulfonamide; evidence shows no specific cross-reactivity.",
+      "rationale": "Strom et al. (NEJM 2003) found the excess risk after sulfonamide-antibiotic allergy reflects a general predisposition to allergic reactions, not sulfonamide cross-reactivity. Kept as info to avoid unnecessary alerts.",
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/14573734/",
+        "https://doi.org/10.1016/j.jaci.2022.08.028"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-NSAID-01",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "nsaid",
+                "aspirin"
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "nsaid_cox1"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Aspirin/NSAID hypersensitivity reported ({allergy.evidence}). {rx.drug} is a COX-1-inhibiting NSAID.",
+      "rationale": "In NSAID-exacerbated respiratory or cutaneous disease, reactions cross over to all strong COX-1 inhibitors (aspirin, ibuprofen, diclofenac, naproxen, ketorolac, mefenamic acid).",
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/24117484/",
+        "https://doi.org/10.1016/j.jaci.2022.08.028"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-NSAID-02",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "nsaid",
+                "aspirin"
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "coxib"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "NSAID hypersensitivity reported. {rx.drug} is a selective COX-2 inhibitor; it is usually tolerated, but check the reaction type and follow the local protocol.",
+      "rationale": "Selective COX-2 inhibitors are tolerated by most cross-reactive NSAID-hypersensitive patients. The exception is single-NSAID-induced (selective) reactions, which need individual assessment.",
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/24117484/"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-AED-01",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "allergies",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "aromatic_anticonvulsant"
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "aromatic_anticonvulsant"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Hypersensitivity to {allergy.substance} reported. {rx.drug} is a structurally related aromatic anticonvulsant.",
+      "rationale": "The FDA carbamazepine label states that about a third of patients with carbamazepine hypersensitivity also react to oxcarbazepine.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=047bc284-060a-4db9-bf37-75d10f95a0a6"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-HLA-01",
+      "family": "drug_allergy",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "carbamazepine"
+              ]
+            }
+          },
+          {
+            "fact": "patient.ancestry_region",
+            "op": "in",
+            "value": [
+              "east_asia",
+              "southeast_asia",
+              "south_asia"
+            ]
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "hla_b_1502"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Carbamazepine started in a patient of Asian ancestry; no HLA-B*1502 result recorded.",
+      "rationale": "Boxed warning: HLA-B*1502 is strongly associated with carbamazepine SJS/TEN and is found almost exclusively in patients with ancestry across broad areas of Asia; the label advises screening at-risk patients before starting. Relevant to Qatar's large South and Southeast Asian population.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=047bc284-060a-4db9-bf37-75d10f95a0a6"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "ALG-DOC-01",
+      "family": "drug_allergy",
+      "trigger": {
+        "exists_in": "allergies",
+        "where": {
+          "any": [
+            {
+              "fact": "reaction",
+              "op": "not_exists"
+            },
+            {
+              "fact": "severity",
+              "op": "eq",
+              "value": "unknown"
+            }
+          ]
+        }
+      },
+      "severity": "info",
+      "message_en": "Allergy to {allergy.substance} mentioned, but the reaction and severity were not captured. Suggested question: 'What happened when you took it?'",
+      "rationale": "NICE CG183 asks for the drug, the reaction, its severity and the date to be documented. The reaction type decides whether alternatives are safe (see ALG-PEN-04).",
+      "source_urls": [
+        "https://www.nice.org.uk/guidance/cg183"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-PARA-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "paracetamol"
+            },
+            {
+              "any": [
+                {
+                  "fact": "daily_dose_mg",
+                  "op": "gt",
+                  "value": 4000
+                },
+                {
+                  "fact": "dose_mg",
+                  "op": "gt",
+                  "value": 1000
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Paracetamol {rx.dose_mg} mg x {rx.frequency_per_day}/day = {rx.daily_dose_mg} mg/day; exceeds the adult maximum (1 g per dose, 4 g/day).",
+      "rationale": "The FDA label sets a maximum of 1 g per dose and 4 g/day for adults of 50 kg or more. Hepatotoxicity risk rises above this, and patients often take extra over-the-counter paracetamol (e.g., Panadol, Adol); ask about it.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0f67c1bd-915b-4681-88dd-22f5154a80b3",
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0005aafa-08f8-4990-a54d-cc097195708f"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-PARA-03",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "paracetamol"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg_per_kg",
+              "op": "gt",
+              "value": 75
+            },
+            {
+              "fact": "patient.weight_kg",
+              "op": "lt",
+              "value": 50
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Paracetamol {rx.daily_dose_mg_per_kg} mg/kg/day in a patient under 50 kg (maximum 75 mg/kg/day).",
+      "rationale": "For adults and adolescents under 50 kg, the cited (IV acetaminophen) label caps the dose at 75 mg/kg/day. Low body weight is common in undernourished migrant workers.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0f67c1bd-915b-4681-88dd-22f5154a80b3"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-PARA-04",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "paracetamol"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 3000
+            },
+            {
+              "any": [
+                {
+                  "fact": "patient.hepatic_impairment",
+                  "op": "eq",
+                  "value": true
+                },
+                {
+                  "fact": "patient.chronic_alcohol",
+                  "op": "eq",
+                  "value": true
+                },
+                {
+                  "fact": "patient.malnourished",
+                  "op": "eq",
+                  "value": true
+                },
+                {
+                  "fact": "patient.heat_illness_suspected",
+                  "op": "eq",
+                  "value": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Paracetamol {rx.daily_dose_mg} mg/day with a hepatic risk factor (liver disease, chronic alcohol use, malnutrition, or heat illness/dehydration). Consider a lower ceiling.",
+      "rationale": "OTC labels cap some products at 3 g/day. The FDA label advises caution in hepatic impairment, alcoholism and malnutrition, and CDC lists heat-related liver injury as raising paracetamol hepatotoxicity risk. The 3 g threshold is a conservative alert setting, not a guideline number.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0f67c1bd-915b-4681-88dd-22f5154a80b3",
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0005aafa-08f8-4990-a54d-cc097195708f",
+        "https://www.cdc.gov/heat-health/hcp/clinical-guidance/heat-and-medications-guidance-for-clinicians.html"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "threshold_is_design_choice"
+    },
+    {
+      "id": "DOSE-IBU-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "ibuprofen"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 2400
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Ibuprofen {rx.daily_dose_mg} mg/day is above the usual 2.4 g/day ceiling (US prescription label maximum: 3.2 g/day).",
+      "rationale": "The FDA prescription label maximum is 3200 mg/day, but many formularies use 2.4 g/day as the usual ceiling. GI, renal and CV risk is dose-dependent.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00872852-680a-41b3-901b-b991b12a176d"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "threshold_is_design_choice",
+      "escalate_to_critical_if": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "ibuprofen"
+            },
+            {
+              "any": [
+                {
+                  "fact": "daily_dose_mg",
+                  "op": "gt",
+                  "value": 3200
+                },
+                {
+                  "fact": "dose_mg",
+                  "op": "gt",
+                  "value": 800
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "DOSE-IBU-02",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "ibuprofen"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 3200
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Ibuprofen {rx.daily_dose_mg} mg/day exceeds the FDA prescription label maximum of 3200 mg/day.",
+      "rationale": "FDA prescription label: 'Do not exceed 3200 mg total daily dose.'",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00872852-680a-41b3-901b-b991b12a176d"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "ibuprofen"
+            },
+            {
+              "any": [
+                {
+                  "fact": "daily_dose_mg",
+                  "op": "gt",
+                  "value": 3200
+                },
+                {
+                  "fact": "dose_mg",
+                  "op": "gt",
+                  "value": 800
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "DOSE-DICLO-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "diclofenac"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 150
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Diclofenac {rx.daily_dose_mg} mg/day is above 150 mg/day.",
+      "rationale": "The diclofenac label reports a higher risk of liver injury at doses of 150 mg/day or more; 150 mg/day is the usual oral maximum.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=08e41a9d-644c-4ac6-aba3-38d7c3f36d36"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "diclofenac"
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 200
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "DOSE-NAP-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "naproxen"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 1250
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Naproxen {rx.daily_dose_mg} mg/day is above 1250 mg/day.",
+      "rationale": "The label says the total daily dose should not exceed 1250 mg of naproxen, and allows 1500 mg/day only for limited periods.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=000155a8-709c-44e5-a75f-cd890f3a7caf"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "naproxen"
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 1500
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "DOSE-KETO-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "ketorolac"
+            },
+            {
+              "any": [
+                {
+                  "all": [
+                    {
+                      "fact": "route",
+                      "op": "eq",
+                      "value": "oral"
+                    },
+                    {
+                      "fact": "daily_dose_mg",
+                      "op": "gt",
+                      "value": 40
+                    }
+                  ]
+                },
+                {
+                  "fact": "duration_days",
+                  "op": "gt",
+                  "value": 5
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Ketorolac {rx.daily_dose_mg} mg/day for {rx.duration_days} days exceeds the oral maximum (40 mg/day) or the 5-day total limit.",
+      "rationale": "The label caps oral ketorolac at 40 mg/day and total combined IV/IM and oral use at 5 days because of GI bleeding and renal risk.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=04d5114e-332b-4ed0-85df-b276c1dc296c"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-AMOX-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "amoxicillin"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 3000
+            },
+            {
+              "fact": "route",
+              "op": "eq",
+              "value": "oral"
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Oral amoxicillin {rx.daily_dose_mg} mg/day is above 3 g/day. Check the indication.",
+      "rationale": "The label's adult range is 750–1750 mg/day, with up to 3 g/day in H. pylori dual therapy (1 g three times daily). Higher oral doses suggest a unit or frequency error.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00fbd46e-05fd-4f8a-9f59-a7a4d01c8e54"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "threshold_is_design_choice",
+      "escalate_to_critical_if": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "amoxicillin"
+            },
+            {
+              "fact": "route",
+              "op": "eq",
+              "value": "oral"
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 6000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "DOSE-COAMOX-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "co-amoxiclav"
+              ]
+            },
+            {
+              "fact": "daily_clavulanate_mg",
+              "op": "gt",
+              "value": 375
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Co-amoxiclav regimen delivers {rx.daily_clavulanate_mg} mg/day of clavulanate (more than 375 mg). Check the tablet strength; two 250/125 tablets do not equal one 500/125 tablet.",
+      "rationale": "The label states that two 250 mg/125 mg tablets should not replace one 500 mg/125 mg tablet because of the extra clavulanate. 375 mg/day equals 500/125 three times daily.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00cf4429-e37c-4490-b22d-3cd796124296"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "threshold_is_design_choice"
+    },
+    {
+      "id": "DOSE-AZI-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "azithromycin"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 500
+            },
+            {
+              "fact": "duration_days",
+              "op": "gt",
+              "value": 1
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Azithromycin {rx.daily_dose_mg} mg/day. Standard adult regimens use 500 mg/day or less, except single-dose STI regimens.",
+      "rationale": "Label regimens: 500 mg day 1 then 250 mg days 2–5, or 500 mg daily for 3 days. Single 1–2 g doses are used only for specific STI indications. Azithromycin also prolongs QT.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=003307c5-3f73-4a5d-a704-bfdea3c656e8"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-CTX-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "ceftriaxone"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 2000
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Ceftriaxone {rx.daily_dose_mg} mg/day is above the usual adult 1–2 g/day. Higher doses (label maximum 4 g/day) are for severe infections such as meningitis.",
+      "rationale": "Label (adults): the usual daily dose is 1 to 2 g, and the total daily dose should not exceed 4 g; meningitis dosing reaches 4 g/day. Alerting above 2 g is a conservative design choice.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=03283208-8616-4117-9d2b-aa8046017a4f"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "threshold_is_design_choice",
+      "escalate_to_critical_if": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "ceftriaxone"
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 4000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "DOSE-CIPRO-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "ciprofloxacin"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 1500
+            },
+            {
+              "fact": "route",
+              "op": "eq",
+              "value": "oral"
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Oral ciprofloxacin {rx.daily_dose_mg} mg/day exceeds 750 mg twice daily.",
+      "rationale": "The highest adult oral regimen in the label is 750 mg every 12 hours.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0fac4466-fbe5-49d2-96e3-e3ac2739bd5b"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-METRO-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "metronidazole"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 4000
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Metronidazole {rx.daily_dose_mg} mg/day exceeds 4 g per 24 h.",
+      "rationale": "Label: a maximum of 4 g should not be exceeded in a 24-hour period.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=02046a22-a5eb-4bb7-bec7-e5a2aa55e142"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-MET-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "metformin"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 2550
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Metformin {rx.daily_dose_mg} mg/day exceeds the immediate-release label maximum of 2550 mg/day (2000 mg for extended-release).",
+      "rationale": "FDA label maximum: 2550 mg/day for immediate-release, 2000 mg/day for extended-release. Some formularies allow up to 3 g.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=011de1a5-1ac0-4831-9e8d-26ec79ba2205"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-MET-02",
+      "family": "dose_ceiling",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "metformin"
+              ]
+            }
+          },
+          {
+            "fact": "patient.egfr",
+            "op": "lt",
+            "value": 30
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Metformin prescribed with eGFR {patient.egfr}; it is contraindicated below 30 mL/min/1.73 m².",
+      "rationale": "Label: do not use metformin when eGFR is below 30 because of lactic acidosis risk. Dehydration and heat-related AKI can drop eGFR quickly in outdoor workers.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=011de1a5-1ac0-4831-9e8d-26ec79ba2205",
+        "https://www.cdc.gov/heat-health/hcp/clinical-guidance/heat-and-medications-guidance-for-clinicians.html"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-AMLO-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "amlodipine"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 10
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Amlodipine {rx.daily_dose_mg} mg/day exceeds the 10 mg/day maximum.",
+      "rationale": "Label: maximum 10 mg once daily.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=003dd1ec-16f8-4f96-b6a8-c4689d35892a"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-LISI-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "lisinopril"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 40
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Lisinopril {rx.daily_dose_mg} mg/day is above the usual 40 mg/day titration ceiling.",
+      "rationale": "The label titrates to 40 mg/day; doses up to 80 mg 'do not appear to give greater effect'.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=021831ab-dfeb-40fc-aede-4aa1fbb8d918"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "lisinopril"
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 80
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "DOSE-SIMVA-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "simvastatin"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 40
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Simvastatin {rx.daily_dose_mg} mg/day exceeds the 40 mg maximum recommended dose.",
+      "rationale": "Label: the maximum recommended dose is 40 mg once daily (80 mg is restricted because of myopathy risk).",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00896fff-081d-4553-be8c-1999a8a73dda"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-OME-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "omeprazole"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 40
+            }
+          ]
+        }
+      },
+      "severity": "info",
+      "message_en": "Omeprazole {rx.daily_dose_mg} mg/day. Doses above 40 mg are generally for hypersecretory conditions.",
+      "rationale": "Label regimens for GERD and ulcers are 20–40 mg once daily. Higher doses (up to 120 mg three times daily) are for Zollinger-Ellison syndrome.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0344268f-d8e6-48d5-b1e1-f750ed1d8a52"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-OND-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "ondansetron"
+              ]
+            },
+            {
+              "fact": "dose_mg",
+              "op": "gt",
+              "value": 16
+            },
+            {
+              "fact": "route",
+              "op": "eq",
+              "value": "iv"
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Ondansetron IV single dose {rx.dose_mg} mg exceeds 16 mg.",
+      "rationale": "IV label: maximum 16 mg per dose; higher single IV doses carry QT-prolongation risk.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=1b9c2d9f-62a8-4d26-a041-a598bc59e300"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-METOC-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "metoclopramide"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 30
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Metoclopramide {rx.daily_dose_mg} mg/day exceeds the EMA-recommended 30 mg/day.",
+      "rationale": "EMA 2013 review: maximum 30 mg/day (0.5 mg/kg), for up to 5 days, because of neurological side effects. The FDA label differs (up to 12 weeks for GERD); local formulary decides.",
+      "source_urls": [
+        "https://www.ema.europa.eu/en/medicines/human/referrals/metoclopramide-containing-medicines",
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0034a97a-fb05-418a-a234-de278907cd2a"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-TRAM-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "tramadol"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 400
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Tramadol {rx.daily_dose_mg} mg/day exceeds 400 mg/day.",
+      "rationale": "IR label: not to exceed 400 mg/day (300 mg/day for extended-release; in severe renal impairment dose 12-hourly to a maximum of 200 mg/day; lower ceilings over age 75). Seizure and serotonin-syndrome risk rise with dose.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=007bf37f-0e46-426a-ac8c-be63d4b7414c"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-COD-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "codeine"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 240
+            }
+          ]
+        }
+      },
+      "severity": "caution",
+      "message_en": "Codeine {rx.daily_dose_mg} mg/day is above 240 mg/day.",
+      "rationale": "The FDA codeine sulfate label maximum is 360 mg/24 h. Many formularies use 240 mg/day; CYP2D6 ultra-rapid metabolisers are at risk even at normal doses.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=010905f9-3bcb-4b50-9fe8-a3ad0010f14c"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "threshold_is_design_choice",
+      "escalate_to_critical_if": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "codeine"
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 360
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "DOSE-COLCH-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "colchicine"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 1.8
+            },
+            {
+              "fact": "indication",
+              "op": "eq",
+              "value": "gout_flare"
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Colchicine {rx.daily_dose_mg} mg in 24 h for a gout flare exceeds 1.8 mg.",
+      "rationale": "Label: for a gout flare, 1.2 mg then 0.6 mg one hour later (1.8 mg total). Colchicine has a narrow therapeutic index.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0f69b9c6-8c00-45e2-b950-34dc5ae62352"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-PRED-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "prednisolone",
+                "prednisone"
+              ]
+            },
+            {
+              "fact": "daily_dose_mg",
+              "op": "gt",
+              "value": 60
+            }
+          ]
+        }
+      },
+      "severity": "info",
+      "message_en": "{rx.drug} {rx.daily_dose_mg} mg/day is above the usual 5–60 mg/day starting range. Confirm the indication.",
+      "rationale": "The label's initial dosage is 5–60 mg/day depending on the disease. Higher doses are used in specific conditions, so this is informational.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0060b86b-0b79-4c54-a7be-97683a933a05"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-SALB-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "salbutamol"
+              ]
+            },
+            {
+              "fact": "daily_puffs",
+              "op": "gt",
+              "value": 12
+            }
+          ]
+        }
+      },
+      "severity": "info",
+      "message_en": "Salbutamol inhaler {rx.daily_puffs} puffs/day prescribed for routine use. Frequent reliever need suggests poorly controlled asthma.",
+      "rationale": "Label: 2 inhalations every 4–6 hours; 'more frequent administration or a greater number of inhalations is not recommended'. Acute-asthma protocols differ and are out of scope for this rule.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=04c8a345-0a0d-5a01-e063-6294a90a40d2"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-LEVO-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "levothyroxine"
+              ]
+            },
+            {
+              "fact": "dose_mcg",
+              "op": "gt",
+              "value": 300
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Levothyroxine dose {rx.dose_raw} equals more than 300 mcg/day. Possible mg/mcg unit error.",
+      "rationale": "Label: doses above 200 mcg/day are seldom needed, and needing more than 300 mcg/day is rare. A dose spoken in 'mg' (e.g., '1 mg' = 1000 mcg) is a classic unit error.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=008de8fd-150f-4022-8ccb-c8bfa94875c7"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DOSE-ADR-01",
+      "family": "dose_ceiling",
+      "trigger": {
+        "exists_in": "prescribed_meds",
+        "where": {
+          "all": [
+            {
+              "fact": "drug",
+              "op": "eq",
+              "value": "adrenaline"
+            },
+            {
+              "any": [
+                {
+                  "all": [
+                    {
+                      "fact": "route",
+                      "op": "eq",
+                      "value": "iv"
+                    },
+                    {
+                      "fact": "concentration_mg_per_ml",
+                      "op": "eq",
+                      "value": 1
+                    }
+                  ]
+                },
+                {
+                  "all": [
+                    {
+                      "fact": "route",
+                      "op": "eq",
+                      "value": "im"
+                    },
+                    {
+                      "fact": "dose_mg",
+                      "op": "gt",
+                      "value": 0.5
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "severity": "critical",
+      "message_en": "Adrenaline {rx.dose_raw} by {rx.route}. In adult anaphylaxis the dose is 0.5 mg IM of 1 mg/mL; undiluted 1 mg/mL must not be given IV.",
+      "rationale": "Resuscitation Council UK anaphylaxis guidance: adults receive 500 micrograms IM (0.5 mL of 1 mg/mL). IV adrenaline is for experienced specialists only, using diluted solutions.",
+      "source_urls": [
+        "https://www.resus.org.uk/library/additional-guidance/guidance-anaphylaxis/emergency-treatment"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-WARF-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "warfarin"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "nsaid_cox1",
+                "coxib"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Warfarin with {rx.drug} (an NSAID) increases bleeding risk.",
+      "rationale": "The warfarin label lists NSAIDs among drugs that increase bleeding risk.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0cbce382-9c88-4f58-ae0f-532a841e8f95"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-WARF-02",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "warfarin"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "fluconazole",
+                "metronidazole"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Warfarin with {rx.drug} potentiates anticoagulation (INR rise). Monitor INR or choose an alternative.",
+      "rationale": "The fluconazole and metronidazole labels report prothrombin time increases and bleeding with warfarin.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=01df20c4-7b94-044e-e063-6394a90a406a",
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=02046a22-a5eb-4bb7-bec7-e5a2aa55e142"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-STATIN-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "simvastatin"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "clarithromycin",
+                "erythromycin",
+                "itraconazole",
+                "ketoconazole",
+                "posaconazole",
+                "voriconazole"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Simvastatin with {rx.drug} (a strong CYP3A4 inhibitor) is contraindicated because of myopathy/rhabdomyolysis risk.",
+      "rationale": "The simvastatin label contraindicates strong CYP3A4 inhibitors, including clarithromycin and azole antifungals.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00896fff-081d-4553-be8c-1999a8a73dda"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-STATIN-02",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "all": [
+                {
+                  "fact": "drug",
+                  "op": "in",
+                  "value": [
+                    "simvastatin"
+                  ]
+                },
+                {
+                  "fact": "daily_dose_mg",
+                  "op": "gt",
+                  "value": 20
+                }
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "amlodipine",
+                "amiodarone",
+                "ranolazine"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Simvastatin above 20 mg with {rx.drug}: the label caps simvastatin at 20 mg/day with this drug.",
+      "rationale": "Simvastatin label: patients taking amiodarone, amlodipine or ranolazine should not exceed 20 mg once daily.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00896fff-081d-4553-be8c-1999a8a73dda"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-CLOP-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "clopidogrel"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "omeprazole",
+                "esomeprazole"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Clopidogrel with {rx.drug} reduces antiplatelet effect. Consider pantoprazole or an H2 blocker if gastroprotection is needed.",
+      "rationale": "The clopidogrel label says to avoid concomitant omeprazole or esomeprazole (CYP2C19 inhibition).",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0078fb3d-3595-4ae1-a059-1d5e81c879cf"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-PDE5-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "pde5_inhibitor"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "nitrate"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "{rx.drug} with a nitrate is contraindicated (severe hypotension). This is critical in chest-pain patients given GTN.",
+      "rationale": "The sildenafil label contraindicates use with nitric oxide donors such as organic nitrates in any form.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00ee09dd-2de0-4dc4-85f6-b51ed6eabd5b"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-TIZ-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "tizanidine"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "ciprofloxacin",
+                "fluvoxamine"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Tizanidine with {rx.drug} (a potent CYP1A2 inhibitor) is contraindicated (hypotension, sedation).",
+      "rationale": "The tizanidine label contraindicates potent CYP1A2 inhibitors such as ciprofloxacin and fluvoxamine. Tizanidine is a common muscle relaxant for back pain in manual workers.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=03fa03a6-fd05-4f17-872a-3c123330935d"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-SERO-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "tramadol",
+                "linezolid"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "ssri",
+                "snri",
+                "tca",
+                "maoi",
+                "triptan"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "{rx.drug} with a serotonergic drug carries serotonin syndrome risk (and seizure risk with tramadol).",
+      "rationale": "The sertraline and linezolid labels warn of serotonin syndrome with concomitant serotonergic drugs, including tramadol.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00179766-980b-44b0-99d3-1fee2bb27e37",
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=16007ca5-7956-4414-af38-406a6623400e"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-K-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "acei",
+                "arb"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "spironolactone",
+                "eplerenone",
+                "amiloride",
+                "triamterene",
+                "potassium_chloride"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "{rx.drug} with an ACE inhibitor/ARB raises hyperkalaemia risk. Check potassium and renal function.",
+      "rationale": "The spironolactone label lists ACE inhibitors, ARBs and potassium supplements as causes of severe hyperkalaemia in combination.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0c8c973f-13a2-4883-8316-4006398e2931"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-MTX-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "methotrexate"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "trimethoprim",
+                "co-trimoxazole"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Methotrexate with {rx.drug} increases bone-marrow suppression risk.",
+      "rationale": "The methotrexate label reports that trimethoprim/sulfamethoxazole can increase bone-marrow suppression.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=8593f7fc-eabe-44ae-bb05-b3d7d408e4f7"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-ALLO-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "allopurinol"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "azathioprine",
+                "mercaptopurine"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Allopurinol with {rx.drug} increases exposure and myelosuppression risk; the dose must be reduced.",
+      "rationale": "The allopurinol label requires a dose reduction of azathioprine or mercaptopurine when they are co-administered.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=005048dd-844f-468c-bf56-1a09727e3477"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "DDI-AKI-01",
+      "family": "drug_interaction",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "nsaid_cox1",
+                "coxib"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "acei",
+                "arb"
+              ]
+            }
+          },
+          {
+            "exists_in": "all_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "diuretic"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "NSAID + ACE inhibitor/ARB + diuretic ('triple whammy') raises acute kidney injury risk, especially with dehydration or heat exposure.",
+      "rationale": "NSAID labels describe reduced diuretic and antihypertensive effect and renal risk. CDC heat-and-medication guidance flags NSAIDs (kidney injury with dehydration), diuretics and ACE inhibitors/ARBs.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00872852-680a-41b3-901b-b991b12a176d",
+        "https://www.cdc.gov/heat-health/hcp/clinical-guidance/heat-and-medications-guidance-for-clinicians.html"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "any": [
+          {
+            "fact": "patient.heat_exposure",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "fact": "patient.dehydration",
+            "op": "in",
+            "value": [
+              "moderate",
+              "severe"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "WORK-CHEST-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "chest_pain",
+                "chest_discomfort",
+                "chest_pressure",
+                "chest_burning",
+                "epigastric_pain_exertional",
+                "jaw_arm_pain"
+              ]
+            }
+          },
+          {
+            "fact": "elapsed_min_since.symptom.chest_pain",
+            "op": "gt",
+            "value": 10
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ecg_12lead"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Chest pain first mentioned {elapsed} min ago ({symptom.evidence}). No 12-lead ECG recorded.",
+      "rationale": "The 2021 AHA/ACC guideline and 2023 ESC ACS guideline recommend a 12-lead ECG within 10 minutes of arrival for acute chest pain.",
+      "source_urls": [
+        "https://doi.org/10.1161/CIR.0000000000001029",
+        "https://doi.org/10.1093/eurheartj/ehad191"
+      ],
+      "fire_on": "timer",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-CHEST-02",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "chest_pain",
+                "chest_discomfort",
+                "chest_pressure",
+                "chest_burning",
+                "epigastric_pain_exertional",
+                "jaw_arm_pain"
+              ]
+            }
+          },
+          {
+            "fact": "disposition.type",
+            "op": "eq",
+            "value": "discharge"
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ecg_12lead"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Discharge planned for a patient who reported chest pain ({symptom.evidence}). No ECG documented.",
+      "rationale": "Discharging acute chest pain without an ECG skips the first step of ACS rule-out in both AHA/ACC 2021 and ESC 2023. In Qatar, cardiovascular causes dominate recorded deaths of young Nepali workers in hot months (Pradhan et al. 2019).",
+      "source_urls": [
+        "https://doi.org/10.1161/CIR.0000000000001029",
+        "https://doi.org/10.1093/eurheartj/ehad191",
+        "https://pubmed.ncbi.nlm.nih.gov/31302648/"
+      ],
+      "fire_on": "on_disposition",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-CHEST-03",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "chest_pain",
+                "chest_discomfort",
+                "chest_pressure",
+                "chest_burning",
+                "epigastric_pain_exertional",
+                "jaw_arm_pain"
+              ]
+            }
+          },
+          {
+            "fact": "disposition.type",
+            "op": "eq",
+            "value": "discharge"
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "troponin_hs",
+                "troponin"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Discharge planned after chest pain without a troponin result.",
+      "rationale": "ESC 2023 recommends high-sensitivity troponin with a 0h/1h (or 0h/2h) algorithm to rule out NSTEMI. AHA/ACC 2021 recommends hs-troponin for suspected ACS.",
+      "source_urls": [
+        "https://doi.org/10.1093/eurheartj/ehad191",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "fire_on": "on_disposition",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-CHEST-04",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "idiom_hits",
+            "where": {
+              "fact": "red_flag_tags",
+              "op": "contains_any",
+              "value": [
+                "acs"
+              ]
+            }
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ecg_12lead"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "The patient described '{idiom.romanized}' ({idiom.literal_en}). This idiom can mask cardiac chest pain. Consider an ECG.",
+      "rationale": "AHA/ACC 2021 says chest pain includes pressure, tightness or discomfort in the chest, shoulders, arms, neck, back, upper abdomen or jaw, and discourages the label 'atypical'. Lexicon entries such as gyastrik, gas, kabag and seene mein jalan are tagged with this risk.",
+      "source_urls": [
+        "https://doi.org/10.1161/CIR.0000000000001029",
+        "https://pubmed.ncbi.nlm.nih.gov/31302648/"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-HEAT-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.heat_exposure",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "confusion",
+                "collapse",
+                "seizure",
+                "ataxia",
+                "altered_mental_status",
+                "vomiting_in_heat",
+                "temp_ge_40"
+              ]
+            }
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "temp_rectal",
+                "temp_core"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Heat exposure plus {symptom.code} ({symptom.evidence}), but no core (rectal) temperature recorded. Suspect exertional heat stroke.",
+      "rationale": "ACSM 2023 and WMS 2024 guidance: exertional heat stroke is diagnosed by CNS dysfunction plus core temperature, measured rectally. Oral, tympanic and axillary readings are unreliable. Qatar restricts midday outdoor work in summer and requires work to stop above WBGT 32.1 °C, so outdoor workers are a high-risk group.",
+      "source_urls": [
+        "https://doi.org/10.1249/JSR.0000000000001058",
+        "https://doi.org/10.1177/10806032241227924",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9811094/",
+        "https://www.ilo.org/resource/qatars-ministerial-decision-heat-stress"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-HEAT-02",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.heat_stroke_suspected",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "none_in": "interventions",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "cold_water_immersion",
+                "active_cooling"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Suspected heat stroke with no active cooling documented. Guidance is 'cool first, transport second'.",
+      "rationale": "ACSM 2023: immediate whole-body cold-water immersion is the most effective cooling; survival depends on how long core temperature stays elevated.",
+      "source_urls": [
+        "https://doi.org/10.1249/JSR.0000000000001058",
+        "https://doi.org/10.1177/10806032241227924"
+      ],
+      "fire_on": "timer",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-HEAT-03",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.heat_illness_suspected",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ck",
+                "creatinine",
+                "electrolytes"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Heat illness suspected; CK, creatinine and electrolytes not ordered (rhabdomyolysis, AKI, sodium disturbance).",
+      "rationale": "Exertional heat stroke guidance recommends evaluating end-organ injury, including rhabdomyolysis, kidney injury, liver injury and electrolyte or sodium abnormalities.",
+      "source_urls": [
+        "https://doi.org/10.1249/JSR.0000000000001058",
+        "https://doi.org/10.1177/10806032241227924"
+      ],
+      "fire_on": "on_disposition",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-HEAT-04",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.heat_stroke_suspected",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "paracetamol",
+                "ibuprofen",
+                "diclofenac",
+                "aspirin"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "info",
+      "message_en": "Antipyretic ordered for suspected heat stroke. Antipyretics do not lower temperature in heat stroke; active cooling is the treatment.",
+      "rationale": "WMS heat-illness guidelines advise against antipyretics for heat stroke; the hyperthermia is not hypothalamic set-point fever.",
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/31221601/",
+        "https://doi.org/10.1177/10806032241227924"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-HEAD-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "headache"
+              ]
+            }
+          },
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "thunderclap_onset",
+                "fever_with_neck_stiffness",
+                "focal_neuro_deficit",
+                "new_headache_age_over_50",
+                "headache_in_pregnancy_postpartum",
+                "papilloedema",
+                "head_trauma",
+                "immunosuppression"
+              ]
+            }
+          },
+          {
+            "fact": "disposition.type",
+            "op": "eq",
+            "value": "discharge"
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ct_head",
+                "neuro_exam_documented",
+                "lumbar_puncture"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Headache with red flag '{symptom.code}' ({symptom.evidence}); discharge planned with no neurological exam or imaging decision documented.",
+      "rationale": "The SNNOOP10 red and orange flags (Do et al., Neurology 2019) and NICE CG150 identify features that need evaluation for secondary headache.",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC6340385/",
+        "https://www.nice.org.uk/guidance/cg150"
+      ],
+      "fire_on": "on_disposition",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-PREG-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "abdominal_pain",
+                "pelvic_pain",
+                "vaginal_bleeding",
+                "syncope",
+                "dizziness"
+              ]
+            }
+          },
+          {
+            "all": [
+              {
+                "fact": "patient.sex",
+                "op": "eq",
+                "value": "female"
+              },
+              {
+                "fact": "patient.age_years",
+                "op": "gte",
+                "value": 12
+              },
+              {
+                "fact": "patient.age_years",
+                "op": "lte",
+                "value": 55
+              },
+              {
+                "fact": "patient.pregnant",
+                "op": "eq",
+                "value": "unknown"
+              }
+            ]
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "pregnancy_test"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Woman of reproductive age with {symptom.code}; pregnancy status unknown and no pregnancy test.",
+      "rationale": "NICE NG126 asks for a pregnancy test in women of reproductive age with symptoms that could indicate ectopic pregnancy (abdominal or pelvic pain, bleeding, dizziness or fainting).",
+      "source_urls": [
+        "https://www.nice.org.uk/guidance/ng126"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "any": [
+          {
+            "exists_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ct_abdomen",
+                "xray_abdomen",
+                "ct_pelvis"
+              ]
+            }
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "teratogen"
+              ]
+            }
+          },
+          {
+            "fact": "disposition.type",
+            "op": "eq",
+            "value": "discharge"
+          }
+        ]
+      }
+    },
+    {
+      "id": "WORK-MAL-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "fever",
+                "rigors"
+              ]
+            }
+          },
+          {
+            "fact": "patient.travel_malaria_endemic_days",
+            "op": "lte",
+            "value": 90
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "malaria_rdt",
+                "malaria_smear"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Fever after recent travel to a malaria-endemic area ({patient.travel_country}); no malaria test.",
+      "rationale": "WHO guidelines recommend parasitological confirmation (microscopy or RDT) for every suspected malaria case. Qatar has no local transmission but sees imported cases, mostly in migrants arriving from or returning to endemic countries (Bansal et al. 2025).",
+      "source_urls": [
+        "https://www.who.int/publications/i/item/guidelines-for-malaria",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC11725959/"
+      ],
+      "fire_on": "on_disposition",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-FLUID-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "any": [
+              {
+                "fact": "patient.dehydration",
+                "op": "eq",
+                "value": "severe"
+              },
+              {
+                "exists_in": "prescribed_meds",
+                "where": {
+                  "fact": "class",
+                  "op": "eq",
+                  "value": "iv_fluid"
+                }
+              }
+            ]
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "electrolytes",
+                "urea_creatinine"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "IV fluids or severe dehydration without electrolytes, urea and creatinine.",
+      "rationale": "NICE CG174 recommends assessing fluid and electrolyte status, including laboratory measurement of urea and electrolytes, when giving IV fluids.",
+      "source_urls": [
+        "https://www.nice.org.uk/guidance/cg174"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-SUICIDE-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "any": [
+              {
+                "exists_in": "symptoms",
+                "where": {
+                  "fact": "code",
+                  "op": "in",
+                  "value": [
+                    "suicidal_ideation",
+                    "self_harm"
+                  ]
+                }
+              },
+              {
+                "exists_in": "idiom_hits",
+                "where": {
+                  "fact": "red_flag_tags",
+                  "op": "contains_any",
+                  "value": [
+                    "suicidality"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "none_in": "assessments",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "suicide_risk_assessment",
+                "psychosocial_assessment"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Possible suicidal ideation ({symptom.evidence}). No risk or psychosocial assessment documented.",
+      "rationale": "NICE NG225: anyone who has self-harmed or expresses suicidal thoughts should receive a psychosocial assessment. Indirect idioms such as 'I wish I could sleep and not wake up' (UNHCR 2015) count.",
+      "source_urls": [
+        "https://www.nice.org.uk/guidance/ng225"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-SEPSIS-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "fever",
+                "rigors",
+                "hypothermia"
+              ]
+            }
+          },
+          {
+            "any": [
+              {
+                "fact": "vitals.rr",
+                "op": "gte",
+                "value": 25
+              },
+              {
+                "fact": "vitals.bp_sys",
+                "op": "lte",
+                "value": 90
+              },
+              {
+                "fact": "vitals.hr",
+                "op": "gt",
+                "value": 130
+              },
+              {
+                "exists_in": "symptoms",
+                "where": {
+                  "fact": "code",
+                  "op": "in",
+                  "value": [
+                    "new_confusion"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "lactate",
+                "blood_culture"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Possible sepsis (infection signs plus a high-risk vital sign). No lactate or blood cultures ordered.",
+      "rationale": "NICE NG51 high-risk criteria include respiratory rate of 25 or more, systolic BP of 90 or less, heart rate above 130 and new confusion; these call for urgent senior review, lactate, cultures and antibiotics.",
+      "source_urls": [
+        "https://www.nice.org.uk/guidance/ng51"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "WORK-TLOC-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "syncope",
+                "transient_loss_of_consciousness"
+              ]
+            }
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ecg_12lead"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "Transient loss of consciousness reported; no 12-lead ECG.",
+      "rationale": "NICE CG109 recommends a 12-lead ECG for everyone with transient loss of consciousness.",
+      "source_urls": [
+        "https://www.nice.org.uk/guidance/cg109"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "fact": "disposition.type",
+        "op": "eq",
+        "value": "discharge"
+      }
+    },
+    {
+      "id": "WORK-STROKE-01",
+      "family": "missing_workup",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "sudden_unilateral_weakness",
+                "facial_droop",
+                "speech_disturbance",
+                "sudden_unilateral_numbness"
+              ]
+            }
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ct_head",
+                "mri_brain"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Sudden focal neurological symptom ({symptom.evidence}); no brain imaging ordered. Check the stroke pathway.",
+      "rationale": "NICE NG128: people with suspected acute stroke need immediate brain imaging when thrombolysis or thrombectomy may apply. Idioms like jham-jham or kamzori may be the first description.",
+      "source_urls": [
+        "https://www.nice.org.uk/guidance/ng128"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-RAAS-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "acei",
+                "arb"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "{rx.drug} in pregnancy. RAAS blockers carry a boxed warning for fetal toxicity.",
+      "rationale": "Enalapril and losartan labels: drugs acting on the renin-angiotensin system can injure and kill the developing fetus; stop as soon as pregnancy is detected.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=074fe718-88d8-365c-e063-6394a90a299d",
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=021cd76a-b093-4704-8410-5e7d01e20a54"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-ISO-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "isotretinoin"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Isotretinoin in a pregnant patient is contraindicated (extremely high risk of severe birth defects).",
+      "rationale": "The isotretinoin label boxed warning says it must not be used by patients who are or may become pregnant; dispensing is restricted under iPLEDGE in the US.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0114567b-3bac-490d-b9eb-03a6c5d90935",
+        "https://ipledgeprogram.com/"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-WARF-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "warfarin"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Warfarin in pregnancy is contraindicated (except mechanical heart valves at high thrombotic risk).",
+      "rationale": "The warfarin label notes embryopathy, fetal haemorrhage and increased miscarriage risk.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0cbce382-9c88-4f58-ae0f-532a841e8f95"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-VPA-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "valproate",
+                "divalproex"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Valproate in pregnancy carries a high risk of neural tube defects and other malformations, and reduced IQ.",
+      "rationale": "The divalproex label boxed warning covers fetal risk, including neural tube defects, major malformations and decreased IQ.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=02304a23-4a5f-47bc-9687-4044b43f7a20"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-MTX-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "drug",
+              "op": "in",
+              "value": [
+                "methotrexate"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Methotrexate is contraindicated in pregnancy for non-neoplastic diseases.",
+      "rationale": "The methotrexate label boxed warning covers embryo-fetal toxicity, including fetal death.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=04a95db9-a124-4b97-bd71-1c37a6b3b0c8"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-MISO-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "all": [
+                {
+                  "fact": "drug",
+                  "op": "in",
+                  "value": [
+                    "misoprostol",
+                    "diclofenac-misoprostol"
+                  ]
+                },
+                {
+                  "fact": "indication",
+                  "op": "not_in",
+                  "value": [
+                    "obstetric"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "critical",
+      "message_en": "Misoprostol-containing product in pregnancy (outside an obstetric indication) can cause abortion, uterine rupture and birth defects.",
+      "rationale": "The diclofenac/misoprostol label boxed warning says it is contraindicated in pregnancy.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0d6509a1-7af8-473b-8951-c19439274379"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-NSAID-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "all": [
+                {
+                  "fact": "class",
+                  "op": "in",
+                  "value": [
+                    "nsaid_cox1",
+                    "coxib"
+                  ]
+                },
+                {
+                  "fact": "drug",
+                  "op": "neq",
+                  "value": "aspirin_low_dose"
+                }
+              ]
+            }
+          },
+          {
+            "fact": "patient.gestation_weeks",
+            "op": "gte",
+            "value": 20
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "NSAID ({rx.drug}) at {patient.gestation_weeks} weeks: FDA advises avoiding NSAIDs from 20 weeks (oligohydramnios, fetal renal dysfunction).",
+      "rationale": "FDA 2020: limit NSAID use between 20 and 30 weeks and avoid after 30 weeks; low-dose aspirin (81 mg) for obstetric indications is excepted.",
+      "source_urls": [
+        "https://www.fda.gov/drugs/drug-safety-and-availability/fda-recommends-avoiding-use-nsaids-pregnancy-20-weeks-or-later-because-they-can-result-low-amniotic"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "fact": "patient.gestation_weeks",
+        "op": "gte",
+        "value": 30
+      }
+    },
+    {
+      "id": "PREG-TETRA-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "tetracycline"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "{rx.drug} in pregnancy: tetracyclines can permanently discolour teeth when used during tooth development (second half of pregnancy).",
+      "rationale": "The doxycycline label warns that tetracycline-class drugs used during tooth development, including the last half of pregnancy, may cause permanent tooth discoloration.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00b2aa98-dea2-90c3-e063-6294a90a35d6"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-STATIN-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.pregnant",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "statin"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "info",
+      "message_en": "Statin in pregnancy: FDA removed the blanket contraindication in 2021. Most patients should stop, but the decision is individual.",
+      "rationale": "FDA (2021) asked for removal of the strongest warning against statins in pregnancy. This rule exists so the engine does not raise an outdated 'critical' alert.",
+      "source_urls": [
+        "https://www.fda.gov/drugs/drug-safety-and-availability/fda-requests-removal-strongest-warning-against-using-cholesterol-lowering-statins-during-pregnancy"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "PREG-UNK-01",
+      "family": "pregnancy",
+      "trigger": {
+        "all": [
+          {
+            "all": [
+              {
+                "fact": "patient.sex",
+                "op": "eq",
+                "value": "female"
+              },
+              {
+                "fact": "patient.age_years",
+                "op": "gte",
+                "value": 12
+              },
+              {
+                "fact": "patient.age_years",
+                "op": "lte",
+                "value": 55
+              },
+              {
+                "fact": "patient.pregnant",
+                "op": "eq",
+                "value": "unknown"
+              }
+            ]
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "teratogen"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "{rx.drug} is teratogenic and pregnancy status is unknown. Confirm with a pregnancy test before prescribing.",
+      "rationale": "The labels of the teratogens above (RAAS blockers, isotretinoin, warfarin, valproate, methotrexate, misoprostol) require pregnancy to be excluded; NICE NG126 supports testing women of reproductive age.",
+      "source_urls": [
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=0114567b-3bac-490d-b9eb-03a6c5d90935",
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=02304a23-4a5f-47bc-9687-4044b43f7a20",
+        "https://www.nice.org.uk/guidance/ng126"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "HEAT-MED-01",
+      "family": "heat_medication",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.heat_exposure",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "fact": "patient.dehydration",
+            "op": "in",
+            "value": [
+              "moderate",
+              "severe"
+            ]
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "nsaid_cox1",
+                "coxib"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "caution",
+      "message_en": "NSAID prescribed to a dehydrated, heat-exposed patient. Kidney injury risk is higher. Consider paracetamol and rehydration first.",
+      "rationale": "CDC heat-and-medication guidance lists NSAIDs as raising kidney-injury risk with dehydration.",
+      "source_urls": [
+        "https://www.cdc.gov/heat-health/hcp/clinical-guidance/heat-and-medications-guidance-for-clinicians.html",
+        "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=00872852-680a-41b3-901b-b991b12a176d"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    },
+    {
+      "id": "HEAT-MED-02",
+      "family": "heat_medication",
+      "trigger": {
+        "all": [
+          {
+            "fact": "patient.heat_exposure",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "exists_in": "prescribed_meds",
+            "where": {
+              "fact": "class",
+              "op": "in",
+              "value": [
+                "diuretic",
+                "anticholinergic",
+                "antipsychotic",
+                "beta_blocker",
+                "tca",
+                "topiramate"
+              ]
+            }
+          }
+        ]
+      },
+      "severity": "info",
+      "message_en": "{rx.drug} can impair heat tolerance (sweating, volume or blood-pressure effects) in an outdoor worker. Add heat counselling to the patient plan.",
+      "rationale": "CDC lists diuretics, anticholinergic antihistamines, antipsychotics, beta-blockers, TCAs and topiramate among drugs that raise heat-illness risk, and recommends reviewing medications and teaching warning signs.",
+      "source_urls": [
+        "https://www.cdc.gov/heat-health/hcp/clinical-guidance/heat-and-medications-guidance-for-clinicians.html"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked"
+    }
+  ]
+}

@@ -1,0 +1,2412 @@
+{
+  "meta": {
+    "name": "Bayan AI cultural idiom lexicon",
+    "version": "0.1.0",
+    "created": "2026-11-06",
+    "purpose": "Retrieval-augmented decision support: lets the doctor see the literal meaning of a patient's idiom of distress plus literature-sourced clinical possibilities and clarifying questions. It is not a diagnostic tool.",
+    "authorship_caveat": "Compiled by engineers without clinical training from the cited literature. Every entry needs review by a licensed clinician and a native speaker before real-world use.",
+    "evidence_levels": {
+      "literature": "The idiom (or a direct cognate) is described in peer-reviewed or institutional literature (journal articles, UNHCR review).",
+      "clinical_guideline": "Mapping is taken from a clinical guideline.",
+      "community_reported": "Meaning taken from dictionaries, lay health media or community usage; clinical interpretations are general differentials, not studied for this idiom."
+    },
+    "red_flag_tags": "Machine-readable tags derived from masks_red_flags; safety rules (e.g., WORK-CHEST-04, WORK-SUICIDE-01) match on them.",
+    "likelihood_scale": "high/medium/low is a rough ordering of how often the meaning is intended in the cited sources, not a calibrated probability. masks_red_flags lists dangerous conditions that must not be missed, whatever the likelihood.",
+    "iso_note": "Arabic entries use apc (Levantine) because the main source documents Syrian Arabic; also_used_in lists other Arabic varieties seen in Qatar (arb, afb Gulf, arz Egyptian, apd Sudanese) where usage is plausible but unverified.",
+    "license_note": "Entries are short factual summaries with links; check the licence of each cited source before redistributing quotations."
+  },
+  "entries": [
+    {
+      "id": "npi-001",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "मन दुख्यो",
+      "romanized": "man dukhyo",
+      "literal_en": "my heart-mind hurts",
+      "clinical_interpretations": [
+        {
+          "meaning": "Sadness, grief or emotional suffering (the 'man' is the heart-mind, the seat of feeling)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Depressive episode",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Literal chest pain if the patient localises it to the chest",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Cardiac chest pain if the patient points to the chest or links it to exertion",
+        "Suicidal ideation"
+      ],
+      "clarifying_questions_en": [
+        "When you say your man hurts, is it a feeling of sadness, or is there pain in your body? Where?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Heart-mind distress is a socially acceptable reason to seek help in Nepal (Kohrt & Hruschka 2010); do not dismiss it as 'just emotional' without checking for physical chest pain.",
+      "red_flag_tags": [
+        "acs",
+        "suicidality"
+      ]
+    },
+    {
+      "id": "npi-002",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "मन भारी",
+      "romanized": "man bhaari",
+      "literal_en": "heavy heart-mind",
+      "clinical_interpretations": [
+        {
+          "meaning": "Low mood or sadness; heaviness lifts ('haluka') when recovered",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Anxiety or worry",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Chest heaviness or pressure of cardiac origin",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome when 'heaviness' is physical and exertional"
+      ],
+      "clarifying_questions_en": [
+        "Is the heaviness a feeling in your mind, or a weight or pressure on your chest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "npi-003",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "मनमा कुरा खेल्ने",
+      "romanized": "manmaa kuraa khelne",
+      "literal_en": "words playing in the heart-mind",
+      "clinical_interpretations": [
+        {
+          "meaning": "Worry or rumination",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Generalised anxiety or depressive disorder",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Insomnia secondary to worry",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation hidden behind 'worry'"
+      ],
+      "clarifying_questions_en": [
+        "What are the thoughts that keep playing? Are they about family, debt or work?",
+        "How are you sleeping?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "npi-004",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "मनको घाउ",
+      "romanized": "manko ghaau",
+      "literal_en": "a wound in the heart-mind",
+      "clinical_interpretations": [
+        {
+          "meaning": "Distressing memory of a past event that cannot be forgotten",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Post-traumatic stress symptoms",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Ongoing abuse or unsafe living or working conditions"
+      ],
+      "clarifying_questions_en": [
+        "Did something happen that you cannot forget?",
+        "Do the memories come back suddenly, or in dreams?",
+        "Are you safe where you live and work now?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": []
+    },
+    {
+      "id": "npi-005",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "ग्यास्ट्रिक",
+      "romanized": "gyastrik",
+      "literal_en": "'gastric' (English loanword)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Dyspepsia, gastritis or reflux",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Bodily expression of psychological distress (often labelled 'gastric')",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Cardiac ischaemia felt as epigastric or burning chest discomfort",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Peptic ulcer, biliary or pancreatic disease",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome: cardiovascular causes made up most recorded deaths of Nepali workers in Qatar in hot months (Pradhan et al. 2019)",
+        "Upper GI bleeding (black stools, vomiting blood)"
+      ],
+      "clarifying_questions_en": [
+        "Can you point to exactly where you feel it?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?",
+        "Have you had black stools or vomited blood?",
+        "Does an antacid help? (Relief does not rule out a heart cause.)"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/",
+        "https://pubmed.ncbi.nlm.nih.gov/31302648/",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "literature",
+      "notes": "Kohrt & Harper report 'gyaastrik' is often diagnosed as gastritis while carrying psychosocial meaning. In a chest-pain context it must not short-circuit cardiac workup.",
+      "red_flag_tags": [
+        "acs",
+        "gi_bleed"
+      ]
+    },
+    {
+      "id": "npi-006",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "झमझम",
+      "romanized": "jham-jham",
+      "literal_en": "tingling, pins-and-needles (also 'kat kat khanchha': gnawing, burning tingling)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Anxiety or hyperventilation-related paraesthesia",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Peripheral neuropathy, e.g., diabetic or B12 deficiency",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Electrolyte disturbance after heavy sweating",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Stroke or TIA if it is one-sided and sudden",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Stroke (sudden one-sided numbness, weakness, facial droop, speech change)",
+        "Undiagnosed diabetes"
+      ],
+      "clarifying_questions_en": [
+        "Is it on one side of the body or both? Did it start suddenly?",
+        "Any weakness, face drooping or difficulty speaking?",
+        "Do you have diabetes, or are you very thirsty and urinating often?"
+      ],
+      "body_system": "neurological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/",
+        "https://www.nice.org.uk/guidance/ng128"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "metabolic",
+        "stroke"
+      ]
+    },
+    {
+      "id": "npi-007",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "नसा कमजोर",
+      "romanized": "naasaa kamjor",
+      "literal_en": "weak nerves",
+      "clinical_interpretations": [
+        {
+          "meaning": "Chronic anxiety or depression framed as a bodily weakness (less stigmatising)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Fatigue from a medical cause such as anaemia, thyroid disease or diabetes",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Peripheral neuropathy",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Anaemia",
+        "Hypothyroidism",
+        "Diabetes"
+      ],
+      "clarifying_questions_en": [
+        "What do weak nerves feel like for you: tired, shaky, numb, or worried?",
+        "How long has it been going on? Any weight change?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "metabolic"
+      ]
+    },
+    {
+      "id": "npi-008",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "दिमाग खाएको",
+      "romanized": "dimaag khaaeko",
+      "literal_en": "my brain has been eaten",
+      "clinical_interpretations": [
+        {
+          "meaning": "Frustration, irritability or inability to concentrate from overwork or conflict",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Depression or burnout",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Sleep deprivation",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Head injury or other organic cause of confusion if onset is sudden"
+      ],
+      "clarifying_questions_en": [
+        "Is it trouble thinking and concentrating, or anger and frustration?",
+        "How many hours do you work and sleep?",
+        "Any recent head injury?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": []
+    },
+    {
+      "id": "npi-009",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "दिमाग तात्यो",
+      "romanized": "dimaag taataeyo",
+      "literal_en": "my brain got hot",
+      "clinical_interpretations": [
+        {
+          "meaning": "Anger with a felt heat in the head",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Headache",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Literal heat illness or fever in an outdoor worker",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat exhaustion or heat stroke (outdoor work in summer, confusion, collapse)",
+        "Fever or meningitis"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean you feel angry, or does your head actually feel hot or painful?",
+        "Were you working outside in the heat today? Any confusion, fainting or vomiting?",
+        "Have you measured a fever?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/",
+        "https://doi.org/10.1249/JSR.0000000000001058"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "heat_illness",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "npi-010",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "साटो गयो",
+      "romanized": "saato gayo",
+      "literal_en": "my soul has gone (often after a fright; related: 'dar laagyo', struck by fear)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Acute stress reaction after a frightening event",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Post-traumatic stress or dissociation",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Organic causes of a sudden change in behaviour or alertness (hypoglycaemia, head injury, infection) if the episode is new"
+      ],
+      "clarifying_questions_en": [
+        "What happened just before you felt this?",
+        "Since then, have you had trouble sleeping, being easily startled, or feeling 'not yourself'?",
+        "Did you hit your head or lose consciousness?"
+      ],
+      "body_system": "spiritual/explanatory",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "metabolic"
+      ]
+    },
+    {
+      "id": "npi-011",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "भूत लाग्यो / बोक्सी लाग्यो",
+      "romanized": "bhut laagyo / boksi laagyo",
+      "literal_en": "struck by a ghost / struck by a witch",
+      "clinical_interpretations": [
+        {
+          "meaning": "Explanatory model for distress or unusual experiences",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Psychosis, dissociation, or seizure-like episodes described in spiritual terms",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Seizure",
+        "Delirium or encephalitis",
+        "Psychosis needing urgent assessment"
+      ],
+      "clarifying_questions_en": [
+        "Can you describe what happens during an episode: do you lose awareness, shake, or bite your tongue?",
+        "Do you hear or see things others do not?",
+        "Any fever or headache?"
+      ],
+      "body_system": "spiritual/explanatory",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Respect the explanation; ask for a behavioural description of the episode rather than challenging the belief.",
+      "red_flag_tags": [
+        "neuro_psych_emergency"
+      ]
+    },
+    {
+      "id": "npi-012",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "जीउ सुकेर गयो",
+      "romanized": "jiu sukera gayo",
+      "literal_en": "my body has dried up",
+      "clinical_interpretations": [
+        {
+          "meaning": "Weight loss and fatigue linked to distress or depression",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Chronic illness such as tuberculosis, diabetes or HIV",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Dehydration in a heat-exposed worker",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Tuberculosis",
+        "Uncontrolled diabetes",
+        "Severe dehydration or heat illness"
+      ],
+      "clarifying_questions_en": [
+        "Have you lost weight? How much and over how long?",
+        "Any cough for more than 2 weeks, night sweats or fever?",
+        "How much water do you drink at work in the heat?"
+      ],
+      "body_system": "general/constitutional",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "heat_illness",
+        "metabolic"
+      ]
+    },
+    {
+      "id": "mul-001",
+      "language": "Hindi/Urdu/Bengali/Nepali (English loanword)",
+      "iso639_3": "hin",
+      "native": "टेंशन / ٹینشن / টেনশন",
+      "romanized": "tension",
+      "literal_en": "tension",
+      "clinical_interpretations": [
+        {
+          "meaning": "Everyday stress and worry",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Depressive or anxiety symptoms (rumination, sleeplessness, irritability)",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "At the severe end, hopelessness or suicidality",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation",
+        "Hypertension may be confused with 'tension' in some patients' speech; check whether they mean blood pressure"
+      ],
+      "clarifying_questions_en": [
+        "What does tension do to you: sleep, appetite, anger, body pain?",
+        "Is it everyday tension or a very bad tension?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://doi.org/10.1016/j.ssmmh.2022.100092",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "urd",
+        "ben",
+        "npi"
+      ],
+      "notes": "Weaver & Karasz (2022) found 'tension' ranges from everyday hassles to severe distress or suicidality; severity must be asked, not assumed. The blood-pressure confusion note is a community observation, not from these papers.",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "mul-002",
+      "language": "Nepali/Hindi/Bengali",
+      "iso639_3": "npi",
+      "native": "चिन्ता / চিন্তা",
+      "romanized": "chinta (Bengali: onek beshi chinta, 'thinking too much')",
+      "literal_en": "worry; thinking too much",
+      "clinical_interpretations": [
+        {
+          "meaning": "Worry or rumination",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Depression, anxiety or PTSD (variable overlap)",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation"
+      ],
+      "clarifying_questions_en": [
+        "What do you think about most? How many hours a day?",
+        "Does it stop you sleeping or working?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4689615/"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "hin",
+        "ben"
+      ],
+      "notes": "Kaiser et al. (2015) caution that 'thinking too much' should not be read as a one-to-one gloss for any psychiatric disorder.",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "hin-001",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "दिल घबराना / دل گھبرانا (घबराहट / گھبراہٹ)",
+      "romanized": "dil ghabrana / ghabrahat",
+      "literal_en": "my heart is panicking; restlessness",
+      "clinical_interpretations": [
+        {
+          "meaning": "Anxiety or panic",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Palpitations from arrhythmia, thyrotoxicosis or anaemia",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Nausea or a general unwell feeling",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Hypoglycaemia",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Acute coronary syndrome",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Arrhythmia",
+        "Acute coronary syndrome when accompanied by chest pain or breathlessness",
+        "Hypoglycaemia in patients on insulin or sulfonylureas"
+      ],
+      "clarifying_questions_en": [
+        "Does your heart beat fast or irregularly, or is it a feeling of fear?",
+        "Any chest pain, breathlessness or fainting with it?",
+        "Do you take diabetes medicine? When did you last eat?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=ghabraahat",
+        "https://www.dawn.com/news/1212181"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Dictionary meaning plus lay press usage; no peer-reviewed study of this exact phrase was found.",
+      "red_flag_tags": [
+        "acs",
+        "arrhythmia_syncope",
+        "metabolic",
+        "respiratory"
+      ]
+    },
+    {
+      "id": "hin-002",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "दिल डूबना / دل ڈوبنا",
+      "romanized": "dil doobna",
+      "literal_en": "my heart is sinking",
+      "clinical_interpretations": [
+        {
+          "meaning": "Low mood, worry or exhaustion",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Presyncope from dehydration, hypotension or arrhythmia",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Cardiac chest discomfort",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Syncope of cardiac origin",
+        "Acute coronary syndrome",
+        "Heat exhaustion"
+      ],
+      "clarifying_questions_en": [
+        "Do you feel faint, or is it a feeling of sadness and worry?",
+        "Have you fainted or nearly fainted?",
+        "Did this start while working in the heat?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/2756440/",
+        "https://www.rekhta.org/urdudictionary?keyword=dil"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Cognate of the Punjabi 'sinking heart' syndrome documented by Krause (1989); the Hindi/Urdu phrasing itself is not separately studied in the sources found.",
+      "red_flag_tags": [
+        "acs",
+        "arrhythmia_syncope",
+        "heat_illness"
+      ]
+    },
+    {
+      "id": "hin-003",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "दम घुटना / دم گھٹنا",
+      "romanized": "dam ghutna",
+      "literal_en": "my breath is being choked",
+      "clinical_interpretations": [
+        {
+          "meaning": "Panic or anxiety",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Asthma or COPD exacerbation",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Heart failure, acute coronary syndrome or pulmonary embolism",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute breathlessness of cardiac or respiratory origin: check SpO2 and respiratory rate"
+      ],
+      "clarifying_questions_en": [
+        "Is it hard to breathe in, or a tight chest?",
+        "Does it happen at rest, lying flat, or with exertion?",
+        "Any wheeze, leg swelling, or chest pain?"
+      ],
+      "body_system": "respiratory",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=dam+ghutna",
+        "https://www.dawn.com/news/1212181"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "red_flag_tags": [
+        "respiratory"
+      ]
+    },
+    {
+      "id": "hin-004",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "गैस / گیس (गैस चढ़ना)",
+      "romanized": "gas / gas chadhna",
+      "literal_en": "gas / gas rising up",
+      "clinical_interpretations": [
+        {
+          "meaning": "Dyspepsia, bloating or reflux",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Biliary colic or pancreatitis",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Acute coronary syndrome described as 'gas' in the chest",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome",
+        "Biliary or pancreatic disease"
+      ],
+      "clarifying_questions_en": [
+        "Can you point to exactly where you feel it?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?",
+        "Does it come after food, or with work and walking?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://doi.org/10.1161/CIR.0000000000001029",
+        "https://lokmanyahospitals.com/blogs/acidity-heartburn-and-the-confusion-around-pitta"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "The 2021 AHA/ACC guideline asks clinicians to treat chest, shoulder, arm, neck, back, upper-abdominal or jaw discomfort as possible chest pain; a patient's 'gas' label should not lower suspicion.",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "hin-005",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "सीने में जलन / سینے میں جلن",
+      "romanized": "seene mein jalan",
+      "literal_en": "burning in the chest",
+      "clinical_interpretations": [
+        {
+          "meaning": "Heartburn or reflux",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute coronary syndrome",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome (burning can be cardiac)"
+      ],
+      "clarifying_questions_en": [
+        "Can you point to exactly where you feel it?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?",
+        "Is it worse lying down or after spicy food?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=jalan",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "hin-006",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "पेशाब में जलन / پیشاب میں جلن",
+      "romanized": "peshab mein jalan",
+      "literal_en": "burning in the urine",
+      "clinical_interpretations": [
+        {
+          "meaning": "Urinary tract infection",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Sexually transmitted urethritis",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Concentrated urine from dehydration in heat",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Kidney stone",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Pyelonephritis or urosepsis (fever, flank pain)",
+        "Dehydration-related acute kidney injury in outdoor workers"
+      ],
+      "clarifying_questions_en": [
+        "Any fever, back or side pain?",
+        "Any discharge?",
+        "How much water do you drink during your shift?"
+      ],
+      "body_system": "genitourinary",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=jalan",
+        "https://www.cdc.gov/heat-health/hcp/clinical-guidance/heat-and-medications-guidance-for-clinicians.html"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "red_flag_tags": [
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "hin-007",
+      "language": "Hindi/Urdu/Punjabi",
+      "iso639_3": "hin",
+      "native": "गर्मी / گرمی",
+      "romanized": "garmi",
+      "literal_en": "heat (in the body)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Humoral 'hot' explanation for dysuria, mouth ulcers, boils, rash or loose stools",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Fever",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Heat exhaustion or heat stroke in an outdoor worker",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat stroke (confusion, collapse, very high temperature)",
+        "Infection with fever"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean the weather, a fever, or a 'hot' feeling inside?",
+        "Were you working outside today? Any confusion, fainting, vomiting or cramps?",
+        "Have you measured your temperature?"
+      ],
+      "body_system": "thermoregulatory",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/%E0%A4%97%E0%A4%B0%E0%A5%8D%E0%A4%AE%E0%A5%80",
+        "https://www.rekhta.org/urdudictionary?keyword=garmii",
+        "https://pubmed.ncbi.nlm.nih.gov/2756440/",
+        "https://doi.org/10.1249/JSR.0000000000001058"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd",
+        "pan"
+      ],
+      "notes": "Krause (1989) records 'excessive heat' as a perceived cause of Punjabi 'sinking heart'. In Qatar's summer, take the literal meaning seriously.",
+      "red_flag_tags": [
+        "heat_illness"
+      ]
+    },
+    {
+      "id": "hin-008",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "कमज़ोरी / کمزوری",
+      "romanized": "kamzori",
+      "literal_en": "weakness",
+      "clinical_interpretations": [
+        {
+          "meaning": "Generalised fatigue: anaemia, diabetes, depression, dehydration or infection",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Sexual 'weakness' (see dhat)",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Focal weakness from stroke",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Stroke (one-sided weakness)",
+        "Anaemia or GI bleeding",
+        "Hyperglycaemia",
+        "Heat exhaustion",
+        "Tuberculosis"
+      ],
+      "clarifying_questions_en": [
+        "Is the weakness in the whole body, or one arm or leg?",
+        "Did it come on suddenly?",
+        "Any weight loss, black stools, thirst or frequent urination?"
+      ],
+      "body_system": "general/constitutional",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/%E0%A4%95%E0%A4%AE%E0%A4%9C%E0%A4%BC%E0%A5%8B%E0%A4%B0%E0%A5%80",
+        "https://www.rekhta.org/urdudictionary?keyword=kamzorii",
+        "https://www.nice.org.uk/guidance/ng128"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "red_flag_tags": [
+        "gi_bleed",
+        "heat_illness",
+        "metabolic",
+        "stroke"
+      ]
+    },
+    {
+      "id": "hin-009",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "चक्कर आना / چکر آنا",
+      "romanized": "chakkar aana",
+      "literal_en": "circles are coming (I feel dizzy)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Presyncope from dehydration, heat, low blood pressure or arrhythmia",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Vertigo (e.g., benign positional vertigo)",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Hypoglycaemia or anaemia",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Pregnancy",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Posterior-circulation stroke",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Cardiac syncope",
+        "Posterior-circulation stroke",
+        "Ectopic pregnancy in a woman of reproductive age"
+      ],
+      "clarifying_questions_en": [
+        "Does the room spin, or do you feel you will faint?",
+        "Any chest pain, palpitations or fainting?",
+        "Any double vision, slurred speech or trouble walking?",
+        "When was your last menstrual period?"
+      ],
+      "body_system": "neurological",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/%E0%A4%9A%E0%A4%95%E0%A5%8D%E0%A4%95%E0%A4%B0",
+        "https://www.rekhta.org/urdudictionary?keyword=chakkar"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "red_flag_tags": [
+        "arrhythmia_syncope",
+        "ectopic_pregnancy",
+        "stroke"
+      ]
+    },
+    {
+      "id": "hin-010",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "धात / دھات",
+      "romanized": "dhat (dhaat girna)",
+      "literal_en": "loss of 'dhat' (semen, vital essence)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Anxiety or depression with somatic symptoms (DSM-5 cultural syndrome)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Worry about sexual function",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Urinary tract infection, STI, prostatitis or diabetes",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "STI or urinary infection",
+        "Diabetes (glycosuria)"
+      ],
+      "clarifying_questions_en": [
+        "What exactly do you notice: discharge, cloudy urine, or something else?",
+        "Any burning, pain or sores?",
+        "How is your mood and sleep?"
+      ],
+      "body_system": "genitourinary",
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/14990517/"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "urd",
+        "ben",
+        "npi"
+      ],
+      "notes": "Sumathipala et al. (2004) show semen-loss anxiety is not as culture-bound as once thought. Approach without judgement; young male workers may be embarrassed to raise it.",
+      "red_flag_tags": [
+        "metabolic"
+      ]
+    },
+    {
+      "id": "pan-001",
+      "language": "Punjabi",
+      "iso639_3": "pan",
+      "native": "ਦਿਲ ਘਿਰਦਾ",
+      "romanized": "dil ghirda (reported as 'sinking heart')",
+      "literal_en": "my heart is sinking",
+      "clinical_interpretations": [
+        {
+          "meaning": "Stress-related distress with physical heart or chest sensations",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Depression or anxiety",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Heat exhaustion: excessive heat is a perceived cause",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Cardiac disease",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome",
+        "Heat illness"
+      ],
+      "clarifying_questions_en": [
+        "Can you point to exactly where you feel it?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?",
+        "Did it start after heat, hard work, worry or a family problem?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/2756440/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Krause (1989): 'sinking heart' involves physical sensations in the heart or chest attributed to excessive heat, exhaustion, worry and/or social failure. Gurmukhi spelling should be confirmed by a native speaker.",
+      "red_flag_tags": [
+        "acs",
+        "heat_illness"
+      ]
+    },
+    {
+      "id": "ben-001",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "মন খারাপ",
+      "romanized": "mon kharap",
+      "literal_en": "my heart-mind is bad",
+      "clinical_interpretations": [
+        {
+          "meaning": "Sadness or low mood",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Depressive episode if persistent",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation"
+      ],
+      "clarifying_questions_en": [
+        "How long have you felt like this? Every day?",
+        "Can you still enjoy anything?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ben-002",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "মনে চাপ",
+      "romanized": "mone chaap",
+      "literal_en": "pressure in the heart-mind",
+      "clinical_interpretations": [
+        {
+          "meaning": "Stress, feeling burdened",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Physical chest pressure if localised to the chest",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome if the pressure is physical"
+      ],
+      "clarifying_questions_en": [
+        "Is the pressure a feeling of stress, or a physical pressure on your chest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "ben-003",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "মাথা গরম",
+      "romanized": "matha gorom",
+      "literal_en": "my head is hot",
+      "clinical_interpretations": [
+        {
+          "meaning": "Anger, temper or irritability",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Literal heat illness or fever in a heat-exposed worker",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat stroke (confusion, collapse)",
+        "Fever or meningitis"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean you feel angry, or does your head feel hot?",
+        "Were you working outside in the heat? Any confusion, vomiting or fainting?",
+        "Any headache with stiff neck?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/",
+        "https://doi.org/10.1249/JSR.0000000000001058"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "heat_illness",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "ben-004",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "মাথায় চাপ",
+      "romanized": "mathay chaap",
+      "literal_en": "pressure in the head",
+      "clinical_interpretations": [
+        {
+          "meaning": "Stress or being over-burdened",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Tension-type headache",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Secondary headache red flags (thunderclap onset, neuro deficit, fever)",
+        "Severe hypertension"
+      ],
+      "clarifying_questions_en": [
+        "Is this a feeling of stress or an actual headache?",
+        "Did it start suddenly, like being hit?",
+        "Any weakness, vision change or vomiting?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": []
+    },
+    {
+      "id": "ben-005",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "শরীর দুর্বল",
+      "romanized": "shorir durbol",
+      "literal_en": "my body is weak",
+      "clinical_interpretations": [
+        {
+          "meaning": "Fatigue with low mood or stress",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Anaemia, diabetes, infection or dehydration",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Focal weakness from stroke",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Stroke",
+        "Anaemia",
+        "Hyperglycaemia",
+        "Heat exhaustion"
+      ],
+      "clarifying_questions_en": [
+        "Is the weakness everywhere, or in one arm or leg?",
+        "Since when? Any weight loss, fever or thirst?"
+      ],
+      "body_system": "general/constitutional",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/",
+        "https://www.nice.org.uk/guidance/ng128"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "heat_illness",
+        "metabolic",
+        "stroke"
+      ]
+    },
+    {
+      "id": "ben-006",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "বুক ধড়ফড়",
+      "romanized": "buk dhorfor",
+      "literal_en": "my chest is fluttering or pounding",
+      "clinical_interpretations": [
+        {
+          "meaning": "Palpitations from anxiety",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Arrhythmia",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Anaemia, thyroid disease or hypoglycaemia",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Arrhythmia with syncope or chest pain",
+        "Thyrotoxicosis"
+      ],
+      "clarifying_questions_en": [
+        "Is the beat fast, slow or irregular? Can you tap it?",
+        "Any fainting, chest pain or breathlessness with it?",
+        "Any weight loss, heat intolerance or tremor?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://www.medanta.org/bn/patient-education-blog/heart-palpitations-why-they-happen-how-to-stop-them",
+        "https://www.teachers.gov.bd/blog/details/630420"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Sourced from Bengali-language health education pages, not peer-reviewed literature.",
+      "red_flag_tags": [
+        "arrhythmia_syncope"
+      ]
+    },
+    {
+      "id": "ben-007",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "গ্যাস্ট্রিক / গ্যাসের সমস্যা",
+      "romanized": "gastric / gas-er shomossha",
+      "literal_en": "gastric / gas problem",
+      "clinical_interpretations": [
+        {
+          "meaning": "Dyspepsia or reflux",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute coronary syndrome felt as epigastric or chest discomfort",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome"
+      ],
+      "clarifying_questions_en": [
+        "Can you point to exactly where you feel it?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.prothomalo.com/lifestyle/health/tg7fppixsv",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "ben-008",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "মেজাজ খারাপ",
+      "romanized": "mejaj kharap",
+      "literal_en": "my mood is bad",
+      "clinical_interpretations": [
+        {
+          "meaning": "Irritability or anger",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Low mood",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Depression with suicidal ideation"
+      ],
+      "clarifying_questions_en": [
+        "Is it anger, sadness, or both?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "mal-001",
+      "language": "Malayalam",
+      "iso639_3": "mal",
+      "native": "ഗ്യാസ് ട്രബിൾ",
+      "romanized": "gas trouble",
+      "literal_en": "gas trouble",
+      "clinical_interpretations": [
+        {
+          "meaning": "Dyspepsia or bloating",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute coronary syndrome misread as gas",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome: Malayalam health media warn that heart-attack pain is often mistaken for gas trouble"
+      ],
+      "clarifying_questions_en": [
+        "Can you point to exactly where you feel it?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.asianetnews.com/health/how-can-we-differentiate-chest-pain-of-heart-attack-from-others-hyp-rzhcw2",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "mal-002",
+      "language": "Malayalam",
+      "iso639_3": "mal",
+      "native": "പിത്തം",
+      "romanized": "pittham",
+      "literal_en": "bile / 'pitta' (Ayurvedic humour)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Acidity, heartburn or nausea",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Migraine with nausea",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Gallbladder or liver disease",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Biliary disease or jaundice",
+        "Migraine or other secondary headache when vomiting with headache"
+      ],
+      "clarifying_questions_en": [
+        "What do you feel when you say pittham: sour taste, vomiting, headache, yellow eyes?",
+        "Is the pain on the right side under the ribs?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.starhealth.in/ml/symptoms/pitta-dosha-symptoms-malayalam/",
+        "https://lokmanyahospitals.com/blogs/acidity-heartburn-and-the-confusion-around-pitta"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "A gastroenterology source warns that 'pitta' is used loosely by patients for very different problems.",
+      "red_flag_tags": []
+    },
+    {
+      "id": "tam-001",
+      "language": "Tamil (Sri Lankan)",
+      "iso639_3": "tam",
+      "native": "நடைப்பிணம்",
+      "romanized": "nadaipinam (reported as 'Walking Corpse Syndrome')",
+      "literal_en": "walking corpse",
+      "clinical_interpretations": [
+        {
+          "meaning": "Trauma-related distress with cognitive difficulty, forgetfulness and 'autopilot' functioning",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "PTSD, depression or dissociative episodes",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Organic cognitive impairment",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Head injury, hypothyroidism, B12 deficiency or seizures presenting as 'empty-headedness'"
+      ],
+      "clarifying_questions_en": [
+        "Do you forget things or lose time? Do you feel you act without thinking?",
+        "Do you have episodes where your head feels empty?",
+        "Any past head injury or fits?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9388945/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Affleck et al. describe it as a common trauma-related idiom among Sri Lankan Tamils. The Tamil spelling is a literal rendering of 'walking corpse' and should be confirmed against the paper and a native speaker.",
+      "red_flag_tags": [
+        "metabolic",
+        "neuro_psych_emergency"
+      ]
+    },
+    {
+      "id": "tgl-001",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "pasma",
+      "romanized": "pasma",
+      "literal_en": "'pasma' (from Spanish pasmar), an illness from a hot-cold imbalance, e.g., washing hands in cold water after hard work",
+      "clinical_interpretations": [
+        {
+          "meaning": "Hand tremor, sweaty palms, numbness or pain attributed to hot-cold exposure",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Overuse or repetitive-strain symptoms in manual or domestic work",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Diabetes, thyroid dysfunction or a neurological condition",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Hyperthyroidism",
+        "Diabetic neuropathy",
+        "Toxic exposure: farmers in one study prioritised avoiding pasma over protecting themselves from pesticides (Palis et al. 2006)"
+      ],
+      "clarifying_questions_en": [
+        "What exactly do you feel in your hands: shaking, numbness, pain or sweating?",
+        "Any weight loss, palpitations or heat intolerance?",
+        "What chemicals or cleaning products do you handle at work, and do you use gloves?"
+      ],
+      "body_system": "musculoskeletal",
+      "source_urls": [
+        "https://en.wikipedia.org/wiki/Pasma",
+        "https://pubmed.ncbi.nlm.nih.gov/16436451/",
+        "https://scholarspace.manoa.hawaii.edu/items/61328dc2-e7f4-4094-bd73-ea1c0e21b096"
+      ],
+      "evidence_level": "literature",
+      "notes": "Folk illness with no biomedical equivalent. The patient may avoid cold water, cold IV fluids or showers after exertion because of it; explain instructions with this in mind.",
+      "red_flag_tags": [
+        "metabolic"
+      ]
+    },
+    {
+      "id": "tgl-002",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "kabag",
+      "romanized": "kabag",
+      "literal_en": "gas pain; flatulence (also used for infant colic)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Bloating, gas pain or dyspepsia",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Infant colic when describing a baby",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Bowel obstruction, appendicitis or cardiac pain in adults",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome when the 'gas pain' is in the chest or upper abdomen",
+        "Surgical abdomen (persistent pain, vomiting, no stool or flatus)"
+      ],
+      "clarifying_questions_en": [
+        "Where is the pain? Show me.",
+        "Are you able to pass gas and stool?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/kabag",
+        "https://www.unilab.com.ph/articles/know-babys-kabag"
+      ],
+      "evidence_level": "community_reported",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "tgl-003",
+      "language": "Tagalog/Filipino (Cebuano 'bughat')",
+      "iso639_3": "tgl",
+      "native": "binat / bughat",
+      "romanized": "binat (Tagalog) / bughat (Cebuano)",
+      "literal_en": "relapse, especially after childbirth or illness, blamed on overwork or getting wet too early",
+      "clinical_interpretations": [
+        {
+          "meaning": "Postpartum complication: infection, anaemia or postpartum depression",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Relapse of a previous illness",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Postpartum psychosis if 'madness' is described",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Postpartum sepsis or endometritis",
+        "Postpartum haemorrhage or anaemia",
+        "Postpartum pre-eclampsia (headache, vision change)",
+        "Postpartum psychosis"
+      ],
+      "clarifying_questions_en": [
+        "When did you give birth, or have a miscarriage or abortion?",
+        "Any fever, heavy bleeding, foul discharge, or severe headache?",
+        "How is your mood and sleep? Any strange thoughts?"
+      ],
+      "body_system": "reproductive",
+      "source_urls": [
+        "https://ojs.upmin.edu.ph/index.php/jcsh/article/view/60",
+        "https://www.tkdlph.com/index.php/ct-menu-item-3/ct-menu-item-15/conditions-illnesses/zamboanga-salambuyan/40-bughat-after-giving-birth",
+        "https://en.wiktionary.org/wiki/binat"
+      ],
+      "evidence_level": "literature",
+      "notes": "Recorded symptoms include headache, body pains, chills, dizziness and fatigue after childbirth, abortion or miscarriage (Philippine Traditional Knowledge Digital Library). Domestic workers may hide a recent pregnancy.",
+      "red_flag_tags": [
+        "neuro_psych_emergency",
+        "postpartum",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "tgl-004",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "nerbiyos / nerbyos",
+      "romanized": "nerbiyos",
+      "literal_en": "nerves (from Spanish nervios)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Anxiety, nervousness or a nervous temperament",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Panic attacks",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Hyperthyroidism",
+        "Hypoglycaemia",
+        "Substance or caffeine use"
+      ],
+      "clarifying_questions_en": [
+        "When you feel nerbiyos, what happens in your body?",
+        "Does it come in sudden attacks?",
+        "Any weight loss or palpitations?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.tagalognow.com/dictionary/nerbiyos/"
+      ],
+      "evidence_level": "community_reported",
+      "red_flag_tags": [
+        "metabolic"
+      ]
+    },
+    {
+      "id": "tgl-005",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "lamig (may lamig, nilalamig)",
+      "romanized": "lamig",
+      "literal_en": "coldness ('cold' trapped in the body; feeling chilled)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Muscle aches or knots explained as trapped cold",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Chills from fever or infection",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Rigors from sepsis or malaria",
+        "Hypothyroidism"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean your muscles are tight and sore, or that you are shivering?",
+        "Have you had a fever? Did you travel home recently?"
+      ],
+      "body_system": "musculoskeletal",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/lamig",
+        "https://en.wikipedia.org/wiki/Pasma",
+        "https://www.tuttlepublishing.com/content/docs/9780804842624/Mga%20Talang%20Pangkultura%20(Culture%20Notes)/Lesson%2005_Culture%20Notes.pdf"
+      ],
+      "evidence_level": "community_reported",
+      "red_flag_tags": [
+        "malaria",
+        "metabolic",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "tgl-006",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "init (mainit ang pakiramdam)",
+      "romanized": "init",
+      "literal_en": "heat; feeling hot",
+      "clinical_interpretations": [
+        {
+          "meaning": "Fever",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Heat illness after work in hot conditions",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Humoral 'hot' state in the init/lamig balance",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat stroke",
+        "Sepsis"
+      ],
+      "clarifying_questions_en": [
+        "Have you measured your temperature?",
+        "Were you working in a hot kitchen or outdoors? Any confusion or fainting?"
+      ],
+      "body_system": "thermoregulatory",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/init",
+        "https://www.tuttlepublishing.com/content/docs/9780804842624/Mga%20Talang%20Pangkultura%20(Culture%20Notes)/Lesson%2005_Culture%20Notes.pdf",
+        "https://doi.org/10.1249/JSR.0000000000001058"
+      ],
+      "evidence_level": "community_reported",
+      "red_flag_tags": [
+        "heat_illness",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "tgl-007",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "usog / usug",
+      "romanized": "usog",
+      "literal_en": "illness that strikes a child after a greeting by a stranger",
+      "clinical_interpretations": [
+        {
+          "meaning": "Sudden illness in a child (fever, vomiting, crying, convulsions) explained as usog",
+          "likelihood": "high"
+        }
+      ],
+      "masks_red_flags": [
+        "Febrile seizure",
+        "Meningitis or sepsis",
+        "Dehydration from gastroenteritis"
+      ],
+      "clarifying_questions_en": [
+        "How old is the child and what symptoms do they have?",
+        "Any fever, rash, stiff neck, or drowsiness?",
+        "Is the child drinking and passing urine?"
+      ],
+      "body_system": "spiritual/explanatory",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/usog",
+        "https://en.wikipedia.org/wiki/Pasma"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Michael Tan's 1987 book 'Usug, Kulam, Pasma' is the classic reference (cited by the Wikipedia pasma article); not read directly for this entry.",
+      "red_flag_tags": [
+        "neuro_psych_emergency",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "tgl-008",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "hilo (nahihilo)",
+      "romanized": "hilo",
+      "literal_en": "dizziness; light-headedness",
+      "clinical_interpretations": [
+        {
+          "meaning": "Presyncope from dehydration, heat or hypotension",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Vertigo",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Anaemia, hypoglycaemia or pregnancy",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Cardiac syncope",
+        "Ectopic pregnancy",
+        "Posterior-circulation stroke"
+      ],
+      "clarifying_questions_en": [
+        "Does the room spin, or do you feel you will faint?",
+        "When was your last period?",
+        "Any chest pain or palpitations?"
+      ],
+      "body_system": "neurological",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/hilo"
+      ],
+      "evidence_level": "community_reported",
+      "red_flag_tags": [
+        "arrhythmia_syncope",
+        "ectopic_pregnancy",
+        "stroke"
+      ]
+    },
+    {
+      "id": "tgl-009",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "masakit ang sikmura",
+      "romanized": "masakit ang sikmura",
+      "literal_en": "my stomach (pit of the stomach) hurts",
+      "clinical_interpretations": [
+        {
+          "meaning": "Dyspepsia or gastritis",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute coronary syndrome felt in the epigastrium",
+          "likelihood": "low"
+        },
+        {
+          "meaning": "Pancreatitis or biliary disease",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome",
+        "Peptic ulcer bleeding"
+      ],
+      "clarifying_questions_en": [
+        "Can you point to exactly where you feel it?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?",
+        "Any black stools or vomiting blood?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/sikmura",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "red_flag_tags": [
+        "acs",
+        "gi_bleed"
+      ]
+    },
+    {
+      "id": "ara-001",
+      "language": "Arabic (Levantine; widely understood)",
+      "iso639_3": "apc",
+      "native": "قلبي مقبوض",
+      "romanized": "qalbi maqboud",
+      "literal_en": "my heart is squeezed",
+      "clinical_interpretations": [
+        {
+          "meaning": "Dysphoria, sadness or worry",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Cardiac chest tightness",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome if felt physically in the chest with exertion"
+      ],
+      "clarifying_questions_en": [
+        "Is it a feeling of sadness or a physical squeezing in your chest?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb",
+        "afb",
+        "arz",
+        "apd"
+      ],
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "ara-002",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "قمطني قلبي",
+      "romanized": "qamatni qalbi",
+      "literal_en": "my heart is squeezing me",
+      "clinical_interpretations": [
+        {
+          "meaning": "Anticipatory anxiety and worry",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Cardiac chest pain",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome"
+      ],
+      "clarifying_questions_en": [
+        "Is it worry about something coming, or pain in your chest?",
+        "Is there sweating, breathlessness, nausea, or pain going to the arm, jaw, neck or back?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb"
+      ],
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "ara-003",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "هبط قلبي",
+      "romanized": "habat qalbi",
+      "literal_en": "my heart fell",
+      "clinical_interpretations": [
+        {
+          "meaning": "Sudden fear or panic",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Presyncope or syncope (heart 'dropping')",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Arrhythmia",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Cardiac syncope",
+        "Arrhythmia",
+        "Hypoglycaemia"
+      ],
+      "clarifying_questions_en": [
+        "Did you faint or nearly faint, or was it a sudden fright?",
+        "Did your heart race or skip?",
+        "Did it happen during exertion?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb"
+      ],
+      "red_flag_tags": [
+        "arrhythmia_syncope",
+        "metabolic"
+      ]
+    },
+    {
+      "id": "ara-004",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "أنا تعبان / نفسيتي تعبانة",
+      "romanized": "ana ta'ban / nafsiyti ta'bana",
+      "literal_en": "I am tired / my psyche is tired",
+      "clinical_interpretations": [
+        {
+          "meaning": "General distress; undifferentiated anxiety or depression",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Physical fatigue from anaemia, infection, diabetes or thyroid disease",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Depression with suicidal ideation",
+        "Anaemia",
+        "Hyperglycaemia"
+      ],
+      "clarifying_questions_en": [
+        "Is it tiredness in your body, in your mind, or both?",
+        "Since when? Sleep, appetite, weight?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf",
+        "https://doi.org/10.3389/fpsyg.2024.1456201"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb",
+        "afb",
+        "arz",
+        "apd"
+      ],
+      "notes": "UNHCR (2015): such statements need further assessment because they may stand for emotional symptoms or relationship difficulties.",
+      "red_flag_tags": [
+        "metabolic",
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ara-005",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "نفسي مخنوقة",
+      "romanized": "nafsi makhnouka",
+      "literal_en": "my psyche is suffocating",
+      "clinical_interpretations": [
+        {
+          "meaning": "Overwhelm, hopelessness, unpleasant chest feelings",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "True breathlessness",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Respiratory or cardiac breathlessness (check SpO2)",
+        "Suicidal ideation"
+      ],
+      "clarifying_questions_en": [
+        "Is it hard to breathe, or a feeling of being trapped?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf",
+        "https://doi.org/10.3389/fpsyg.2024.1456201"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb"
+      ],
+      "red_flag_tags": [
+        "respiratory",
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ara-006",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "ضايج / ضايق",
+      "romanized": "dayej / dayiq",
+      "literal_en": "cramped; constricted",
+      "clinical_interpretations": [
+        {
+          "meaning": "Annoyance, low mood or rumination with chest constriction and sighing",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Physical chest tightness",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome",
+        "Asthma"
+      ],
+      "clarifying_questions_en": [
+        "Is this a mood or a tight chest?",
+        "Does it come on when you work, walk or climb stairs, and ease with rest?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb",
+        "afb"
+      ],
+      "notes": "Gulf usage such as 'خلقي ضايق' (khulqi dayiq) is widely heard but was not separately documented in the sources found.",
+      "red_flag_tags": [
+        "acs",
+        "respiratory"
+      ]
+    },
+    {
+      "id": "ara-007",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "بتمنى نام وما فيق",
+      "romanized": "itmanna nam w ma fiq",
+      "literal_en": "I wish I could sleep and not wake up",
+      "clinical_interpretations": [
+        {
+          "meaning": "Passive suicidal ideation",
+          "likelihood": "high"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicide risk: requires a structured risk assessment"
+      ],
+      "clarifying_questions_en": [
+        "Have you thought about ending your life?",
+        "Have you made any plan, or done anything to harm yourself?",
+        "Who is with you at home? Are you safe tonight?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf",
+        "https://www.nice.org.uk/guidance/ng225"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb",
+        "afb",
+        "arz",
+        "apd"
+      ],
+      "notes": "UNHCR (2015) gives this as an indirect expression of suicidal thoughts. This entry triggers safety rule WORK-SUICIDE-01.",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ara-008",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "إحباط",
+      "romanized": "ihbat",
+      "literal_en": "frustration; defeat",
+      "clinical_interpretations": [
+        {
+          "meaning": "Depressive feelings, frustration, loss of hope",
+          "likelihood": "high"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation"
+      ],
+      "clarifying_questions_en": [
+        "What has made you feel defeated?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb"
+      ],
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ara-009",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "ما بقدر اتحمل / الضغط علي كتير",
+      "romanized": "ma ader athammel / el daght 'alayy ketiir",
+      "literal_en": "I can't bear it anymore / the pressure on me is too much",
+      "clinical_interpretations": [
+        {
+          "meaning": "Extreme stress and helplessness",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "'Daght' (pressure) can also mean blood pressure",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation",
+        "Hypertension: clarify whether 'daght' means stress or blood pressure"
+      ],
+      "clarifying_questions_en": [
+        "When you say 'daght', do you mean stress or your blood pressure?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb"
+      ],
+      "notes": "The stress sense is documented by UNHCR (2015). The blood-pressure sense of 'daght' is ordinary Arabic usage, so the ambiguity is real.",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ara-010",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "وسواس",
+      "romanized": "wiswas",
+      "literal_en": "whispering (of the devil); intrusive thoughts",
+      "clinical_interpretations": [
+        {
+          "meaning": "Obsessive or ruminative intrusive thoughts",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Religious explanation of unwanted thoughts",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "OCD or psychosis being misread as purely spiritual"
+      ],
+      "clarifying_questions_en": [
+        "Are these thoughts that come again and again against your will?",
+        "Do you feel you must do things to stop them?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb"
+      ],
+      "red_flag_tags": [
+        "neuro_psych_emergency"
+      ]
+    },
+    {
+      "id": "ara-011",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "عصبي / معصّب",
+      "romanized": "asabi / ma'sseb",
+      "literal_en": "nervous / on edge",
+      "clinical_interpretations": [
+        {
+          "meaning": "Anxiety as a trait ('asabi') or current irritability ('ma'sseb')",
+          "likelihood": "high"
+        }
+      ],
+      "masks_red_flags": [
+        "Hyperthyroidism",
+        "Substance use"
+      ],
+      "clarifying_questions_en": [
+        "Is this how you usually are, or new recently?",
+        "Any palpitations, sweating or weight loss?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb",
+        "arz"
+      ],
+      "red_flag_tags": [
+        "metabolic"
+      ]
+    },
+    {
+      "id": "ara-012",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "حاسس روحي عم تطلع",
+      "romanized": "hases rouhi 'am tetla'",
+      "literal_en": "I feel my soul is leaving me",
+      "clinical_interpretations": [
+        {
+          "meaning": "Dysphoric mood, being fed up, unable to cope",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Presyncope or air hunger if physical",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Syncope or breathlessness of cardiac or respiratory origin"
+      ],
+      "clarifying_questions_en": [
+        "Is it a feeling of despair, or do you feel faint or short of breath?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb"
+      ],
+      "red_flag_tags": [
+        "arrhythmia_syncope",
+        "respiratory"
+      ]
+    },
+    {
+      "id": "ara-013",
+      "language": "Arabic",
+      "iso639_3": "apc",
+      "native": "مس / جن",
+      "romanized": "mass / jinn",
+      "literal_en": "touched by / possessed by jinn",
+      "clinical_interpretations": [
+        {
+          "meaning": "Religious-spiritual explanation of distress or unusual behaviour",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Psychosis, seizures or dissociation described spiritually",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Seizure",
+        "Delirium",
+        "Psychosis"
+      ],
+      "clarifying_questions_en": [
+        "Can you tell me what happens during these episodes?",
+        "Do you lose awareness, shake, or hear voices?"
+      ],
+      "body_system": "spiritual/explanatory",
+      "source_urls": [
+        "https://www.unhcr.org/sites/default/files/legacy-pdf/55f6b90f9.pdf"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "arb",
+        "afb",
+        "arz",
+        "apd"
+      ],
+      "notes": "UNHCR (2015) describes jinn as a common explanatory model; many patients use both religious healers and medical care.",
+      "red_flag_tags": [
+        "neuro_psych_emergency"
+      ]
+    },
+    {
+      "id": "amh-001",
+      "language": "Amharic",
+      "iso639_3": "amh",
+      "native": "ሚች",
+      "romanized": "mich",
+      "literal_en": "'mich', a local febrile illness category",
+      "clinical_interpretations": [
+        {
+          "meaning": "Febrile illness of any cause",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Malaria in a recent traveller",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Viral infection",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Malaria after a home visit to an endemic area",
+        "Sepsis or meningitis"
+      ],
+      "clarifying_questions_en": [
+        "When did the fever start? Did you travel home recently?",
+        "Any headache, neck stiffness, rash or confusion?"
+      ],
+      "body_system": "general/constitutional",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7647763/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC1852296/",
+        "https://www.who.int/publications/i/item/guidelines-for-malaria",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC11725959/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Documented in Ethiopian ethnobotanical surveys as a human febrile illness. The clinical meaning here comes from the fever, not a validated mapping.",
+      "red_flag_tags": [
+        "malaria",
+        "sepsis_infection"
+      ]
+    }
+  ]
+}
