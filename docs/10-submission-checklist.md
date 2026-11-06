@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | R1 | Build an AI system that **solves a real problem in Qatar** | Language-barrier and medication-safety gap for Qatar's migrant majority in HMC / PHCC / worker health centres. See [01 · Problem & Impact](01-problem-and-impact.md) | Pitch lead | ☐ |
 | R2 | **Grounded in Qatar or the wider Middle East**, or disqualified | Qatar demographics and health system, Gulf-specific clinical risks (heat illness), doctor-side Arabic through QCRI's **Fanar** (Qatar's national Arabic LLM), PDPPL (Law No. 13 of 2016) privacy design. The Qatar grounding must be **visible in the first 15 s** of the README, the video and the pitch | Everyone | ☐ |
-| R3 | **Built with Hugging Face** (open-source libs and/or platform) | Inference Providers (ASR + LLM + TTS), open models from the Hub, Transformers / Gradio Space, optional Jobs fine-tune and Hub dataset. See [04 · Models](04-models-and-languages.md) | Tech lead | ☐ |
+| R3 | **Built with Hugging Face** (open-source libs and/or platform) | Inference Providers (LLMs, English ASR, English/Arabic TTS) plus an Inference Endpoint GPU voice worker (IndicConformer, Voxtral-Arabic, Indic Parler-TTS), open models from the Hub, Transformers / Gradio Space, optional Jobs fine-tune and Hub dataset. See [04 · Models](04-models-and-languages.md) | Tech lead | ☐ |
 | R4 | Frontier models (GPT, Claude…) only "around the edges" | **No frontier model sits in the runtime path.** If one was used for anything (e.g. a coding assistant), say so once in the README | Tech lead | ☐ |
 | R5 | **Everything built during the event** | Repo history starts at the event; commit often with real timestamps | Everyone | ☐ |
 | R6 | Stay within the **$100 shared credit pool** (no top-ups) | Budget and guardrails in [07 · Compute Budget](07-compute-budget-and-efficiency.md). Cancel idle Jobs and Endpoints every night | Captain | ☐ |
@@ -37,7 +37,7 @@
 - [ ] **Demo mode** works without a microphone: a "Play sample consultation" button feeds the pre-recorded golden-path audio through the full pipeline.
 - [ ] Live mode works with the browser microphone over HTTPS (Spaces are HTTPS by default).
 - [ ] Cold-start time is known. If we use an Endpoint with scale-to-zero, **warm it up 15 min before judging**.
-- [ ] The main Space stays on `cpu-upgrade`. The only GPU is the voice worker (scale-to-zero), which is warmed 15 min before judging (efficiency criterion).
+- [ ] The main Space stays on `cpu-upgrade`. The only GPUs are the voice worker and the fine-tune Endpoint (if it ships). Both scale to zero and are warmed 15 min before judging (efficiency criterion).
 - [ ] The README states the patient languages supported, with a clear tier (demo-verified, supported, text-only).
 - [ ] A clinical disclaimer is visible in the UI: decision support for licensed clinicians, not a medical device.
 
@@ -46,7 +46,7 @@
 | Criterion | What judges look for | Our proof point | Where |
 |---|---|---|---|
 | **Impact & relevance** | A real, worthwhile Qatar/ME problem, solved well | The migrant majority, cited evidence on interpreter errors, Qatar heat-illness context, personas | README §Why, [01](01-problem-and-impact.md) |
-| **Use of Hugging Face** | Genuinely built with HF | Fully open-model cascade on Inference Providers, Hub dataset and fine-tuned model, Gradio Space, Fanar from QCRI | README §Built with HF, [04](04-models-and-languages.md), [06](06-fine-tuning-plan.md) |
+| **Use of Hugging Face** | Genuinely built with HF | Fully open-model cascade on Inference Providers and Inference Endpoints, Hub dataset and fine-tuned model, Gradio Space, Fanar from QCRI | README §Built with HF, [04](04-models-and-languages.md), [06](06-fine-tuning-plan.md) |
 | **Technical execution** | Works end to end | The live golden path: voice → translation → idiom note → safety alert → PDF / WhatsApp / SMS / audio | Space + video, [03](03-architecture.md) |
 | **Efficiency** | Smart use of the compute budget | Cost per consultation, small-model routing, VAD gating, TTS caching, scale-to-zero, final spend vs. $100 | [07](07-compute-budget-and-efficiency.md) |
 | **Demo & pitch** | Clear and compelling | A human hook, a live "silent alert" moment, and a 3-min script that has been rehearsed | [09](09-pitch-and-demo.md) |

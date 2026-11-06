@@ -64,7 +64,8 @@
         "vitals.spo2",
         "vitals.temp_c",
         "disposition.type",
-        "elapsed_min_since.symptom.<code>"
+        "elapsed_min_since.symptom.<code>",
+        "elapsed_min_since.first_match"
       ],
       "operators": [
         "eq",
@@ -2464,7 +2465,7 @@
             }
           },
           {
-            "fact": "elapsed_min_since.symptom.chest_pain",
+            "fact": "elapsed_min_since.first_match",
             "op": "gt",
             "value": 10
           },

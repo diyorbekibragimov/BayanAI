@@ -184,13 +184,13 @@ The orchestrator UI runs on the Space's CPU (`cpu-upgrade`). GPU is needed only 
 | Think-loop input tokens | 120k | **28k** (4.3× fewer) |
 | Audio minutes sent to ASR | 12 | **8** (browser VAD) |
 | Safety checks | LLM tokens | **Deterministic rules, $0** |
-| Marginal cost per consultation | ≈ $0.047 | **≈ $0.015** → [[replace with measured value from the UI cost meter]] |
-| Fine-tune (data + training + eval) | — | **$[[measured]]**, A100 for [[n]] min, on HF Jobs |
-| Total spent building and demoing | — | **$[[measured]] of $100**, with ≥ $25 never touched |
+| Marginal cost per consultation | ≈ $0.047 | **≈ $0.015** → ⟨measure: value from the UI cost meter⟩ |
+| Fine-tune (data + training + eval) | — | **$⟨measure⟩**, A100 for ⟨measure⟩ min, on HF Jobs |
+| Total spent building and demoing | — | **$⟨measure⟩ of $100**, with ≥ $25 never touched |
 
-**20-second voice-over:** "Every patient turn goes to a 4-billion-parameter model we fine-tuned on HF Jobs for about two dollars. It reads idioms and keeps the clinical state. The big model runs once, at the end, to write the notes. Safety checks are rules, so they cost nothing and cannot hallucinate. Silence is never sent, and fixed phrases are cached. A consultation costs about one and a half cents, and the whole build used [[$X]] of our $100."
+**20-second voice-over:** "Every patient turn goes to a 4-billion-parameter model we fine-tuned on HF Jobs for about two dollars. It reads idioms and keeps the clinical state. The big model runs once, at the end, to write the notes. Safety checks are rules, so they cost nothing and cannot hallucinate. Silence is never sent, and fixed phrases are cached. A consultation costs about one and a half cents, and the whole build used ⟨measure: $ spent⟩ of our $100."
 
-Fill the `[[...]]` placeholders from the spend log (§9) and the cost meter. Do not present the estimates as measurements. [09](09-pitch-and-demo.md) Q&A #6 pulls these numbers.
+Fill the `⟨measure⟩` markers from the spend log (§9) and the cost meter. Do not present the estimates as measurements. [09](09-pitch-and-demo.md) Q&A #6 pulls these numbers.
 
 ---
 

@@ -158,7 +158,7 @@ The extractor must return JSON that validates against this schema. Every fact ca
   "current_meds":    [{"drug": "lisinopril", "dose_mg": 10, "frequency_per_day": 1, "route": "oral", "evidence": [], "confidence": 0.8}],
   "prescribed_meds": [{"drug": "amoxicillin", "dose_mg": 500, "unit_raw": "mg", "dose_raw": "500 mg", "route": "oral",
                        "frequency_per_day": 3, "duration_days": 5, "indication": "sore throat",
-                       "evidence": [{"utt": "u088", "t": "00:09:40", "quote": "I'll give you amoxicillin 500 three times a day"}], "confidence": 0.95}],
+                       "evidence": [{"utt": "u088", "t": "00:10:50", "quote": "I'll give you amoxicillin 500 three times a day"}], "confidence": 0.95}],
   "symptoms":   [{"code": "chest_burning", "severity": "moderate", "onset": "2h", "first_mention_t": "00:00:42", "evidence": [], "confidence": 0.9}],
   "vitals":     {"hr": 96, "bp_sys": 138, "rr": null, "spo2": null, "temp_c": null, "temp_site": "unknown"},
   "investigations": [{"code": "ecg_12lead", "status": "ordered|resulted", "evidence": []}],
@@ -172,7 +172,7 @@ The extractor must return JSON that validates against this schema. Every fact ca
 }
 ```
 
-The **validator** (plain Python, not the LLM) normalises brand names to INN (e.g., *Adol/Panadol* → paracetamol, *Augmentin* → co-amoxiclav; see `meta.brand_aliases_examples`). It also maps drugs to classes (`meta.drug_classes`), converts units (g → mg, "one tablet" + known strength → mg), computes `daily_dose_mg`, and computes `elapsed_min_since.*` from timestamps. If the dose unit is ambiguous, it records `dose_mg: null` and raises an *info* prompt asking for the strength instead of guessing.
+The **validator** (plain Python, not the LLM) normalises brand names to INN (e.g., *Adol/Panadol* → paracetamol, *Augmentin* → co-amoxiclav; see `meta.brand_aliases_examples`). It also maps drugs to classes (`meta.drug_classes`), converts units (g → mg, "one tablet" + known strength → mg), computes `daily_dose_mg`, and computes `elapsed_min_since.*` from timestamps. `elapsed_min_since.first_match` is the number of minutes since the earliest `first_mention_t` among the items matched by the same rule's `exists_in` clause. For example, `WORK-CHEST-01` counts from the first mention of *any* chest-pain-group symptom, including `chest_burning`. If the dose unit is ambiguous, it records `dose_mg: null` and raises an *info* prompt asking for the strength instead of guessing.
 
 ### 2.4 Rule families (81 rules in `safety_rules.json`)
 
@@ -228,7 +228,7 @@ Observations are labelled `🤖 LLM observation (not a rule)`. They carry the qu
 | Property | Specification |
 |---|---|
 | **Channel** | **On-screen only.** The alert manager has no path to TTS (see the diagram). The tablet never vibrates or chimes for an alert while the patient can see or hear it. |
-| **Severity** | `info`: collapsed grey chip · `caution`: amber card · `critical`: red card pinned to the top, which blocks *finalising* the EMR note or the patient plan until it is acknowledged. It never blocks the conversation. |
+| **Severity** | `info`: collapsed grey chip · `caution`: amber card · `critical`: red card pinned to the top, which blocks *finalising* the EMR note or the patient plan until it is acknowledged. It never blocks the conversation, with one exception from [02](02-product-spec.md): a *critical prescribing* alert (for example `ALG-PEN-01`) holds the doctor's prescribing sentence back from being spoken to the patient until the doctor acknowledges or overrides the alert. |
 | **Evidence** | Every card shows: rule ID · the **exact quoted utterance(s)** with timestamps (tap to replay audio, if retention is enabled) · the extracted fact · the rule rationale · the source links. |
 | **Actions** | One tap: **Acknowledge** (I'll act) · **Override** with a reason chosen from a quick list (e.g., "allergy de-labelled", "benefit outweighs risk", "already done, not captured", "extraction error") plus optional free text · **Wrong fact**, which sends the doctor to correct the state, re-runs the rules and logs the extraction error. |
 | **Audit log** | Append-only JSONL: `{alert_id, rule_id, rule_version, state_version, evidence_utts, shown_at, action, reason, user, ts}`. Retained with the note. It contains no audio. |
@@ -245,10 +245,10 @@ These are scripted demo scenarios with fictional people. The alert lists below a
 | t | Speaker | Utterance (source → EN) | System |
 |---|---|---|---|
 | 00:42 | Patient (ne) | "छाती ग्यास्ट्रिकले जस्तो पोलेको छ, काम गर्दा बढ्छ" → "My chest burns like gastric; it gets worse when I work." | Idiom card **npi-005** (gyastrik) with *Ask* questions. `idiom_hits += [acs, gi_bleed]` → **caution `WORK-CHEST-04`** (idiom may mask ACS). Symptom `chest_burning` (first mention 00:42). |
-| 00:52 | (timer) | No ECG ordered 10 min after first mention | **Caution `WORK-CHEST-01`**, grouped with `WORK-CHEST-04` into one "Chest-pain workup" card. |
 | 01:12 | Patient (ne) | "पेनिसिलिनले मलाई एलर्जी भयो, छालामा दाग आयो" → "I had an allergy to penicillin; I got spots on my skin." | Allergy `{penicillin, reaction: rash, severity: moderate}`. |
 | 03:05 | Doctor (en) | "Probably acidity and a throat infection." | No new alert. |
-| 09:40 | Doctor (en) | "Amoxicillin 500 three times a day for 5 days, and omeprazole. You can go home." | **Critical `ALG-PEN-01`**: quote from 01:12 + quote from 09:40 + AAAAI/ACAAI 2022 · NICE CG183. **Critical `WORK-CHEST-02`** (discharge, no ECG) and **critical `WORK-CHEST-03`** (no troponin): AHA/ACC 2021 · ESC 2023 · Pradhan 2019. |
+| 10:42 | (timer) | No ECG ordered 10 min after first mention | **Caution `WORK-CHEST-01`**, grouped with `WORK-CHEST-04` into one "Chest-pain workup" card. |
+| 10:50 | Doctor (en) | "Amoxicillin 500 three times a day for 5 days, and omeprazole. You can go home." | **Critical `ALG-PEN-01`**: quote from 01:12 + quote from 10:50 + AAAAI/ACAAI 2022 · NICE CG183. **Critical `WORK-CHEST-02`** (discharge, no ECG) and **critical `WORK-CHEST-03`** (no troponin): AHA/ACC 2021 · ESC 2023 · Pradhan 2019. |
 | 09:55 | Doctor taps | Acknowledges all three cards (no override), changes the antibiotic, and orders an ECG + hs-troponin. | Alerts resolve and the audit log records both actions. The patient heard only the doctor's words. |
 
 ### Example 2: Filipino domestic worker, "kabag" + "pasma", unknown pregnancy, ibuprofen, CT ordered

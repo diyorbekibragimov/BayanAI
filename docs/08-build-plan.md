@@ -61,7 +61,7 @@ Times are Doha time. Shift the whole schedule if you start later, but **never mo
 - [ ] Create the Space `dullgrey/team-qh-129-bayan-app` (Gradio SDK, hardware `cpu-upgrade`) and push a hello-world.
 - [ ] Smoke-test one call to each provider: ASR (Whisper), LLM chat, TTS. Write down the latency and cost of each.
 - [ ] Captain: accept the gated licences for `ai4bharat/indic-conformer-600m-multilingual` and `ai4bharat/indic-parler-tts` (they are gated, so access must be requested on the Hub).
-- [ ] A: stand up the **GPU voice worker** (IndicConformer + Indic Parler-TTS + MMS-TTS) as an L4 Endpoint with scale-to-zero, or as a ZeroGPU/GPU Space. Measure Nepali TTS speed on it right away, because it is the biggest unknown in [07](07-compute-budget-and-efficiency.md).
+- [ ] A: stand up the **GPU voice worker** (IndicConformer + Voxtral-Mini-4B-Realtime-Arabic + Indic Parler-TTS + MMS-TTS; Whisper via Providers is the Arabic fallback until Voxtral is up) as an L4 Endpoint with scale-to-zero, or as a ZeroGPU/GPU Space. Measure Nepali TTS speed on it right away, because it is the biggest unknown in [07](07-compute-budget-and-efficiency.md).
 - [ ] D: book native speakers (Nepali first, Hindi second) to record the golden-path lines and to review translations.
 
 ### Phase 1 · Skeleton pipeline (hours 1–5)

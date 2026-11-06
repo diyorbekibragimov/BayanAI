@@ -62,7 +62,7 @@ sequenceDiagram
     participant A as ASR
     participant L as Interpreter LLM
     participant V as TTS
-    P->>T: "छाती ग्यास जस्तै पोल्छ…"
+    P->>T: "मेरो छाती ग्यास्ट्रिकले जस्तो पोलेको छ…"
     T->>T: VAD closes segment (≈300–500 ms silence)
     T->>S: utterance.wav (speech only)
     S->>A: transcribe (hint: session languages)
@@ -87,7 +87,7 @@ sequenceDiagram
 
 1. Browser `getUserMedia({ echoCancellation: true, noiseSuppression: true })`.
 2. **Half-duplex gating:** VAD segments are dropped while Bayan's own TTS is playing, with a short tail buffer.
-3. **Barge-in:** if a human keeps speaking over Bayan for more than about 700 ms, Bayan stops speaking and listens. The interrupted translation stays visible on screen.
+3. **Barge-in (stretch goal, C4 in [02](02-product-spec.md)):** if a human keeps speaking over Bayan for more than about 700 ms, Bayan stops speaking and listens. The interrupted translation stays visible on screen. The MVP uses half-duplex gating only.
 
 ## 4. Think loop: structured state and the safety sentinel
 

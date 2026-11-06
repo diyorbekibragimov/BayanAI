@@ -59,7 +59,7 @@ Roughly **9 in 10 people living in Qatar are not Qatari** (an estimate; no offic
 - 🗣️ **Talks.** It speaks each sentence aloud to the other person in their own language, within seconds.
 - 🧠 **Thinks.** In the background it:
   - interprets **cultural idioms**, e.g. a Nepali worker's *"gyastrik"* (ग्यास्ट्रिक, "gastric") burning chest, which can hide cardiac pain;
-  - shows **silent safety alerts** to the doctor only, e.g. a penicillin allergy mentioned at minute 1 against an amoxicillin prescription at minute 6;
+  - shows **silent safety alerts** to the doctor only, e.g. a penicillin allergy mentioned early in the visit against an amoxicillin prescription a few minutes later;
   - flags a chest-pain patient being discharged with no ECG or troponin.
 
 When the consultation ends, Bayan produces two outputs:
@@ -87,14 +87,14 @@ Full evidence, personas and competitor comparison: [01 · Problem & Impact](docs
 
 ## What happens in a consultation (the golden path)
 
-1. **Consent.** Bayan explains itself in Nepali and asks for consent. Ramesh, a 29-year-old construction worker (an illustrative persona), agrees.
-2. **Interpretation.** The doctor speaks English or Arabic and Ramesh hears Nepali. Ramesh speaks Nepali and the doctor hears English.
-3. **Idiom card.** Ramesh says his chest "burns like *gyastrik*". The doctor sees the literal phrase plus a note:
+1. **Consent.** Bayan explains itself in Nepali and asks for consent. Ram, a 29-year-old construction worker (an illustrative persona), agrees.
+2. **Interpretation.** The doctor speaks English or Arabic and Ram hears Nepali. Ram speaks Nepali and the doctor hears English.
+3. **Idiom card.** Ram says his chest "burns like *gyastrik*". The doctor sees the literal phrase plus a note:
    - it usually means dyspepsia or reflux;
    - it can mask cardiac pain;
    - questions to ask next: exertion, radiation of the pain, sweating.
-4. **Silent alerts.** The doctor is about to prescribe amoxicillin and send Ramesh home. Two alerts appear on the doctor's screen and are never spoken aloud:
-   - 🔴 Ramesh mentioned a penicillin allergy earlier;
+4. **Silent alerts.** The doctor is about to prescribe amoxicillin and send Ram home. Two alerts appear on the doctor's screen and are never spoken aloud:
+   - 🔴 Ram mentioned a penicillin allergy earlier;
    - 🔴 chest pain with no ECG or troponin before discharge.
 5. **Correction.** The doctor acknowledges the alerts and orders blood pressure, an ECG and a troponin test.
 6. **"Bayan, end consultation."** Bayan produces:
@@ -159,7 +159,7 @@ No closed frontier model sits in the runtime path.
 
 | Tier | Patient languages | Status |
 |---|---|---|
-| **Tier 1**: demo targets | Nepali · Hindi · Urdu · Bengali · Malayalam · Filipino (Tagalog) | Full voice in and voice out |
+| **Tier 1**: demo targets | Nepali · Hindi · Urdu · Bengali · Malayalam · Filipino (Tagalog) | Target: full voice in and out (demo-verified only after the [04 §9](docs/04-models-and-languages.md) smoke test) |
 | **Tier 2**: supported | Tamil · Telugu · Punjabi · Sinhala · Indonesian · Swahili · Amharic | Voice in and out; quality less tested |
 | **Tier 3**: best effort | Somali · Tigrinya · Oromo · Pashto | Speech recognition plus text; limited voice |
 | Doctor side | English · Arabic (MSA, Gulf, Egyptian) | — |
@@ -170,7 +170,7 @@ The full coverage matrix, with the model used for every cell and its licence: [0
 
 ## Efficiency: $100, spent on purpose
 
-- **Pay per use, not per hour.** Inference Providers handle the LLMs and English/Arabic speech. The only GPU is the voice worker, and it scales to zero.
+- **Pay per use, not per hour.** Inference Providers handle the LLMs, English speech recognition and English/Arabic speech output. Indic and Arabic speech recognition, plus Indic speech output, run on one GPU voice worker. The fine-tuned model gets its own Endpoint if it ships. Both scale to zero.
 - **Model routing.** The 120B model runs in the talk loop and once at wrap-up. Frequent background extraction goes to a 4B model. The safety rules run on CPU in milliseconds, at no cost.
 - **Silence is free.** Voice activity detection in the browser means only speech is sent. Fixed phrases (consent, "please repeat") are generated once and cached.
 - **Cost per consultation:** about **$0.015**, against about $0.047 for a naive build. That is roughly 3× cheaper. *These are estimates from list prices; the in-app cost meter shows the measured value.*
@@ -202,7 +202,7 @@ Details: [05 · Clinical Safety & Cultural Intelligence](docs/05-clinical-safety
 | 01 | [Problem & Impact](docs/01-problem-and-impact.md) | Qatar evidence, personas, competitor comparison, impact KPIs, policy alignment |
 | 02 | [Product Spec](docs/02-product-spec.md) | Ambient-agent behaviour, single-screen UX, features, MVP scope, acceptance criteria |
 | 03 | [Architecture](docs/03-architecture.md) | Three loops, routing, echo guard, the safety sentinel, outputs, deployment, privacy |
-| 04 | [Models & Languages](docs/04-models-and-languages.md) | Why a cascade, coverage matrix for 18 languages, model comparisons, licences, latency |
+| 04 | [Models & Languages](docs/04-models-and-languages.md) | Why a cascade, coverage matrix for 19 languages, model comparisons, licences, latency |
 | 05 | [Clinical Safety & Cultural Intelligence](docs/05-clinical-safety-and-cultural-intelligence.md) | Idiom interpreter, 81-rule sentinel, alert UX, guardrails, evaluation |
 | 06 | [Fine-Tuning Plan](docs/06-fine-tuning-plan.md) | What to fine-tune and why, data recipe, HF Jobs commands, eval gates |
 | 07 | [Compute Budget & Efficiency](docs/07-compute-budget-and-efficiency.md) | $100 line items, cost per consultation, cost guardrails |
