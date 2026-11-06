@@ -31,4 +31,6 @@ A private backend for [`dullgrey/team-qh-129-bayan-app`](https://huggingface.co/
 | `/benchmark` | both | Nepali TTS → ASR round-trip timing |
 | `/langs` | — | ASR language codes |
 
-Hardware: `l4x1`, with sleep after 15 min idle. Gradio is pinned to 5.x because `parler-tts` requires `transformers==4.46.1`.
+Hardware: `l4x1` ($0.80/h), with sleep after 2 h idle during the judging window. Gradio is pinned to 5.x because `parler-tts` requires `transformers==4.46.1`.
+
+`/speak_stream` cuts the text into short segments and generates them all in one batched Parler call (a decoding step for several segments costs about the same as for one), so the first audio is limited by the first short segment, not the whole text. Boot logs print a timestamp per download/load step.

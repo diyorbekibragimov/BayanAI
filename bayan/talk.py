@@ -200,9 +200,24 @@ def split_sentences(text: str, max_chars: int = 160) -> list[str]:
     return out
 
 
+def _stream_worker_tts(text: str, lang: str):
+    """Stream patient-language speech from the worker: ~0.5 s chunks, generated continuously
+    across sentences, with a start buffer sized so playback never overtakes generation."""
+    import base64
+    job = worker().submit(text, lang, "", api_name="/speak_stream")
+    for out in job:
+        if not isinstance(out, dict) or out.get("done") or not out.get("pcm"):
+            continue
+        pcm = np.frombuffer(base64.b64decode(out["pcm"]), dtype="<i2").astype(np.float32) / 32767.0
+        yield out["sr"], pcm
+
+
 def speak_chunks(text: str, lang: str):
-    """Yield (sample_rate, float32 array) per sentence; yields nothing if no voice for this language yet."""
-    if lang not in WORKER_TTS_LANGS and lang != "en":
+    """Yield (sample_rate, float32 array) chunks; yields nothing if no voice for this language yet."""
+    if lang in WORKER_TTS_LANGS:
+        yield from _stream_worker_tts(text, lang)
+        return
+    if lang != "en":
         return
     for sentence in split_sentences(text):
         voiced = speak(sentence, lang)

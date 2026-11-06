@@ -9,25 +9,52 @@ API (call from the main Space with gradio_client + HF_TOKEN; this Space is priva
   /hear(audio_path, patient_lang)          -> {"role", "lang", "text", "engine", "lid", timings}
   /transcribe(audio_path, lang, decoding)  -> {"text", "lang", "seconds", "audio_seconds"}
   /speak(text, lang, description)          -> (wav, {"seconds", "audio_seconds", "rtf"})
+  /speak_stream(text, lang, description)   -> generator of {"sr", "pcm" (b64 int16), ...}, then {"done": true, stats}
+  /speak_stream_opts(text, lang, description, opts_json), /tts_probe(opts_json) -> latency experiments
   /benchmark()                             -> Nepali TTS -> ASR round-trip timings
   /langs()                                 -> ASR language codes
 """
 
+import base64
+import importlib.util
+import json
 import os
+import queue
+import re
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+
+_T_BOOT = time.time()
+
+
+def _log(msg: str) -> None:
+    print(f"[boot +{time.time() - _T_BOOT:6.1f}s {time.strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+# Must be set before huggingface_hub is imported. hf_transfer ships in the Spaces base image.
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+if importlib.util.find_spec("hf_transfer") is not None:
+    os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
+_log(f"process start; hf_transfer={os.environ.get('HF_HUB_ENABLE_HF_TRANSFER', '0')}")
 
 import torch  # import before onnxruntime so CUDA/cuDNN libs from the torch wheels are loaded
 import numpy as np
 import torchaudio
 import gradio as gr
+from huggingface_hub import constants as hf_constants, snapshot_download
 from transformers import AutoModel, AutoTokenizer, WhisperForConditionalGeneration, WhisperProcessor
-from parler_tts import ParlerTTSForConditionalGeneration
+from parler_tts import ParlerTTSForConditionalGeneration, ParlerTTSStreamer
 from speechbrain.inference.classifiers import EncoderClassifier
+
+_log(f"imports done; torch {torch.__version__}, cuda={torch.cuda.is_available()}")
 
 # TorchScript's GPU fuser fails to compile IndicConformer's complex-valued preprocessor
 # ("default_program ... c10::complex" NVRTC errors), so run TorchScript unfused.
 torch._C._jit_override_can_fuse_on_gpu(False)
 torch._C._jit_set_texpr_fuser_enabled(False)
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 
 HF_TOKEN = os.environ.get("HF_TOKEN")
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -39,30 +66,71 @@ TTS_COMPILE = "" if TTS_COMPILE.lower() in ("", "off", "0", "false") else TTS_CO
 DESC_MAX, PROMPT_MAX = 64, 192  # fixed padded lengths so the compiled graph is reused
 ASR_SR = 16_000
 
-# ---------------------------------------------------------------- models
+CONFORMER_ID = "ai4bharat/indic-conformer-600m-multilingual"
+PARLER_ID = "ai4bharat/indic-parler-tts"
+WHISPER_ID = "openai/whisper-large-v3-turbo"
+VOX_ID = "speechbrain/lang-id-voxlingua107-ecapa"
+_TOK_FILES = ["*.json", "*.model", "*.txt"]
+# Nothing is cached between container starts (no persistent storage), so every boot downloads ~8 GB.
+# Fetch all repos in parallel (many small files in the conformer repo) before the loaders run;
+# the loaders then hit the local cache.
+_PREFETCH = {
+    CONFORMER_ID: None,
+    PARLER_ID: None,
+    WHISPER_ID: ["*.json", "*.txt", "model.safetensors"],
+    VOX_ID: None,
+    "google/flan-t5-large": _TOK_FILES,  # tokenizer only (Parler's description encoder)
+}
+
+
+def _prefetch(repo: str, patterns):
+    t = time.time()
+    for attempt in range(2):
+        try:
+            snapshot_download(repo, allow_patterns=patterns, token=HF_TOKEN, max_workers=16)
+            break
+        except Exception as e:  # noqa: BLE001 - fall back to plain HTTP if hf_transfer misbehaves
+            _log(f"prefetch {repo} failed ({type(e).__name__}: {e}); retrying without hf_transfer")
+            hf_constants.HF_HUB_ENABLE_HF_TRANSFER = False
+    _log(f"prefetched {repo} in {time.time() - t:.1f}s")
+
+
 t0 = time.time()
-asr = AutoModel.from_pretrained(
-    "ai4bharat/indic-conformer-600m-multilingual", trust_remote_code=True, token=HF_TOKEN
-)
+try:
+    with ThreadPoolExecutor(max_workers=len(_PREFETCH)) as ex:
+        list(ex.map(lambda kv: _prefetch(*kv), _PREFETCH.items()))
+except Exception as e:  # noqa: BLE001 - loaders below download whatever is missing
+    _log(f"prefetch error, continuing: {type(e).__name__}: {e}")
+_log(f"all downloads done in {time.time() - t0:.1f}s")
+
+# ---------------------------------------------------------------- models
+t = time.time()
+asr = AutoModel.from_pretrained(CONFORMER_ID, trust_remote_code=True, token=HF_TOKEN)
+_log(f"IndicConformer loaded in {time.time() - t:.1f}s")
+t = time.time()
 tts = ParlerTTSForConditionalGeneration.from_pretrained(
-    "ai4bharat/indic-parler-tts", token=HF_TOKEN, torch_dtype=TTS_DTYPE,
+    PARLER_ID, token=HF_TOKEN, torch_dtype=TTS_DTYPE,
     **({"attn_implementation": "eager"} if TTS_COMPILE else {}),  # explicit "sdpa" is rejected by its T5 encoder
 ).to(DEVICE)
-tts_tok = AutoTokenizer.from_pretrained("ai4bharat/indic-parler-tts", token=HF_TOKEN)
+tts_tok = AutoTokenizer.from_pretrained(PARLER_ID, token=HF_TOKEN)
 desc_tok = AutoTokenizer.from_pretrained(tts.config.text_encoder._name_or_path, token=HF_TOKEN)
 TTS_SR = tts.config.sampling_rate
-WHISPER_ID = "openai/whisper-large-v3-turbo"
+_log(f"Parler-TTS loaded in {time.time() - t:.1f}s")
+t = time.time()
 w_proc = WhisperProcessor.from_pretrained(WHISPER_ID)
 w_model = WhisperForConditionalGeneration.from_pretrained(
     WHISPER_ID, torch_dtype=torch.float16 if DEVICE.startswith("cuda") else torch.float32
 ).to(DEVICE)
 W_DTYPE = w_model.dtype
+_log(f"Whisper loaded in {time.time() - t:.1f}s")
+t = time.time()
 # Dedicated spoken-language ID (107 languages incl. Nepali); Whisper's Nepali LID proved unreliable.
 lid_model = EncoderClassifier.from_hparams(
-    source="speechbrain/lang-id-voxlingua107-ecapa", savedir="/tmp/voxlingua107",
+    source=VOX_ID, savedir="/tmp/voxlingua107",
     run_opts={"device": DEVICE},
 )
 VOX_INDEX = {lab.split(":")[0].strip(): idx for lab, idx in lid_model.hparams.label_encoder.lab2ind.items()}
+_log(f"VoxLingua107 loaded in {time.time() - t:.1f}s")
 LOAD_SECONDS = round(time.time() - t0, 1)
 
 DOCTOR_LANGS = ("en", "ar")
@@ -240,6 +308,283 @@ if TTS_COMPILE and DEVICE.startswith("cuda"):
     print("TTS compile:", COMPILE_NOTE, flush=True)
 
 
+# ---------------------------------------------------------------- streaming TTS
+# Parler generates ~86 codec frames per second of audio, one decoding step each; on an L4 a step costs
+# ~18 ms, i.e. ~1.5x slower than real time, and the cost is per-step overhead, not FLOPs. So:
+#   * the text is cut into short segments (sentences; long ones at commas; a short first segment),
+#   * ALL segments of a group are generated in ONE batched generate() (a step for 6 segments costs about
+#     the same as a step for 1), and audio is streamed in segment order,
+#   * playback starts once the buffered audio guarantees that no segment will run dry. With batching
+#     that wait is set by the first (short) segment instead of the whole text.
+K_CODEBOOKS = tts.decoder.num_codebooks
+CODEBOOK_SIZE = tts.audio_encoder.config.codebook_size
+FRAME_RATE = float(tts.audio_encoder.config.frame_rate)
+CHARS_PER_SEC = {"ne": 11.0, "hi": 12.0, "ur": 12.0, "bn": 12.0, "ml": 10.0, "ta": 10.0, "te": 10.0}
+STREAM_OPTS = {
+    "max_batch": 8,         # segments generated together
+    "first_steps": K_CODEBOOKS + 24,  # decoding steps before the very first chunk (~0.28 s of audio)
+    "play_steps": int(FRAME_RATE * 0.5),  # later chunks: ~0.5 s
+    "first_max": 45,        # first segment is cut at a comma if longer than this (chars)
+    "max_len": 110,         # any segment is cut at commas if longer than this
+    "safety": 1.1,          # multiplier on the estimated segment durations
+    "margin": 0.2,          # extra seconds of buffer
+}
+_TAU = {}  # measured seconds per decoding step, by batch size (EMA across requests)
+_TAU_DEFAULT = 1.6 / FRAME_RATE
+_SENT_SPLIT = re.compile(r"(?<=[।॥.!?؟])\s+")
+_CLAUSE_SPLIT = re.compile(r"(?<=[,،;:])\s+")
+_STOP = object()
+
+
+def _split_sentences(text: str) -> list:
+    return [p.strip() for p in _SENT_SPLIT.split(text.strip()) if p.strip()]
+
+
+def _segments(text: str, first_max: int = 45, max_len: int = 110) -> list:
+    """Sentences; a sentence longer than the limit is cut at clause punctuation (never mid-clause)."""
+    out = []
+    for sent in _split_sentences(text):
+        limit = first_max if not out else max_len
+        clauses = [c.strip() for c in _CLAUSE_SPLIT.split(sent) if c.strip()]
+        if len(sent) <= limit or len(clauses) == 1:
+            out.append(sent)
+            continue
+        cur = ""
+        for c in clauses:
+            if cur and len(cur) + 1 + len(c) > limit and len(cur) >= 12:
+                out.append(cur)
+                limit = max_len
+                cur = c
+            else:
+                cur = f"{cur} {c}".strip()
+        if cur:
+            if out and len(cur) < 12:
+                out[-1] = f"{out[-1]} {cur}"
+            else:
+                out.append(cur)
+    return out
+
+
+class _BatchStreamer(ParlerTTSStreamer):
+    """Streamer for a batch of B segments; emits ("audio", seg, np.ndarray, seg_end) in segment order."""
+
+    def __init__(self, n: int, first_steps: int, play_steps: int):
+        super().__init__(tts, device=DEVICE, play_steps=play_steps)
+        self.n, self.first_steps = n, first_steps
+        self.cur, self.emitted, self.last_decode = 0, [0] * n, 0
+        self.q = queue.Queue()
+        self.t_start, self.step_times = None, []
+
+    def tau(self):
+        st = self.step_times
+        if len(st) < 8:
+            return None
+        return (st[-1] - st[1]) / (len(st) - 2)  # skip the prefill step
+
+    def _decode(self, b: int) -> np.ndarray:
+        return self.apply_delay_pattern_mask(self.token_cache[b * K_CODEBOOKS:(b + 1) * K_CODEBOOKS])
+
+    def _pump(self, final: bool):
+        steps = self.token_cache.shape[-1]
+        while self.cur < self.n:
+            b = self.cur
+            col = self.token_cache[b * K_CODEBOOKS:(b + 1) * K_CODEBOOKS, -1]
+            done = final or (steps > K_CODEBOOKS + 1 and bool((col >= CODEBOOK_SIZE).all()))
+            if done:
+                audio = self._decode(b)
+                self.q.put(("audio", b, audio[self.emitted[b]:], True))
+                self.emitted[b] = len(audio)
+                self.cur += 1
+                self.last_decode = 0  # decode the next segment's backlog right away
+                continue
+            need = self.first_steps if self.emitted[b] == 0 else self.play_steps
+            if steps - self.last_decode >= need and steps > K_CODEBOOKS + 2:
+                audio = self._decode(b)
+                upto = len(audio) - self.stride
+                if upto > self.emitted[b]:
+                    self.q.put(("audio", b, audio[self.emitted[b]:upto], False))
+                    self.emitted[b] = upto
+                self.last_decode = steps
+            break
+
+    def put(self, value):
+        self.step_times.append(time.time())
+        if self.token_cache is None:
+            self.token_cache = value
+            return
+        self.token_cache = torch.cat([self.token_cache, value[:, None]], dim=-1)
+        self._pump(final=False)
+
+    def end(self):
+        if self.token_cache is not None:
+            self._pump(final=True)
+
+
+def _payload(audio: np.ndarray, **meta) -> dict:
+    pcm = (np.clip(audio, -1, 1) * 32767).astype("<i2").tobytes()
+    return {"sr": TTS_SR, "pcm": base64.b64encode(pcm).decode("ascii"),
+            "audio_seconds": round(len(audio) / TTS_SR, 3), **meta}
+
+
+def _est_seconds(seg: str, lang: str, o: dict) -> float:
+    return max(len(seg) / CHARS_PER_SEC.get(lang, 11.0), 0.4) * o["safety"]
+
+
+def _stream_group(segs, lang, description, o, st):
+    """Generate one batch of segments; yield ("audio", seg_idx, chunk, seg_end) once safe to play."""
+    description = description or DEFAULT_DESCRIPTIONS.get(lang, GENERIC_DESCRIPTION)
+    B = len(segs)
+    d = desc_tok([description] * B, return_tensors="pt", padding=True).to(DEVICE)
+    p = tts_tok(list(segs), return_tensors="pt", padding=True).to(DEVICE)
+    streamer = _BatchStreamer(B, o["first_steps"], o["play_steps"])
+    err = []
+
+    def _run():
+        try:
+            with torch.inference_mode():
+                tts.generate(input_ids=d.input_ids, attention_mask=d.attention_mask,
+                             prompt_input_ids=p.input_ids, prompt_attention_mask=p.attention_mask,
+                             streamer=streamer)
+        except Exception as e:  # noqa: BLE001 - surfaced in the consumer
+            err.append(e)
+        finally:
+            streamer.q.put(_STOP)
+
+    t_launch = time.time()
+    th = threading.Thread(target=_run, daemon=True)
+    th.start()
+    est = [_est_seconds(s, lang, o) for s in segs]
+    before = np.concatenate([[0.0], np.cumsum(est)[:-1]])
+    held, released, finished = [], False, False
+    while not finished:
+        try:
+            item = streamer.q.get(timeout=0.03)
+        except queue.Empty:
+            item = None
+        if item is _STOP:
+            finished = True
+        elif item is not None:
+            held.append(item)
+        if not held:
+            continue
+        if not released:
+            tau = streamer.tau() or _TAU.get(B, _TAU_DEFAULT)
+            t_gen = streamer.step_times[0] if streamer.step_times else t_launch
+            # Segment k ends generating at t_gen + (a_k*F + K)*tau and ends playing at P + S_k + a_k.
+            need = max((a * FRAME_RATE + K_CODEBOOKS) * tau - s - a for a, s in zip(est, before))
+            release_at = t_gen + need + o["margin"]
+            released = finished or max(time.time(), st["play_end"]) >= release_at
+        if released:
+            for it in held:
+                yield it
+            held = []
+    th.join()
+    if err:
+        raise err[0]
+    tau = streamer.tau()
+    if tau:
+        _TAU[B] = tau if B not in _TAU else 0.5 * _TAU[B] + 0.5 * tau
+    st["groups"].append({"segments": B, "tau_ms": round(1000 * (tau or 0), 2),
+                         "steps": len(streamer.step_times)})
+
+
+def _speak_stream(text: str, lang: str, description: str, opts: dict):
+    o = {**STREAM_OPTS, **(opts or {})}
+    t0 = time.time()
+    segs = _segments(text, o["first_max"], o["max_len"])
+    st = {"play_end": 0.0, "groups": []}
+    first_at, n, generated, last_seg = None, 0, 0.0, None
+    mb = max(int(o["max_batch"]), 1)
+    for g in range(0, len(segs), mb):
+        for _, b, chunk, seg_end in _stream_group(segs[g:g + mb], lang, description, o, st):
+            if len(chunk) == 0:
+                continue
+            now = time.time()
+            dur = len(chunk) / TTS_SR
+            generated += dur
+            st["play_end"] = max(st["play_end"], now) + dur
+            n += 1
+            seg = g + b
+            meta = {"i": n, "t": round(now - t0, 3), "seg": seg, "seg_start": seg != last_seg}
+            if first_at is None:
+                first_at = now - t0
+                meta["first"] = True
+            last_seg = seg
+            yield _payload(np.asarray(chunk, dtype=np.float32), **meta)
+    total = time.time() - t0
+    yield {"done": True, "first_audio_seconds": round(first_at or total, 3), "total_seconds": round(total, 3),
+           "audio_seconds": round(generated, 3), "rtf": round(total / max(generated, 1e-6), 3), "chunks": n,
+           "segments": segs, "groups": st["groups"]}
+
+
+def _legacy_stream(text: str, lang: str, description: str):
+    """Previous implementation (one sentence at a time, batch 1); used only as a fallback."""
+    description = description or DEFAULT_DESCRIPTIONS.get(lang, GENERIC_DESCRIPTION)
+    t0, n, generated = time.time(), 0, 0.0
+    for sentence in _split_sentences(text):
+        d, p = _tokenize_tts(sentence, description, padded=False)
+        streamer = ParlerTTSStreamer(tts, device=DEVICE, play_steps=STREAM_OPTS["play_steps"])
+        th = threading.Thread(target=lambda: tts.generate(
+            input_ids=d.input_ids, attention_mask=d.attention_mask, prompt_input_ids=p.input_ids,
+            prompt_attention_mask=p.attention_mask, streamer=streamer), daemon=True)
+        th.start()
+        for chunk in streamer:
+            if chunk.shape[0] == 0:
+                break
+            generated += len(chunk) / TTS_SR
+            n += 1
+            yield _payload(np.asarray(chunk, dtype=np.float32), i=n, t=round(time.time() - t0, 3))
+        th.join()
+    total = time.time() - t0
+    yield {"done": True, "total_seconds": round(total, 3), "audio_seconds": round(generated, 3),
+           "rtf": round(total / max(generated, 1e-6), 3), "chunks": n, "fallback": True}
+
+
+def speak_stream(text: str, lang: str = "ne", description: str = ""):
+    """Yield {"sr", "pcm" (base64 int16 LE mono), ...} chunks; the last item has "done": true."""
+    if not text or not text.strip():
+        raise gr.Error("No text received.")
+    started = False
+    try:
+        for item in _speak_stream(text, lang, description, {}):
+            started = True
+            yield item
+    except Exception as e:  # noqa: BLE001 - keep the demo talking
+        if started:
+            raise
+        print(f"batched stream failed, falling back: {type(e).__name__}: {e}", flush=True)
+        yield from _legacy_stream(text, lang, description)
+
+
+def speak_stream_opts(text: str, lang: str = "ne", description: str = "", opts_json: str = "{}"):
+    """Same as /speak_stream with tunable STREAM_OPTS (JSON), for latency experiments."""
+    if not text or not text.strip():
+        raise gr.Error("No text received.")
+    yield from _speak_stream(text, lang, description, json.loads(opts_json or "{}"))
+
+
+@torch.inference_mode()
+def tts_probe(opts_json: str = "{}") -> dict:
+    """Seconds per decoding step vs batch size, plus an ASR round trip of every batched segment."""
+    o = json.loads(opts_json or "{}")
+    sizes = o.get("sizes", [1, 2, 4, 8])
+    texts = o.get("texts") or _split_sentences(BENCH_SENTENCE_NE) + [BENCH_SENTENCE_NE_Q]
+    out = {"tau_ms_by_batch": {}, "segments": []}
+    for B in sizes:
+        segs = [texts[i % len(texts)] for i in range(B)]
+        st = {"play_end": 0.0, "groups": []}
+        audio = {}
+        for _, b, chunk, _end in _stream_group(segs, "ne", "", {**STREAM_OPTS, "margin": 0.0}, st):
+            audio.setdefault(b, []).append(chunk)
+        out["tau_ms_by_batch"][B] = st["groups"][0]
+        if B == max(sizes):
+            for b, seg in enumerate(segs):
+                wav = torch.from_numpy(np.concatenate(audio.get(b, [np.zeros(1, np.float32)]))).unsqueeze(0)
+                r = _transcribe_wave(wav, TTS_SR, "ne")
+                out["segments"].append({"text": seg, "asr": r["text"], "audio_seconds": r["audio_seconds"]})
+    return out
+
+
 def speak(text: str, lang: str = "ne", description: str = ""):
     if not text or not text.strip():
         raise gr.Error("No text received.")
@@ -252,6 +597,7 @@ BENCH_SENTENCE_NE = "नमस्ते। म बयान हुँ। तप�
 
 
 BENCH_SENTENCE_EN = "Do you have any allergies to medicines?"
+BENCH_SENTENCE_NE_Q = "तपाईंलाई कुनै औषधिसँग एलर्जी छ?"
 
 
 def benchmark() -> dict:
@@ -268,12 +614,23 @@ def benchmark() -> dict:
         "model_load_seconds": LOAD_SECONDS,
         "nepali": {"input_text": BENCH_SENTENCE_NE, "tts": tts_ne, "hear": hear_ne},
         "english": {"input_text": BENCH_SENTENCE_EN, "tts": tts_en, "hear": hear_en},
+        "nepali_stream": [x for x in speak_stream(BENCH_SENTENCE_NE, "ne") if x.get("done")][0],
     }
 
 
 def langs() -> list:
     return sorted(asr.language_masks.keys())
 
+
+# Warm up CUDA kernels / allocator so the first real request is not slow (also primes _TAU).
+t = time.time()
+try:
+    for _ in _speak_stream("नमस्ते। धन्यवाद।", "ne", "", {}):
+        pass
+    _log(f"TTS warm-up done in {time.time() - t:.1f}s; tau_ms={ {k: round(v * 1000, 2) for k, v in _TAU.items()} }")
+except Exception as e:  # noqa: BLE001 - never fail boot because of the warm-up
+    _log(f"TTS warm-up failed: {type(e).__name__}: {e}")
+_log(f"ready to serve (models {LOAD_SECONDS}s)")
 
 # ---------------------------------------------------------------- UI / API
 with gr.Blocks(title="Bayan voice worker") as demo:
@@ -291,6 +648,24 @@ with gr.Blocks(title="Bayan voice worker") as demo:
         h_btn = gr.Button("Hear")
         h_out = gr.JSON()
         h_btn.click(hear, [h_audio, h_lang], h_out, api_name="hear")
+    with gr.Tab("Speak (streaming)"):
+        ss_text = gr.Textbox(label="Text", value=BENCH_SENTENCE_NE)
+        ss_lang = gr.Textbox(label="Language code", value="ne")
+        ss_desc = gr.Textbox(label="Voice description (optional)")
+        ss_btn = gr.Button("Stream")
+        ss_out = gr.JSON(label="Chunks (base64 PCM) / final stats")
+        ss_btn.click(speak_stream, [ss_text, ss_lang, ss_desc], ss_out, api_name="speak_stream")
+    with gr.Tab("Debug"):
+        x_text = gr.Textbox(label="Text", value=BENCH_SENTENCE_NE)
+        x_lang = gr.Textbox(label="Language code", value="ne")
+        x_desc = gr.Textbox(label="Voice description (optional)")
+        x_opts = gr.Textbox(label="Stream options (JSON)", value="{}")
+        x_btn = gr.Button("Stream with options")
+        x_out = gr.JSON()
+        x_btn.click(speak_stream_opts, [x_text, x_lang, x_desc, x_opts], x_out, api_name="speak_stream_opts")
+        pr_btn = gr.Button("TTS probe (step time vs batch size)")
+        pr_out = gr.JSON()
+        pr_btn.click(tts_probe, [x_opts], pr_out, api_name="tts_probe")
     with gr.Tab("Speak (TTS)"):
         s_text = gr.Textbox(label="Text", value=BENCH_SENTENCE_NE)
         s_lang = gr.Textbox(label="Language code", value="ne")
