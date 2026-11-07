@@ -275,6 +275,41 @@
   },
   "rules": [
     {
+      "id": "ALG-ASK-01",
+      "family": "allergy_history",
+      "severity": "caution",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "prescribed_meds"
+          },
+          {
+            "none_in": "allergies"
+          },
+          {
+            "none": [
+              {
+                "fact": "questions_asked",
+                "op": "contains_any",
+                "value": [
+                  "allergies"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message_en": "{rx.drug} prescribed, but the patient has not been asked about allergies. Ask before it is given.",
+      "rationale": "Taking an allergy history before prescribing is a basic medication-safety step (NICE CG183; WHO Medication Without Harm). Interpreted consultations make it easy to skip.",
+      "source_urls": [
+        "https://www.nice.org.uk/guidance/cg183",
+        "https://www.who.int/initiatives/medication-without-harm"
+      ],
+      "fire_on": "on_prescribe",
+      "verification": "label_or_guideline_checked",
+      "change_note": "Added 2026-11-07: caution card (never holds) when a medicine is prescribed before any allergy question."
+    },
+    {
       "id": "ALG-PEN-01",
       "family": "drug_allergy",
       "trigger": {
@@ -2630,7 +2665,7 @@
         ]
       },
       "severity": "caution",
-      "message_en": "The patient described '{idiom.romanized}' ({idiom.literal_en}). This idiom can mask cardiac chest pain. Consider an ECG.",
+      "message_en": "The patient said “{idiom.romanized}” ({idiom.literal_en}). This idiom can mask cardiac chest pain. Consider an ECG.",
       "rationale": "AHA/ACC 2021 says chest pain includes pressure, tightness or discomfort in the chest, shoulders, arms, neck, back, upper abdomen or jaw, and discourages the label 'atypical'. Lexicon entries such as gyastrik, gas, kabag and seene mein jalan are tagged with this risk.",
       "source_urls": [
         "https://doi.org/10.1161/CIR.0000000000001029",

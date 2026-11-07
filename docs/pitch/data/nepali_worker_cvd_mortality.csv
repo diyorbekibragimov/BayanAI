@@ -1,0 +1,10 @@
+metric,value,unit,source,year,confidence,note
+"CVD share of deaths, NMWs in Qatar, cool season",22,%,https://doi.org/10.1159/000500853,2019,high,Pradhan et al. Cardiology; 2009-2017
+"CVD share of deaths, NMWs in Qatar, hot season",58,%,https://doi.org/10.1159/000500853,2019,high,many recorded only as 'cardiac arrest'
+"CVD share of deaths, global age 25-35 benchmark",15,%,https://doi.org/10.1159/000500853,2019,high,as cited by the authors
+"average annual death rate, NMWs in Qatar",150,"per 100,000",https://doi.org/10.1159/000500853,2019,high,
+CVD deaths 2009-2017,571,deaths,https://doi.org/10.1159/000500853,2019,high,
+CVD deaths preventable with heat protection,200,deaths,https://doi.org/10.1159/000500853,2019,high,"authors' estimate; heat protection, not diagnosis"
+occupational deaths recorded 2020 (all workers),50,deaths,https://www.ilo.org/publications/one-too-many-collection-and-analysis-data-occupational-injuries-qatar,2021,high,ILO says undercount likely
+severe occupational injuries 2020,506,injuries,https://www.ilo.org/publications/one-too-many-collection-and-analysis-data-occupational-injuries-qatar,2021,high,
+mild-to-moderate occupational injuries 2020,37600,injuries,https://www.ilo.org/publications/one-too-many-collection-and-analysis-data-occupational-injuries-qatar,2021,high,

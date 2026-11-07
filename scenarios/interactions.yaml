@@ -1,0 +1,101 @@
+# Drug-drug interactions: the current medicine comes from the PATIENT (background extractor -> current_meds), the
+# new one from the doctor (synchronous prescription gate). DDI-* rule ids.
+- id: ddi-01-warfarin-diclofenac
+  title: Patient on warfarin for a heart valve; doctor prescribes diclofenac for back pain
+  patient_lang: ml
+  turns:
+    - {role: doctor, text: "What medicines do you take regularly? Any allergies?"}
+    - {role: patient, text: "അലർജി ഒന്നുമില്ല. ഹൃദയത്തിന്റെ വാൽവിന് ഞാൻ ദിവസവും വാർഫറിൻ ഗുളിക കഴിക്കുന്നുണ്ട്, 5 മില്ലിഗ്രാം."}
+    - {role: doctor, text: "For your back pain, take diclofenac 50 mg three times a day for one week."}
+    - {action: held_else}
+    - {role: doctor, text: "No diclofenac. Paracetamol 1 g four times a day, and we will check your INR."}
+  expect:
+    must_hold: [{drug: diclofenac, rule: DDI-WARF-01, turn: 2}]
+    must_not_hold: [paracetamol]
+    state: {prescribed_not: [diclofenac], prescribed_has: [paracetamol]}
+    care_plan: {meds_not: [diclofenac], meds_has: [paracetamol]}
+    pdf: {patient_meds_not: [diclofenac]}
+
+- id: ddi-02-triple-whammy-heat
+  title: Construction worker on lisinopril + hydrochlorothiazide, works in the sun; doctor adds ibuprofen
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "Any allergies, and what medicines do you take?"}
+    - {role: patient, text: "एलर्जी छैन। प्रेसरको लागि लिसिनोप्रिल र पिसाब बढी गराउने हाइड्रोक्लोरोथायजाइड चक्की बिहान खान्छु।"}
+    - {role: doctor, text: "What work do you do?"}
+    - {role: patient, text: "साइटमा ढलान गर्ने काम, दिनभरि घाममा। पानी पिउने फुर्सद नै हुँदैन, पिसाब पनि पहेँलो हुन्छ।"}
+    - {role: doctor, text: "For the knee pain, take ibuprofen 400 mg three times a day for ten days."}
+    - {action: held_else}
+    - {role: doctor, text: "Let's avoid ibuprofen. Paracetamol 1 g up to four times a day, and drink at least three litres of water on work days."}
+  expect:
+    must_hold: [{drug: ibuprofen, rule_any: [DDI-AKI-01, HEAT-MED-01], turn: 4}]
+    must_flag: [{rule: DDI-AKI-01, severity: critical}]
+    state: {patient: {heat_exposure: true}, prescribed_not: [ibuprofen]}
+    care_plan: {meds_not: [ibuprofen]}
+    pdf: {patient_meds_not: [ibuprofen]}
+
+- id: ddi-03-sertraline-tramadol
+  title: Patient on sertraline; tramadol for back pain (serotonin syndrome caution, no hold)
+  patient_lang: ru
+  turns:
+    - {role: doctor, text: "Do you take any regular medicines? Any allergies?"}
+    - {role: patient, text: "Аллергии нет. Пью сертралин 100 мг каждое утро, от депрессии, уже год."}
+    - {role: doctor, text: "For the back pain, tramadol 50 mg every six hours as needed."}
+  expect:
+    must_not_hold: [tramadol]
+    must_flag: [{rule: DDI-SERO-01, severity: caution, by_turn: 2}]
+
+- id: ddi-04-metformin-contrast
+  title: Diabetic on metformin sent for a contrast CT (no rule exists)
+  patient_lang: bn
+  expected_gap: false
+  turns:
+    - {role: doctor, text: "Do you take any medicines regularly?"}
+    - {role: patient, text: "ডায়াবেটিসের জন্য মেটফরমিন ৫০০ দিনে দুইবার খাই। কিডনির একটু সমস্যা আছে বলেছিল ডাক্তার।"}
+    - {role: doctor, text: "Your belly pain needs a CT scan of the abdomen with contrast dye in the vein today."}
+    - {role: patient, text: "ঠিক আছে ডাক্তার সাহেব।"}
+  expect:
+    must_flag:
+      - {kind_any: [missed, observation, ask], keywords: [metformin, contrast, kidney, renal, creatinine, egfr], gap: true, note: "No metformin + iodinated contrast rule (hold metformin, check eGFR). Recommend a DDI/WORK rule; the agent may still catch it."}
+
+- id: ddi-05-sildenafil-gtn
+  title: Chest pain after taking Viagra last night; doctor gives GTN spray
+  patient_lang: tr
+  turns:
+    - {role: doctor, text: "Where is the pain? Any medicines in the last two days?"}
+    - {role: patient, text: "Göğsümün ortası sıkışıyor doktor, sol koluma vuruyor. Dün gece Viagra kullandım, başka ilaç yok."}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "Yok."}
+    - {role: doctor, text: "Give him GTN spray, two puffs under the tongue now, and get a 12-lead ECG."}
+    - {action: held_else}
+    - {role: doctor, text: "No nitrates. Aspirin 300 mg chewed now, ECG and troponin, and we will admit you."}
+  expect:
+    must_hold: [{drug: glyceryl trinitrate, rule: DDI-PDE5-01, turn: 4}]
+    must_flag: [{rule: WORK-CHEST-05}]
+    must_not_flag: [{rule: WORK-CHEST-02}, {rule: WORK-CHEST-03}]
+    care_plan: {meds_not: [gtn, glyceryl, nitro]}
+
+- id: ddi-06-clopidogrel-omeprazole
+  title: Patient on clopidogrel after a stent; omeprazole for dyspepsia (caution only)
+  patient_lang: fr
+  turns:
+    - {role: doctor, text: "Which medicines do you take? Any allergies?"}
+    - {role: patient, text: "Pas d'allergie. Je prends du clopidogrel 75 mg depuis mon stent l'année dernière, et de l'aspirine."}
+    - {role: doctor, text: "For the stomach burning, take omeprazole 20 mg once a day before breakfast."}
+  expect:
+    must_not_hold: [omeprazole]
+    must_flag: [{rule: DDI-CLOP-01, severity: caution}]
+
+- id: ddi-07-simvastatin-clarithromycin
+  title: Patient on simvastatin 40 mg; clarithromycin for pneumonia (contraindicated)
+  patient_lang: es
+  turns:
+    - {role: doctor, text: "What tablets do you take every day? Any allergies?"}
+    - {role: patient, text: "No soy alérgico. Tomo simvastatina 40 por la noche para el colesterol y nada más."}
+    - {role: doctor, text: "For the chest infection, clarithromycin 500 mg twice a day for seven days."}
+    - {action: held_else}
+    - {role: doctor, text: "Then doxycycline 100 mg twice a day for seven days, first dose 200 mg."}
+  expect:
+    must_hold: [{drug: clarithromycin, rule: DDI-STATIN-01, turn: 2}]
+    must_not_hold: [doxycycline]
+    care_plan: {meds_not: [clarithromycin], meds_has: [doxycycline]}

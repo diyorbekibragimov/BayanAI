@@ -33,6 +33,27 @@ def ids(fired) -> set[str]:
     return {f["rule_id"] for f in fired}
 
 
+def no_ask(fired) -> list:
+    """Drop ALG-ASK-01 ("allergies not asked before prescribing"), which fires in any scenario without an allergy
+    question; tests about other rules ignore it."""
+    return [f for f in fired if f["rule_id"] != "ALG-ASK-01"]
+
+
+def test_alg_ask_01_allergy_question_before_prescribing(engine):
+    st = empty_state()
+    merge_delta(st, {"prescribed_meds": [{"drug": "ibuprofen", "dose_mg": 400, "frequency_per_day": 3}]})
+    assert "ALG-ASK-01" in ids(engine.evaluate(st, 1))                  # prescribed, never asked
+    asked = empty_state()
+    asked["questions_asked"] = ["allergies"]
+    merge_delta(asked, {"prescribed_meds": [{"drug": "ibuprofen", "dose_mg": 400, "frequency_per_day": 3}]})
+    assert "ALG-ASK-01" not in ids(engine.evaluate(asked, 1))           # asked: quiet
+    known = empty_state()
+    merge_delta(known, {"allergies": [{"substance": "penicillin"}],
+                        "prescribed_meds": [{"drug": "ibuprofen", "dose_mg": 400, "frequency_per_day": 3}]})
+    assert "ALG-ASK-01" not in ids(engine.evaluate(known, 1))           # an allergy is on record: quiet
+    assert next(f for f in engine.evaluate(st, 1) if f["rule_id"] == "ALG-ASK-01")["severity"] == "caution"
+
+
 def ev(turn, quote=None):
     return [{"utt": turn.id, "quote": quote or turn.english or turn.text}]
 
@@ -251,7 +272,7 @@ def test_worked_example_2_kabag_pasma_ibuprofen_ct(engine, index):
                                          "evidence": ev(dr, "Ibuprofen 800 four times a day")}],
                     "investigations": [{"code": "ct_abdomen", "status": "ordered", "evidence": ev(dr, "let's get a CT abdomen")}]})
     fired = {f["rule_id"]: f for f in engine.evaluate(c.state, 4.17)}
-    assert set(fired) == {"DOSE-IBU-01", "WORK-PREG-01"}           # documented alert list
+    assert set(fired) - {"ALG-ASK-01"} == {"DOSE-IBU-01", "WORK-PREG-01"}           # documented alert list
     assert fired["DOSE-IBU-01"]["severity"] == "caution" and "3200 mg/day" in fired["DOSE-IBU-01"]["message"]
     assert fired["WORK-PREG-01"]["severity"] == "critical" and fired["WORK-PREG-01"]["escalated"] is True
 
@@ -296,7 +317,7 @@ def test_worked_example_3_matha_gorom_heat(engine, index):
         "disposition": {"type": "home", "evidence": ev(dr, "home")},
     })
     fired = {f["rule_id"]: f for f in engine.evaluate(c.state, 3.0)}
-    assert set(fired) == {"WORK-HEAT-01", "WORK-HEAT-02", "WORK-HEAT-04", "DOSE-PARA-04", "DDI-AKI-01",
+    assert set(fired) - {"ALG-ASK-01"} == {"WORK-HEAT-01", "WORK-HEAT-02", "WORK-HEAT-04", "DOSE-PARA-04", "DDI-AKI-01",
                           "HEAT-MED-01", "WORK-HEAT-03"}
     assert fired["WORK-HEAT-04"]["severity"] == "info"
     assert fired["DOSE-PARA-04"]["severity"] == "caution" and "4000 mg/day" in fired["DOSE-PARA-04"]["message"]
@@ -346,8 +367,9 @@ def test_check_prescription_only_reports_rules_involving_the_candidate(engine):
     merge_delta(st, {"current_meds": [{"drug": "warfarin", "dose_mg": 5, "frequency_per_day": 1}],
                      "prescribed_meds": [{"drug": "ibuprofen", "dose_mg": 400, "frequency_per_day": 3}]})
     assert "DDI-WARF-01" in ids(engine.evaluate(st, 1))
-    assert engine.check_prescription(st, [{"name": "paracetamol", "dose_mg": 1000, "frequency_per_day": 3}], 1) == []
+    assert no_ask(engine.check_prescription(st, [{"name": "paracetamol", "dose_mg": 1000, "frequency_per_day": 3}], 1)) == []
     nsaid = engine.check_prescription(empty_state() | {"current_meds": st["current_meds"]}, [{"name": "Voltaren", "dose_mg": 50, "frequency_per_day": 3}], 1)
+    nsaid = no_ask(nsaid)
     assert ids(nsaid) == {"DDI-WARF-01"} and "Warfarin with diclofenac" in nsaid[0]["message"]
     # talk-loop intents: only "prescribe" counts
     assert engine.check_prescription(_allergy_state(), [{"name": "amoxicillin", "intent": "mention"},
@@ -356,7 +378,7 @@ def test_check_prescription_only_reports_rules_involving_the_candidate(engine):
 
 # ============================================================================ engine semantics
 def test_engine_loads_all_rules_and_every_node_is_evaluable(engine):
-    assert len(engine.rules) == 82
+    assert len(engine.rules) == 83
     assert engine.unevaluable == []
 
 
@@ -401,10 +423,11 @@ def test_class_list_and_dotted_facts_and_escalation(engine):
 def test_derived_dose_facts(engine):
     fired = ids(engine.check_prescription(empty_state(), [{"name": "levothyroxine", "dose_mg": 100, "frequency_per_day": 1}], 1))
     assert "DOSE-LEVO-01" in fired                                 # 100 mg = 100000 mcg: unit error
-    assert engine.check_prescription(empty_state(), [{"name": "levothyroxine", "dose_raw": "100 micrograms", "frequency_per_day": 1}], 1) == []
+    assert no_ask(engine.check_prescription(empty_state(), [{"name": "levothyroxine", "dose_raw": "100 micrograms", "frequency_per_day": 1}], 1)) == []
     assert "DOSE-COAMOX-01" in ids(engine.check_prescription(empty_state(), [{"name": "co-amoxiclav", "dose_raw": "500/125 mg", "frequency_per_day": 4}], 1))
     assert "DOSE-COAMOX-01" not in ids(engine.check_prescription(empty_state(), [{"name": "Augmentin", "dose_mg": 625, "frequency_per_day": 3}], 1))
     adr = engine.check_prescription(empty_state(), [{"name": "epinephrine", "dose_raw": "1 mg/mL 1 mg", "route": "intravenous"}], 1)
+    adr = no_ask(adr)
     assert ids(adr) == {"DOSE-ADR-01"}
     assert "DOSE-SALB-01" in ids(engine.check_prescription(empty_state(), [{"name": "Ventolin", "puffs": 2, "frequency_per_day": "every 2 hours"}], 1))
 
@@ -664,3 +687,143 @@ def test_vocab_drug_normalisation():
     assert vocab.classes_of("cefalexin") == ["cephalosporin_aminopenicillin_like_R1"]
     assert vocab.classes_of("co-amoxiclav") == ["penicillin"]
     assert vocab.classes_of("sulfa") == ["sulfonamide_antibiotic"]
+
+
+# ============================================================================ simulation-suite regressions (fix1)
+def test_repair_drug_items_mangled_brand_from_the_doctors_words():
+    # alg-01: the translator returned "augmented" for "Augmentin 625"; the doctor's own words name the brand
+    said = ["Okay. I'll give you Augmentin 625, one tablet three times a day for five days."]
+    d = vocab.repair_drug_items([{"name": "augmented", "intent": "prescribe", "dose_mg": 625}], said)
+    assert d[0]["name"] == "co-amoxiclav" and d[0]["name_llm"] == "augmented"
+    # misspelt INN: fuzzy match
+    assert vocab.repair_drug_items([{"name": "amoxicilin"}], ["ok"])[0]["name"] == "amoxicillin"
+    # a real drug the rules do not list, said as such: untouched (even with another brand in the sentence)
+    d = vocab.repair_drug_items([{"name": "nitrofurantoin", "intent": "prescribe"}],
+                                ["Take nitrofurantoin; you had Bactrim before."])
+    assert d[0]["name"] == "nitrofurantoin" and "name_llm" not in d[0]
+    # known names and brands are left alone; generics for the common Gulf / South Asian brands
+    assert vocab.repair_drug_items([{"name": "co-amoxiclav"}], ["Augmentin"])[0] == {"name": "co-amoxiclav"}
+    for brand, generic in [("Brufen", "ibuprofen"), ("Adol", "paracetamol"), ("Panadol Extra", "paracetamol"),
+                           ("Voltaren", "diclofenac"), ("Septrin", "co-trimoxazole"), ("Ventolin", "salbutamol"),
+                           ("Zithromax", "azithromycin"), ("Augmentin 625", "co-amoxiclav"), ("Tramal", "tramadol")]:
+        assert vocab.normalise_drug(brand) == generic
+    assert vocab.drugs_in_text("No Brufen then. Paracetamol 1 g.") == ["ibuprofen", "paracetamol"]
+
+
+def test_mangled_brand_still_holds_against_penicillin_allergy(engine):
+    said = ["I'll give you Augmentin 625, one tablet three times a day."]
+    drugs = vocab.repair_drug_items([{"name": "augmented", "intent": "prescribe", "dose_mg": 625,
+                                      "frequency_per_day": 3}], said)
+    fired = engine.check_prescription(_allergy_state(), drugs, 5)
+    assert [(f["rule_id"], f["severity"]) for f in fired] == [("ALG-PEN-01", "critical")]
+
+
+@pytest.mark.parametrize("text,n", [
+    ("100 mg QDS", 4), ("q.d.s.", 4), ("QID", 4), ("t.i.d", 3), ("TDS", 3), ("BD", 2), ("bid", 2), ("OD", 1),
+    ("nocte", 1), ("q4h", 6), ("q6h", 4), ("q8h", 3), ("every six hours", 4), ("4-hourly", 6),
+    ("every 4 to 6 hours", 6), ("up to 4 times a day", 4), ("one tablet three times a day", 3), ("x3/day", 3),
+    ("100 mg", None), ("take it after food", None)])
+def test_frequency_from_text_clinical_abbreviations(text, n):
+    from bayan.brain.merge import frequency_from_text
+    assert frequency_from_text(text) == (float(n) if n else None)
+
+
+def test_tramadol_qds_plus_prn_counts_toward_the_daily_ceiling(engine):
+    # dose-09: "tramadol 100 mg QDS, plus another 100 mg at night if the pain wakes you" = 500 mg/day
+    items = [{"name": "tramadol", "intent": "prescribe", "dose_mg": 100, "frequency_per_day": 4, "dose": "100 mg QDS"},
+             {"name": "tramadol", "intent": "prescribe", "dose_mg": 100, "frequency_per_day": 1,
+              "dose": "100 mg at night", "as_needed": True}]
+    fired = engine.check_prescription(empty_state(), copy.deepcopy(items), 5)
+    tram = [f for f in fired if f["rule_id"] == "DOSE-TRAM-01"]
+    assert tram and tram[0]["severity"] == "critical" and "500" in tram[0]["message"]
+    st = empty_state()
+    merge_delta(st, {"prescribed_meds": copy.deepcopy(items)})
+    (m,) = st["prescribed_meds"]
+    assert m["daily_dose_mg"] == 500 and m["frequency_per_day"] == 4 and m["dose_mg"] == 100
+    assert any("plus 100 mg at night" in i for i in m.get("instructions") or [])
+    # the corrected order (50-100 mg q6h PRN, max 400) replaces the schedule: 400 mg/day, no ceiling breach
+    merge_delta(st, {"prescribed_meds": [{"drug": "tramadol", "frequency_per_day": 4, "dose_raw": "50 to 100 mg"}]})
+    assert st["prescribed_meds"][0]["daily_dose_mg"] == 400
+    corrected = engine.check_prescription(empty_state(), [{"name": "tramadol", "frequency_per_day": 4,
+                                                           "dose": "50 to 100 mg every six hours as needed"}], 5)
+    assert "DOSE-TRAM-01" not in ids(corrected)
+    from bayan.brain.merge import parse_dose
+    assert parse_dose("50 to 100 mg") == (100.0, "mg", None) and parse_dose("500/125 mg") == (500.0, "mg", 125.0)
+    assert normalise_med({"drug": "tramadol", "dose_raw": "50-100mg", "frequency_per_day": 4})["daily_dose_mg"] == 400
+    # two strengths in one order: the daily total is the sum
+    two = engine.check_prescription(empty_state(), [
+        {"name": "tramadol", "dose_mg": 100, "frequency_per_day": 4},
+        {"name": "tramadol", "dose_mg": 50, "frequency_per_day": 3}], 5)
+    assert any(f["rule_id"] == "DOSE-TRAM-01" and "550" in f["message"] for f in two)
+
+
+def test_swelling_reaction_is_severe_and_escalates_cephalosporin(engine):
+    from bayan.brain.merge import reaction_severity
+    assert reaction_severity("my whole body swelled up, lips too") == "severe"
+    assert reaction_severity("eyes got swollen") == "severe"
+    assert reaction_severity("throat swelling, could not breathe") == "anaphylaxis"
+    assert reaction_severity("breathing difficulty") == "anaphylaxis"
+    for mild in ("rash", "hives", "itching", "rash on the arm", "spots", "stomach upset"):
+        assert reaction_severity(mild) is None
+    # alg-08: the talk loop records the allergy with severity unknown; the reaction wording makes it severe
+    st = empty_state()
+    merge_delta(st, {"allergies": [{"substance": "amoxicillin", "reaction": "body swelling, lips swollen",
+                                    "severity": "unknown"}]})
+    assert st["allergies"][0]["severity"] == "severe"
+    # a later milder label from the extractor never downgrades it
+    merge_delta(st, {"allergies": [{"substance": "amoxicillin", "severity": "moderate"}]})
+    assert st["allergies"][0]["severity"] == "severe"
+    fired = {f["rule_id"]: f for f in engine.check_prescription(st, [{"name": "cephalexin", "dose_mg": 500,
+                                                                      "frequency_per_day": 4}], 5)}
+    assert fired["ALG-PEN-02"]["severity"] == "critical"
+
+
+def _heat_turn(role, english, uid="u002", t=1.0):
+    from bayan.brain.state import Turn
+    return Turn(id=uid, t_min=t, role=role, lang="en", text=english, english=english)
+
+
+def test_heat_collapse_vomiting_fires_work_heat_01(engine):
+    # heat-01: outdoor worker, "dimaag taatyo", fell, vomited twice; no core temperature yet
+    st = empty_state()
+    ev_ = [{"utt": "u002", "t_min": 1.25, "quote": "working on the site in the sun ... vomited twice"}]
+    merge_delta(st, {"patient": {"heat_exposure": True},
+                     "symptoms": [{"code": "dizziness", "evidence": ev_}, {"code": "vomiting", "evidence": ev_}]})
+    assert "vomiting_in_heat" in {s["code"] for s in st["symptoms"]}
+    fired = {f["rule_id"]: f for f in engine.evaluate(st, 1.3)}
+    assert fired["WORK-HEAT-01"]["severity"] == "critical"
+    # no heat exposure: vomiting stays plain vomiting
+    st2 = empty_state()
+    merge_delta(st2, {"symptoms": [{"code": "vomiting", "evidence": ev_}]})
+    assert {s["code"] for s in st2["symptoms"]} == {"vomiting"}
+    # aliases the extractor may use
+    assert vocab.normalise_code("symptoms", "disoriented") == "confusion"
+    assert vocab.normalise_code("symptoms", "fainted") == "syncope"
+
+
+def test_heat_keyword_delta_dehydration_and_collapse(engine):
+    from bayan.brain import extract
+    turns = [_heat_turn("patient", "I work in the sun all day, I collapsed at the site.", "u002", 1.0),
+             _heat_turn("doctor", "You look dry. Take diclofenac 50 mg three times a day.", "u003", 2.0)]
+    kw = extract.heat_keyword_delta(turns)
+    assert kw["patient"] == {"dehydration": "moderate"} and [s["code"] for s in kw["symptoms"]] == ["collapse"]
+    # never lowers a grade the model gave
+    assert extract.add_keyword_facts({"patient": {"dehydration": "severe"}}, kw)["patient"]["dehydration"] == "severe"
+    assert extract.heat_keyword_delta([_heat_turn("doctor", "Your mouth is not dry.", "u004")]) == {}
+    # heat-02: heat exposure + doctor-judged dehydration + an NSAID -> HEAT-MED-01
+    st = empty_state()
+    merge_delta(st, extract.add_keyword_facts({"patient": {"heat_exposure": True}}, kw))
+    fired = engine.check_prescription(st, [{"name": "diclofenac", "dose_mg": 50, "frequency_per_day": 3}], 2)
+    assert "HEAT-MED-01" in ids(fired)
+
+
+def test_idiom_gloss_reads_cleanly(engine):
+    assert vocab.literal_gloss("'gastric' (English loanword)") == "gastric"
+    assert vocab.literal_gloss("my stomach (pit of the stomach) hurts") == "my stomach hurts"
+    assert vocab.literal_gloss("my brain got hot") == "my brain got hot"
+    st = empty_state()
+    ev_ = [{"utt": "u002", "t_min": 1.0, "quote": "chest burning, gyastrik"}]
+    merge_delta(st, {"idiom_hits": [{"id": "npi-005", "red_flag_tags": ["acs"], "utt": "u002", "t_min": 1.0}],
+                     "symptoms": [{"code": "chest_burning", "evidence": ev_}]})
+    msg = next(f["message"] for f in engine.evaluate(st, 1.0) if f["rule_id"] == "WORK-CHEST-04")
+    assert msg.startswith("The patient said “gyastrik” (gastric).") and "loanword" not in msg

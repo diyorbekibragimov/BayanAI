@@ -1,0 +1,9 @@
+metric,value,unit,period,source,source_year,confidence,note
+total_population,3143491,people,mid-2024,https://gulfmigration.grc.net/?p=11457,2025,high,PSA/NPC estimate
+male_population,2215203,people,mid-2024,https://gulfmigration.grc.net/?p=11457,2025,high,70.5% male
+female_population,928288,people,mid-2024,https://gulfmigration.grc.net/?p=11457,2025,high,
+total_population,3214609,people,2025-12,https://www.qatar-tribune.com/article/212590/latest-news/qatars-population-surpasses-321-million-by-end-of-2025,2026,high,NPC monthly figure
+total_population,3370611,people,2026-03,https://marhaba.qa/?p=346856,2026,low,"NPC via Marhaba; +5% in 3 months, unexplained; seasonal"
+employed_total,2239938,people,2024,https://gulfmigration.grc.net/?p=11488,2025,medium,LFS 2024 annual bulletin via GLMM
+employed_non_qatari,2112589,people,2024,https://gulfmigration.grc.net/?p=11488,2025,medium,94.3% of employed
+non_qatari_share_of_residents,0.89,share,2019-2021,https://doi.org/10.1515/multi-2020-0119,2021,low,estimate; Qatar publishes no nationality breakdown

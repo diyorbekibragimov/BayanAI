@@ -36,6 +36,7 @@ from typing import Any
 from . import agentkit, llm
 from .cards import CardStore, norm_text
 from .state import fmt_t
+from .vocab import repair_drug_items
 
 DEBOUNCE_S = float(os.environ.get("BAYAN_THINK_DEBOUNCE", "1.2"))
 # Cost: a doctor's plain question ("Does it spread to your arm?") changes no safety-relevant fact, so its
@@ -273,7 +274,21 @@ def _post_idiom_card(consult, hit: dict, turn) -> str:
 
 
 # ------------------------------------------------------------------ prescription gate (sync, no LLM)
-def _talk_med(d: dict, ev: list[dict]) -> dict:
+def _talk_freq(d: dict, quote: str) -> float | None:
+    """Deterministic frequency check on the translator's item: a frequency phrase in the dose as said ("100 mg QDS")
+    or, when the model gave none, in the doctor's words about this drug ("tramadol 100 mg QDS, ..."). Returns the
+    larger of the model's and the parsed value (dose ceilings must not be under-counted), or None."""
+    from .merge import frequency_from_text
+    from .vocab import clause_for
+    llm_f = _num(d.get("frequency_per_day"))
+    parsed = frequency_from_text(d.get("dose")) if d.get("dose") else None
+    if parsed is None and llm_f is None and quote:
+        parsed = frequency_from_text(clause_for(d.get("name") or d.get("drug") or "", quote))
+    vals = [v for v in (llm_f, parsed) if v is not None and v > 0]
+    return max(vals) if vals else None
+
+
+def _talk_med(d: dict, ev: list[dict], quote: str = "") -> dict:
     out = {"drug": (d.get("name") or d.get("drug") or "").strip().lower(), "evidence": ev, "intent": "prescribe"}
     dose_mg = _num(d.get("dose_mg"))
     if dose_mg is not None:
@@ -287,6 +302,9 @@ def _talk_med(d: dict, ev: list[dict]) -> dict:
             out[k] = d[k]
     if d.get("frequency") and "frequency_per_day" not in out:
         out["frequency"] = d["frequency"]
+    f = _talk_freq(d, quote)
+    if f is not None:
+        out["frequency_per_day"] = f
     return out
 
 
@@ -300,13 +318,16 @@ def prescription_gate(consult, drugs: list[dict], quote: str, utt: str) -> list[
         now = consult.now_min()
         turn = consult.turn_by_id(utt) if utt else None
         ev = [{"utt": utt, "t_min": turn.t_min if turn else now, "quote": quote or (turn.english if turn else "")}]
+        said = [quote or "", (turn.english if turn else "") or "", (turn.text if turn else "") or ""]
+        # brand / mangled names -> generics before the rules see them ("augmented" for "Augmentin 625")
+        drugs = repair_drug_items([dict(d) for d in drugs or [] if isinstance(d, dict)], said)
         cands, stops = [], []
         for d in drugs or []:
             if not isinstance(d, dict) or not (d.get("name") or d.get("drug")):
                 continue
             intent = str(d.get("intent") or "prescribe").strip().lower()
             if intent == "prescribe":
-                cands.append(_talk_med(d, ev))
+                cands.append(_talk_med(d, ev, quote or (turn.english if turn else "")))
             elif intent == "stop":
                 stops.append({"drug": (d.get("name") or d.get("drug")).strip().lower(), "evidence": ev})
         hits: list[dict] = []
@@ -970,7 +991,8 @@ def think_now(consult, flush: bool = False) -> dict:
                     summary["extract_error"] = err
                     if delta:
                         consult.log("tool", "update_state (keyword fallback) → "
-                                            + ", ".join("+" + x["code"] for x in delta["symptoms"]))
+                                            + ", ".join(["+" + x["code"] for x in delta.get("symptoms") or []]
+                                                      + [f"{k}={v}" for k, v in (delta.get("patient") or {}).items()]))
                 summary["extract_tokens"] = [llm.USAGE["prompt_tokens"] - u0[0],
                                              llm.USAGE["completion_tokens"] - u0[1]]
                 summary["extract_cost"] = llm.USAGE["cost_usd"] - u0[2]   # priced at the provider actually used

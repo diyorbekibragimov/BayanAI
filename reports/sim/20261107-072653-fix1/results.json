@@ -1,0 +1,6480 @@
+{
+ "meta": {
+  "run_id": "20261107-072653-fix1",
+  "models": {
+   "llm": "openai/gpt-oss-120b",
+   "llm_provider": "cerebras",
+   "agent": "openai/gpt-oss-120b",
+   "agent_provider": "cerebras",
+   "brain": "openai/gpt-oss-120b",
+   "brain_provider": "default",
+   "extract_provider": "groq"
+  },
+  "wall_s": 61.96846294403076,
+  "n": 7,
+  "git": "dda9fdc",
+  "dirty_app_files": 25,
+  "created": "2026-11-07T07:27:57"
+ },
+ "results": [
+  {
+   "id": "alg-01-augmentin-brand",
+   "title": "Penicillin rash, doctor prescribes Augmentin by brand name, then switches to azithromycin",
+   "category": "allergy",
+   "patient_lang": "ne",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 3.3,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 3.3
+     },
+     "utt": "u003",
+     "english": "Hello, I'm Dr. Sara. What brings you in today?",
+     "translation": "नमस्ते, म डा. सारा हुँ। आज तपाईंलाई के समस्या छ?",
+     "wait_s": 1.2,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.92,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.91
+     },
+     "utt": "u004",
+     "english": "Hello doctor sir. For three days my throat has been very painful, it's hard to swallow, and I have a fever that keeps coming.",
+     "translation": "",
+     "wait_s": 8.18,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.89,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.89
+     },
+     "utt": "u005",
+     "english": "Do you have any allergy to any medicine?",
+     "translation": "के तपाईंलाई कुनै औषधि प्रति एलर्जी छ?",
+     "wait_s": 1.22,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.0,
+     "talk": {
+      "drugs": [
+       {
+        "name": "penicillin",
+        "intent": "mention"
+       }
+      ],
+      "allergies": [
+       {
+        "substance": "penicillin",
+        "reaction": "rash all over my body"
+       }
+      ],
+      "tests": [],
+      "s": 1.0
+     },
+     "utt": "u006",
+     "english": "Um, before once when I took penicillin I got a rash all over my body.",
+     "translation": "",
+     "wait_s": 4.41,
+     "open_cards": [
+      "c001",
+      "c002",
+      "c003"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.85,
+     "talk": {
+      "drugs": [
+       {
+        "name": "co-amoxiclav",
+        "intent": "prescribe",
+        "dose_mg": 625,
+        "frequency_per_day": 3,
+        "dose": "625 mg"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "s": 0.85
+     },
+     "utt": "u007",
+     "english": "Okay. I'll give you Augmentin 625, one tablet three times a day for five days.",
+     "translation": "ठीक छ। म तपाईंलाई को-एमोक्सिसिलाव ६२५ मि.ग्रा. दिनमा तीन पटक पाँच दिनको लागि दिनेछु।",
+     "held": {
+      "turn": 4,
+      "rule": "ALG-PEN-01",
+      "drug": "co-amoxiclav",
+      "headline": "The patient reported a penicillin allergy. Co-amoxiclav is a penicillin.",
+      "rule_ids": [
+       "ALG-PEN-01"
+      ],
+      "drug_norm": "co-amoxiclav",
+      "resolution": "withdrawn"
+     },
+     "wait_s": 0.0,
+     "open_cards": [
+      "c004",
+      "c001",
+      "c002",
+      "c003"
+     ]
+    },
+    {
+     "i": 5,
+     "t_min": 4.25,
+     "role": null,
+     "action": "held_else",
+     "had_held": true,
+     "process_s": 0.0,
+     "wait_s": 0.0,
+     "open_cards": [
+      "c001",
+      "c002",
+      "c003"
+     ]
+    },
+    {
+     "i": 6,
+     "t_min": 5.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.99,
+     "talk": {
+      "drugs": [
+       {
+        "name": "azithromycin",
+        "intent": "prescribe",
+        "dose_mg": 500,
+        "frequency_per_day": 1,
+        "dose": "500 mg once a day"
+       },
+       {
+        "name": "paracetamol",
+        "intent": "prescribe",
+        "dose_mg": 1000,
+        "frequency_per_day": 3,
+        "dose": "1 g up to three times a day"
+       }
+      ],
+      "allergies": [
+       {
+        "substance": "penicillin",
+        "reaction": "rash"
+       }
+      ],
+      "tests": [],
+      "s": 0.98
+     },
+     "utt": "u008",
+     "english": "Instead, take azithromycin 500 mg once a day for three days, and paracetamol 1 g up to three times a day for the fever.",
+     "translation": "त्यसको सट्टा, एज़िथ्रोमाइसिन ५०० मि.ग्रा. दिनमा एक पटक तीन दिनको लागि लिऊँ, र ज्वरोको लागि पेरासिटामोल १ ग्रा. दिनमा तीन पटकसम्म लिऊँ।",
+     "wait_s": 5.38,
+     "open_cards": [
+      "c001",
+      "c002",
+      "c003"
+     ]
+    }
+   ],
+   "holds": [
+    {
+     "turn": 4,
+     "rule": "ALG-PEN-01",
+     "drug": "co-amoxiclav",
+     "headline": "The patient reported a penicillin allergy. Co-amoxiclav is a penicillin.",
+     "rule_ids": [
+      "ALG-PEN-01"
+     ],
+     "drug_norm": "co-amoxiclav",
+     "resolution": "withdrawn"
+    }
+   ],
+   "errors": [],
+   "started": "2026-11-07T07:26:56",
+   "end_visit_s": 7.98,
+   "approve_s": 0.58,
+   "screen": "sent",
+   "warnings": [
+    "Dropped from history: “Penicillin allergy causing rash all over body”: not stated by anyone in the consultation (allergy)."
+   ],
+   "review_warnings": [],
+   "wrapup_metrics": {
+    "total_s": 7.975,
+    "draft_note_s": 1.921,
+    "care_plan_s": 3.197,
+    "check_s": 0.0,
+    "render_s": 1.35,
+    "agent_s": 7.975,
+    "mode": "agent",
+    "agent_steps": 3,
+    "llm_calls": 3,
+    "note_source": "llm",
+    "note_llm_calls": 1,
+    "note_chunks": 0,
+    "care_plan_llm_s": 3.193,
+    "llm_prompt_tokens": 4656,
+    "llm_completion_tokens": 2411
+   },
+   "agentic": "agent",
+   "care_plan": {
+    "lang": "ne",
+    "medicines": [
+     {
+      "drug": "azithromycin",
+      "name": "Azithromycin",
+      "name_native": "एज़िथ्रोमाइसिन",
+      "title_en": "Azithromycin 500 mg",
+      "note_en": "Take 500 mg only when needed. No more than 1 times a day.",
+      "note_native": "आवश्यक परे मात्र 500 mg लिऊँ। दिनमा 1 पटक भन्दा बढी नलिनुहोस्।",
+      "prn": true
+     },
+     {
+      "drug": "paracetamol",
+      "name": "Paracetamol",
+      "name_native": "प्यारेसेटामोल",
+      "title_en": "Paracetamol 1 g",
+      "note_en": "Take 1 g only when needed. No more than 3 times a day.",
+      "note_native": "आवश्यक परे मात्र 1 g लिऊँ। दिनमा 3 पटक भन्दा बढी नलिनुहोस्।",
+      "prn": true
+     }
+    ],
+    "avoid": [
+     {
+      "substance": "penicillin",
+      "en": "Penicillin medicines, for example amoxicillin. You are allergic.",
+      "native": "पेनिसिलिन औषधिहरू, उदाहरणका लागि एमोक्सिसिलिन। तपाईंलाई एलर्जी छ।"
+     }
+    ],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {
+     "en": "",
+     "native": ""
+    }
+   },
+   "note_md": "# Consultation note\n\nEncounter 630736AB · 07 Nov 2026 07:26 · Patient language: Nepali · Interpreter: Bayan AI\n\n## Allergies\n\n- Penicillin: rash all over my body\n\n## Presenting complaint\n\nVery painful throat, difficulty swallowing, and fever\n\n## History\n\n- Sore throat for three days, painful and hard to swallow\n- Fever for three days, intermittent\n\n## Medication changes\n\n- Azithromycin 500 mg, up to once a day, as needed, for 3 days: started\n- Paracetamol 1 g, up to 3 times a day, as needed: started\n\n## Information given to patient\n\n- Care plan given in Nepali (QR code to the plan page and PDF).\n\n## Safety alerts\n\n- Allergy to penicillin mentioned, but the reaction or its severity was not captured.\n- Penicillin allergy reported; co-amoxiclav was then prescribed. The instruction was held.\n",
+   "pdf": {
+    "patient": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-01-augmentin-brand_patient.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 71469,
+     "pages": 1,
+     "title": "Your medicines and care instructions (Nepali)",
+     "text": "तपाईं\u0005को औषधि\u000b र हेरचाह नि\u0011र्दे\u0013शन\nYour medicines and care instructions\n07 Nov 2026\nतपाईं\u0005को औषधि\u000b\nYour medicines\nएज़ि\u0018थ्रोमाइसि\u001dन 500 mg\nAzithromycin 500 mg\nआवश्यक परे मात्र 500 mg लि\u000fऊँ। दि\u0014नमा 1 पटक भन्दा बढी नलि\u000fनुहोस्।\nTake 500 mg only when needed. No more than 1 times a day.\nप्यारेसेटामोल 1 g\nParacetamol 1 g\nआवश्यक परे मात्र 1 g लि\u000fऊँ। दि\u0014नमा 3 पटक भन्दा बढी नलि\u000fनुहोस्।\nTake 1 g only when needed. No more than 3 times a day.\nनखानुहोस्\nDo not take\nपेनि&सि(लि\u000fन औषधि,हरू, उदाहरणका लागि3 एमोक्सि6(सि(लि\u000fन। तपाईं9लाई; एलर्जी= छ।\nPenicillin medicines, for example amoxicillin. You are allergic.\nआपतकालीन अवस्थामा, 999 मा कल गर्नु45होस्।\nIn an emergency, call 999.\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansDevanagari",
+      "MPDFAA+NotoSansDevanagariBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/alg-01-augmentin-brand_patient_p1.png"
+    },
+    "doctor": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-01-augmentin-brand_doctor.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 76520,
+     "pages": 2,
+     "title": "Consultation note",
+     "text": "Bayan AI\nInterpreter & Clinical Safety Copilot\nConsultation note\nEncounter 630736AB\n07 Nov 2026, 07:26\nPatient ID\nP-630736\nAge / sex\nNot recorded\nPatient language\nNepali\nClinician language\nEnglish\nInterpretation\nBayan AI\nConsent to interpretation\nRecorded (patient\nagreed)\nEncounter start\n2026-11-07 07:26\nDuration\n5 min\nAllergies\nPenicillin: rash all over my body\nPresenting complaint\nVery painful throat, difficulty swallowing, and fever\nHistory\nSore throat for three days, painful and hard to swallow\nFever for three days, intermittent\nMedication changes\nMedicine\nDose\nRoute\nFrequency\nDuration\nStatus\nAzithromycin\n500\nmg\nUp to once a day, as\nneeded\n3 days\nStarted\nParacetamol\n1 g\nUp to 3 times a day, as\nneeded\nStarted\nInformation given to patient\nCare plan given in Nepali (QR code to the plan page and PDF).\nSafety alerts\nAllergy to penicillin mentioned, but the reaction or its severity was not captured.\nPenicillin allergy reported; co-amoxiclav was then prescribed. The instruction was held.\nReviewed by\nSignature\nDate/time\nPage 1 of 2\n\nTranscript\nTime\nSpeaker\nSaid\nInterpreted\n00:00\nInterpreter\nनमस्ते। म बयान हुँ। म तपाईं\u000e र डाक्टरको कुरा अनुवाद\nगर्छु\u001b\u001c। के तपाईं\u000e आफ्नो आवाज प्रशोधन गर्न\u001c सहमति(\nदि*नुहुन्छ?\nConsent: Hello, I am Bayan. I translate\nbetween you and the doctor. Your voice is\nprocessed to translate it and is not stored.\nDo you agree?\n00:00\nPatient\nYes\nYes (consent given on screen)\n00:30\nClinician\nHello, I'm Dr. Sara. What brings you in\ntoday?\nनमस्ते, म डा. सारा हुँ। आज तपाईं\u000eलाई\u001c के समस्या छ?\n01:15\nPatient\nनमस्ते डाक्टर साब। तीन दि*नदेखि4 घाँटी एकदमै दुखेको\nछ, नि;ल्नै गाह्रो, अनि; ज्वरो पनि; आइराख्छ।\nHello doctor sir. For three days my throat\nhas been very painful, it's hard to swallow,\nand I have a fever that keeps coming.\n02:00\nClinician\nDo you have any allergy to any medicine?\nके तपाईं\u000eलाई\u001c कुनै औषधिD प्रति( एलर्जीF छ?\n02:45\nPatient\nअँ, पहिHले एकपटक पेनि;सिJलिLन खाँदा जिNउभरिR डाबर\nआएर चिTलाएको थिVयो।\nUm, before once when I took penicillin I\ngot a rash all over my body.\n03:30\nClinician\nHeld\nOkay. I'll give you Augmentin 625, one\ntablet three times a day for five days.\nNot spoken (held by the safety check).\n05:00\nClinician\nInstead, take azithromycin 500 mg once a\nday for three days, and paracetamol 1 g\nup to three times a day for the fever.\nत्यसको सट्टा, एज़िZथ्रोमाइसिJन 500 मि_.ग्रा. दि*नमा एक\nपटक तीन दि*नको लागिb लिLऊँ, र ज्वरोको लागिb\nपेरासिJटामोल 1 ग्रा. दि*नमा तीन पटकसम्म लिLऊँ।\nPage 2 of 2\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansDevanagari",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/alg-01-augmentin-brand_doctor_p1.png"
+    }
+   },
+   "state": {
+    "allergies": [
+     {
+      "substance": "penicillin",
+      "class": [
+       "penicillin"
+      ],
+      "reaction": "rash all over my body",
+      "severity": "unknown"
+     }
+    ],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "azithromycin",
+      "dose_mg": 500,
+      "frequency_per_day": 1,
+      "daily_dose_mg": 500,
+      "dose_raw": null,
+      "as_needed": null,
+      "route": null
+     },
+     {
+      "drug": "paracetamol",
+      "dose_mg": 1000,
+      "frequency_per_day": 3,
+      "daily_dose_mg": 3000,
+      "dose_raw": null,
+      "as_needed": null,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [
+     "sore_throat",
+     "fever"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": [
+     "pain_character",
+     "allergies"
+    ]
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Airway risk not assessed",
+     "body": "Patient reports severe sore throat and difficulty swallowing (u004) but no inquiry about breathing difficulty or voice changes, a red‑flag for possible airway compromise.",
+     "ask_text": null,
+     "grounding": "u004",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c002",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "info",
+     "status": "open",
+     "title": "Allergy conflict · ALG-DOC-01",
+     "body": "Allergy to penicillin mentioned, but the reaction or its severity was not captured. Suggested question: 'What happened when you took it?'",
+     "ask_text": null,
+     "grounding": "ALG-DOC-01",
+     "rule_ids": [
+      "ALG-DOC-01"
+     ],
+     "t_min": 2.75
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about penicillin reaction details",
+     "body": "Patient reported rash with penicillin; severity and airway involvement not captured.",
+     "ask_text": "Did you have any swelling, trouble breathing, or other symptoms when you took penicillin?",
+     "grounding": "ALG-DOC-01",
+     "rule_ids": [],
+     "t_min": 2.75
+    },
+    {
+     "id": "c004",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "critical",
+     "status": "resolved",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "body": "Penicillin allergy reported (“Um, before once when I took penicillin I got a rash all over my body.”, 02:45). Co-amoxiclav is a penicillin.",
+     "ask_text": null,
+     "grounding": "ALG-PEN-01",
+     "rule_ids": [
+      "ALG-PEN-01"
+     ],
+     "t_min": 3.5
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Airway risk not assessed",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "ALG-DOC-01",
+     "action": "shown",
+     "severity": "info",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-DOC-01",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about penicillin reaction details",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c004",
+     "rule_id": "ALG-PEN-01",
+     "action": "shown",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "reason": null,
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c004",
+     "rule_id": "ALG-PEN-01",
+     "action": "acknowledge",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "reason": "sentence withdrawn by the clinician (said something else)",
+     "t_min": 4.25
+    },
+    {
+     "card_id": "c004",
+     "rule_id": "ALG-PEN-01",
+     "action": "resolved",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "reason": "rule no longer fires",
+     "t_min": 4.25
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state → +fever, +sore_throat, asked:pain_character",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 agent: copilot step 1 error: Error while parsing tool call from model output: Message contains no content and no tool calls",
+    "1.25 card: + caution observation card c001: Airway risk not assessed [u004]",
+    "1.25 tool: final_answer([observation 'Airway risk not assessed']) → c001",
+    "1.25 agent: copilot: 2 step(s), 1 tool call(s), 3.1s, 3535/1095 tok ($0.0021)",
+    "2.00 tool: update_state deferred: u005 (question, batched with the answer)",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 agent: copilot skipped: nothing new in u005",
+    "2.75 tool: update_state (talk loop) → +allergy penicillin (rash all over my body, unknown)",
+    "2.75 tool: update_state → asked:allergies",
+    "2.75 tool: check_safety_rules → ALG-DOC-01",
+    "2.75 card: + info safety card c002: Allergy conflict · ALG-DOC-01 [ALG-DOC-01]",
+    "2.75 card: + info ask card c003: Ask about penicillin reaction details [ALG-DOC-01]",
+    "2.75 tool: final_answer([ask 'Ask about penicillin reaction details']) → c003",
+    "2.75 agent: copilot: 1 step(s), 1 tool call(s), 1.2s, 1894/741 tok ($0.0012)",
+    "3.50 tool: update_state (prescription gate) → +rx co-amoxiclav 625 mg x3/day",
+    "3.50 card: + critical safety card c004: Allergy conflict · ALG-PEN-01 [ALG-PEN-01]",
+    "3.50 tool: check_prescription(co-amoxiclav) → ALG-PEN-01 · HOLD",
+    "4.25 card: doctor acknowledge c004: Allergy conflict · ALG-PEN-01 (sentence withdrawn by the clinician (said something else))",
+    "4.25 card: ✓ resolved c004: Allergy conflict · ALG-PEN-01",
+    "4.25 tool: withdraw u007 (sentence withdrawn by the clinician (said something else)) → -rx co-amoxiclav",
+    "5.00 tool: update_state (prescription gate) → +rx azithromycin 500 mg x1/day, +rx paracetamol 1000 mg x3/day",
+    "5.00 tool: check_prescription(azithromycin, paracetamol) → no on_prescribe rule fires",
+    "5.00 tool: update_state → no new facts",
+    "5.00 tool: check_safety_rules → ALG-DOC-01",
+    "5.00 tool: final_answer([observation 'Airway risk not assessed']) → duplicate",
+    "5.00 agent: copilot: 1 step(s), 1 tool call(s), 1.6s, 1973/899 tok ($0.0014)",
+    "6.00 tool: note_llm → 3 items (llm)",
+    "6.00 tool: draft_note → 31 lines",
+    "6.00 tool: care_plan_llm → 4 keys in 2.1s",
+    "6.00 tool: care_plan_llm retry → 0 missing line(s) requested",
+    "6.00 tool: build_care_plan → 2 medicine(s), 1 avoid, 0 red flag(s), 0 excluded",
+    "6.00 tool: check_care_plan → ok",
+    "6.00 tool: draft_outputs() → note drafted (llm): 4 sections, 31 lines; care plan: medicines Azithr…",
+    "6.00 tool: render_outputs → doctor_pdf, patient_pdf",
+    "6.00 tool: render_outputs() → rendered: doctor_pdf, patient_pdf, wa_link, sms_link; 0 warning(s).",
+    "6.00 agent: wrap-up agent: 3 step(s), 2 tool call(s), 8.0s, 1167/255 tok ($0.0006)",
+    "6.00 agent: wrap-up agent: ok=True steps=3",
+    "6.00 system: wrap-up done (agent) in 8.0s: 1 warning(s)"
+   ],
+   "stats": {
+    "runs": 5,
+    "latency_s": [
+     0.0,
+     6.97,
+     0.0,
+     3.19,
+     4.16
+    ],
+    "extract_tokens": [
+     11512,
+     1920
+    ],
+    "agent_tokens": [
+     7402,
+     2735
+    ],
+    "cost_usd": 0.01011115
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 6.97,
+     "extract_s": 3.78,
+     "agent_s": 3.12,
+     "agent_steps": 2,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 7276,
+     "output_tokens": 1868,
+     "extract_tokens": [
+      3741,
+      773
+     ],
+     "agent_tokens": [
+      3535,
+      1095
+     ],
+     "cost_usd": 0.003199
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 3.19,
+     "extract_s": 2.01,
+     "agent_s": 1.17,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5743,
+     "output_tokens": 1124,
+     "extract_tokens": [
+      3849,
+      383
+     ],
+     "agent_tokens": [
+      1894,
+      741
+     ],
+     "cost_usd": 0.002083
+    },
+    {
+     "t_min": 5.0,
+     "kind": "think",
+     "turns": [
+      "u008"
+     ],
+     "latency_s": 4.16,
+     "extract_s": 2.58,
+     "agent_s": 1.57,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5895,
+     "output_tokens": 1663,
+     "extract_tokens": [
+      3922,
+      764
+     ],
+     "agent_tokens": [
+      1973,
+      899
+     ],
+     "cost_usd": 0.002526
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794025629.938493,
+     "latency_s": 9.09,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Airway risk not assessed",
+     "severity": "caution"
+    },
+    "c002": {
+     "turn": 3,
+     "wall": 1794025636.2882109,
+     "latency_s": 4.24,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Allergy conflict · ALG-DOC-01",
+     "severity": "info"
+    },
+    "c003": {
+     "turn": 3,
+     "wall": 1794025637.461045,
+     "latency_s": 5.41,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about penicillin reaction details",
+     "severity": "info"
+    },
+    "c004": {
+     "turn": 4,
+     "wall": 1794025638.309246,
+     "latency_s": 0.85,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "severity": "critical"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 9.09,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Airway risk not assessed"
+    },
+    {
+     "card": "c002",
+     "turn": 3,
+     "latency_s": 4.24,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [
+      "ALG-DOC-01"
+     ],
+     "title": "Allergy conflict · ALG-DOC-01"
+    },
+    {
+     "card": "c003",
+     "turn": 3,
+     "latency_s": 5.41,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about penicillin reaction details"
+    },
+    {
+     "card": "c004",
+     "turn": 4,
+     "latency_s": 0.85,
+     "status": "open",
+     "severity": "critical",
+     "rule_ids": [
+      "ALG-PEN-01"
+     ],
+     "title": "Allergy conflict · ALG-PEN-01"
+    },
+    {
+     "card": "c004",
+     "turn": 5,
+     "latency_s": 0.0,
+     "status": "resolved",
+     "severity": "critical",
+     "rule_ids": [
+      "ALG-PEN-01"
+     ],
+     "title": "Allergy conflict · ALG-PEN-01"
+    }
+   ],
+   "rules_seen": {
+    "ALG-DOC-01": {
+     "turn": 3,
+     "latency_s": 4.24,
+     "card": "c002",
+     "severity": "info",
+     "family": "drug_allergy",
+     "message": "Allergy to penicillin mentioned, but the reaction or its severity was not captured. Suggested question: 'What happened when you took it?'"
+    },
+    "ALG-PEN-01": {
+     "turn": 4,
+     "latency_s": 0.85,
+     "card": "c004",
+     "severity": "critical",
+     "family": "drug_allergy",
+     "message": "Penicillin allergy reported (“Um, before once when I took penicillin I got a rash all over my body.”, 02:45). Co-amoxiclav is a penicillin."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      10580,
+      3175,
+      9
+     ],
+     "openai/gpt-oss-120b|groq": [
+      11512,
+      1920,
+      3
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      7402,
+      2735,
+      3,
+      5.858990907669067,
+      0
+     ],
+     "wrap-up agent": [
+      1167,
+      255,
+      1,
+      7.974820137023926,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.00925,
+    "cost_agent_usd": 0.00524,
+    "cost_usd": 0.01449,
+    "llm_usage_delta": {
+     "calls": 19,
+     "prompt_tokens": 30661,
+     "completion_tokens": 8085
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 37.0,
+   "checks": [
+    {
+     "type": "hold",
+     "desc": "held: co-amoxiclav ALG-PEN-01 at turn 4",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "t4 co-amoxiclav ALG-PEN-01 ['ALG-PEN-01']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_hold",
+     "desc": "not held: azithromycin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_hold",
+     "desc": "not held: paracetamol",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "flag",
+     "desc": "ALG-PEN-01 severity=critical by turn 4",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "ALG-DOC-01@t3 info; ALG-PEN-01@t4 critical",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT ALG-ASK-01",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "prescribed includes azithromycin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "prescribed=['azithromycin', 'paracetamol']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "prescribed includes paracetamol",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "prescribed=['azithromycin', 'paracetamol']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "prescribed excludes co-amoxiclav",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "prescribed=['azithromycin', 'paracetamol']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "allergy recorded: penicillin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "allergies=penicillin ['penicillin']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "care plan lists azithromycin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "medicines: azithromycin azithromycin azithromycin 500 mg paracetamol paracetamol paracetamol 1 g",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "care plan does NOT list augmentin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "medicines: azithromycin azithromycin azithromycin 500 mg paracetamol paracetamol paracetamol 1 g",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "care plan does NOT list co-amoxiclav",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "medicines: azithromycin azithromycin azithromycin 500 mg paracetamol paracetamol paracetamol 1 g",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "care plan does NOT list amoxicillin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "medicines: azithromycin azithromycin azithromycin 500 mg paracetamol paracetamol paracetamol 1 g",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "'Do not take' mentions penicillin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "avoid: penicillin medicines, for example amoxicillin. you are allergic.",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-01-augmentin-brand_patient.pdf pages=1 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-01-augmentin-brand_doctor.pdf pages=2 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "every character sent to the PDFs has a glyph in a bundled font",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has devanagari text",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "250 devanagari chars",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient sheet labels exist for ne",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title label = 'तपाईंको औषधि र हेरचाह निर्देशन'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF title names the language",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title='Your medicines and care instructions (Nepali)'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF medicines section omits augmentin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "Your medicines and care instructions 07 Nov 2026 तपाईं\u0005को औषधि\u000b Your medicines एज़ि\u0018थ्रोमाइसि\u001dन 500 mg Azithromycin 500 mg आवश्यक परे मात्र 500 mg लि\u000fऊँ। दि\u0014नमा 1 पटक भन्दा बढी नलि\u000fनुहोस्। Take 500 mg only when needed. No more than 1 times a day. प्यारेसेटामोल 1 g Paracetamol 1 g आवश्यक परे मात्र 1 ",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF medicines section omits co-amoxiclav",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "Your medicines and care instructions 07 Nov 2026 तपाईं\u0005को औषधि\u000b Your medicines एज़ि\u0018थ्रोमाइसि\u001dन 500 mg Azithromycin 500 mg आवश्यक परे मात्र 500 mg लि\u000fऊँ। दि\u0014नमा 1 पटक भन्दा बढी नलि\u000fनुहोस्। Take 500 mg only when needed. No more than 1 times a day. प्यारेसेटामोल 1 g Paracetamol 1 g आवश्यक परे मात्र 1 ",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF medicines section omits amoxicillin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "Your medicines and care instructions 07 Nov 2026 तपाईं\u0005को औषधि\u000b Your medicines एज़ि\u0018थ्रोमाइसि\u001dन 500 mg Azithromycin 500 mg आवश्यक परे मात्र 500 mg लि\u000fऊँ। दि\u0014नमा 1 पटक भन्दा बढी नलि\u000fनुहोस्। Take 500 mg only when needed. No more than 1 times a day. प्यारेसेटामोल 1 g Paracetamol 1 g आवश्यक परे मात्र 1 ",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF names the patient language (Nepali)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF records the held instruction",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has a Safety alerts section",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF contains 'penicillin'",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "wrap-up reached the review/sent screen",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "screen=sent agentic=agent",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "alg-03-sulfa-furosemide-trap",
+   "title": "Sulfa-antibiotic allergy, furosemide prescribed (non-antibiotic sulfonamide, info only, must not hold)",
+   "category": "allergy",
+   "patient_lang": "ur",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.8,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.8
+     },
+     "utt": "u003",
+     "english": "Your legs are swollen. Any allergies to medicines?",
+     "translation": "آپ کے پیر سوجے ہوئے ہیں۔ کیا آپ کو دوائیوں سے کوئی الرجی ہے؟",
+     "wait_s": 1.23,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.0,
+     "talk": {
+      "drugs": [
+       {
+        "name": "sulfonamide",
+        "intent": "mention"
+       }
+      ],
+      "allergies": [
+       {
+        "substance": "sulfonamide",
+        "reaction": "itching and rash"
+       }
+      ],
+      "tests": [],
+      "s": 0.99
+     },
+     "utt": "u004",
+     "english": "Yes, I got itching and rash from the sulfa antibiotic.",
+     "translation": "",
+     "wait_s": 7.83,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.87,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.87
+     },
+     "utt": "u005",
+     "english": "Okay. Do you have shortness of breath when lying flat?",
+     "translation": "ٹھیک ہے۔ کیا آپ کو لیٹتے وقت سانس لینے میں دشواری ہوتی ہے؟",
+     "wait_s": 1.21,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.8,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.79
+     },
+     "utt": "u006",
+     "english": "No doctor, only my feet stay swollen, especially in the evening.",
+     "translation": "",
+     "wait_s": 7.3,
+     "open_cards": [
+      "c002",
+      "c001"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 1.02,
+     "talk": {
+      "drugs": [
+       {
+        "name": "furosemide",
+        "intent": "prescribe",
+        "dose_mg": 40,
+        "frequency_per_day": 1,
+        "dose": "40 mg"
+       }
+      ],
+      "allergies": [
+       {
+        "substance": "sulfa",
+        "reaction": "itching and rash"
+       }
+      ],
+      "tests": [
+       "kidney function test",
+       "potassium level"
+      ],
+      "s": 1.02
+     },
+     "utt": "u007",
+     "english": "I'll give you furosemide 40 mg once every morning, and we will check your kidney function and potassium.",
+     "translation": "میں آپ کو فیوروسیمائڈ 40 ملی گرام صبح کے وقت ایک بار دوں گا، اور ہم آپ کی گردے کی کارکردگی اور پوٹاشیم کی جانچ کریں گے۔",
+     "wait_s": 5.27,
+     "open_cards": [
+      "c003",
+      "c004",
+      "c002",
+      "c001"
+     ]
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T07:26:56",
+   "end_visit_s": 7.75,
+   "approve_s": 0.54,
+   "screen": "sent",
+   "warnings": [
+    "Dropped from history: “Allergy to sulfonamide antibiotic causing itching and rash”: not stated by anyone in the consultation (Allergy)."
+   ],
+   "review_warnings": [],
+   "wrapup_metrics": {
+    "total_s": 7.742,
+    "draft_note_s": 1.951,
+    "care_plan_s": 3.113,
+    "check_s": 0.0,
+    "render_s": 1.359,
+    "agent_s": 7.742,
+    "mode": "agent",
+    "agent_steps": 3,
+    "llm_calls": 3,
+    "note_source": "llm",
+    "note_llm_calls": 1,
+    "note_chunks": 0,
+    "care_plan_llm_s": 3.11,
+    "llm_prompt_tokens": 4378,
+    "llm_completion_tokens": 2429
+   },
+   "agentic": "agent",
+   "care_plan": {
+    "lang": "ur",
+    "medicines": [
+     {
+      "drug": "furosemide",
+      "name": "Furosemide",
+      "name_native": "فیوروسیمائڈ",
+      "title_en": "Furosemide 40 mg",
+      "note_en": "Take 40 mg every morning.",
+      "note_native": "ہر صبح 40 mg لیں۔",
+      "prn": false
+     }
+    ],
+    "avoid": [
+     {
+      "substance": "sulfonamide",
+      "en": "Sulfonamide medicines, for example co-trimoxazole. You are allergic.",
+      "native": "سلفونامائڈ ادویات، مثال کے طور پر کو-ٹریموکسازول۔ آپ کو الرجی ہے۔"
+     }
+    ],
+    "red_flags": [],
+    "advice": [
+     {
+      "en": "We will check your kidney function and potassium.",
+      "native": "ہم آپ کے گردے کے فنکشن اور پوٹاشیم کی جانچ کریں گے۔"
+     }
+    ],
+    "follow_up": {
+     "en": "",
+     "native": ""
+    }
+   },
+   "note_md": "# Consultation note\n\nEncounter BF5255CA · 07 Nov 2026 07:26 · Patient language: Urdu · Interpreter: Bayan AI\n\n## Allergies\n\n- Sulfonamide: itching and rash\n\n## Presenting complaint\n\nLeg swelling\n\n## History\n\n- Swollen feet, especially in the evening\n\n## Observations and investigations\n\n- Creatinine: Pending\n- Electrolytes: Pending\n\n## Plan\n\n- Check kidney function and potassium\n\n## Medication changes\n\n- Furosemide 40 mg, once a day: started\n\n## Information given to patient\n\n- Care plan given in Urdu (QR code to the plan page and PDF).\n\n## Safety alerts\n\n- Allergy to sulfonamide mentioned, but the reaction or its severity was not captured.\n- Drug allergy reported; furosemide was then prescribed.\n",
+   "pdf": {
+    "patient": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-03-sulfa-furosemide-trap_patient.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 72876,
+     "pages": 1,
+     "title": "Your medicines and care instructions (Urdu)",
+     "text": "\u0019آ\u0002پ کی دوا\u000eئ\u0015یں اور د\u0005یکھ \u000eبھال کی ہدا\u0005یا\u0002ت\nYour medicines and care instructions\n07 Nov 2026\n\u0019آ\u0002پ کی دوا\u000eئ\u0015یں\nYour medicines\nmg 40 #ف\u0015یوروس\u0015یما\u000eئ\u001dڈFurosemide 40 mg\n ل\u0004یں۔mg 40 ہر ص\nبح\nTake 40 mg every morning.\nرو)زا\u000eنہ کا %ش \u0015ی\u001dڈول\nDaily schedule\n\u000eنا%ش \u0015تہ\nBreakfast\nدوا\nMedicine\n40 mg#ف\u0015یوروس\u0015یما\u000eئ\u001dڈ\nFurosemide\n\u000eنہ ل\u0015یں\nDo not take\n!ٹر!یموکسا\u001cزول۔ \u0018آ\u0016پ کو الر\u0011ج ی ہے۔-سل0فو-ناما-ئ+ڈ ادو!یا\u0016ت ، م\u0004ثال کے طور !پر کو\nSulfonamide medicines, for example co-trimoxazole. You are allergic.\nد\u0005ی-گر ہدا\u0005یا\u0002ت\nOther instructions\nہم \u0018آ\u0016پ کے 4گردے کے =ف\nنک;ش :ن اور !پو!ٹا9ش \u0004یم کی \u0011ج ا-ن6چ کر!یں 4گے۔\nWe will check your kidney function and potassium.\n \u0005پر کال کر\u0005یں۔999 ا\u0005یمر5ج 3نسی کی صور\u0002ت م\u0015یں\nIn an emergency, call 999.\n",
+     "fonts": [
+      "MPDFAA+NotoNaskhArabic",
+      "MPDFAA+NotoNaskhArabicBold",
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/alg-03-sulfa-furosemide-trap_patient_p1.png"
+    },
+    "doctor": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-03-sulfa-furosemide-trap_doctor.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 77923,
+     "pages": 2,
+     "title": "Consultation note",
+     "text": "Bayan AI\nInterpreter & Clinical Safety Copilot\nConsultation note\nEncounter BF5255CA\n07 Nov 2026, 07:26\nPatient ID\nP-BF5255\nAge / sex\nNot recorded\nPatient language\nUrdu\nClinician language\nEnglish\nInterpretation\nBayan AI\nConsent to interpretation\nRecorded (patient\nagreed)\nEncounter start\n2026-11-07 07:26\nDuration\n4 min\nAllergies\nSulfonamide: itching and rash\nPresenting complaint\nLeg swelling\nHistory\nSwollen feet, especially in the evening\nObservations and investigations\nTest\nStatus\nResult (as stated by clinician)\nCreatinine\nOrdered\nPending\nElectrolytes\nOrdered\nPending\nPlan\nCheck kidney function and potassium\nMedication changes\nMedicine\nDose\nRoute\nFrequency\nDuration\nStatus\nFurosemide\n40 mg\nOnce a day\nStarted\nInformation given to patient\nCare plan given in Urdu (QR code to the plan page and PDF).\nSafety alerts\nAllergy to sulfonamide mentioned, but the reaction or its severity was not captured.\nDrug allergy reported; furosemide was then prescribed.\nReviewed by\nSignature\nDate/time\nPage 1 of 2\n\nTranscript\nTime\nSpeaker\nSaid\nInterpreted\n00:00\nInterpreterہ\fیلو، م\fیں \"با\u0007یا\tن ہوں۔ م\fیں \u001aآ\u0018پ اور \u0015ڈاک\fٹر کے درم\fیا\tن \u0007تر\u0004ج مہ\nکر\u0007تی ہوں۔ \u001aآ\u0018پ کی \u001aآوا)ز کو \u0007تر\u0004ج مہ کے ل\fیے \u0007پروس\fیس ک\fیا\n\u0004ج ا\u0007تا ہے اور مح/فو2ظ \"نہ\fیں کی \u0004ج ا\u0007تی۔ ک\fیا \u001aآ\u0018پ م\fت/ف-ق ہ\fیں؟\nConsent: Hello, I am Bayan. I translate\nbetween you and the doctor. Your voice is\nprocessed to translate it and is not stored.\nDo you agree?\n00:00\nPatient\nYes\nYes (consent given on screen)\n00:30\nClinician\nYour legs are swollen. Any allergies to\nmedicines?\n\u001aآ\u0018پ کے \u0007پ\fیر سو\u0004ج ے ہو\"ئے ہ\fیں۔ ک\fیا \u001aآ\u0018پ کو دوا\"ئ\fیوں سے کو\"ئی\nالر\u0004ج ی ہے؟\n01:15\nPatient\u0004ج ی، سل/فا والی ا\u0007ی;ن\fٹی \"با\"ئ\fیو\u0007ٹک سے م9ج ھے \u0004خ ار6ش اور دا\"نے\n\"نکل \u001aآ\"ئے \u0007تھے۔\nYes, I got itching and rash from the sulfa\nantibiotic.\n02:00\nClinician\nOkay. Do you have shortness of breath\nwhen lying flat?\n\u0007ٹھ\fیک ہے۔ ک\fیا \u001aآ\u0018پ کو ل\fی\fٹ\fتے وAق@ت سا\"نس ل\fی;نے م\fیں د?ش واری\nہو\u0007تی ہے؟\n02:45\nPatient\"نہ\fیں \u0015ڈاک\fٹر صاح@ب ، \"بس \u0007پاDؤ ں سو\u0004ج ے رہ\fتے ہ\fیں، ?ش ام کو\n)ز\u0007یادہ۔\nNo doctor, only my feet stay swollen,\nespecially in the evening.\n03:30\nClinician\nI'll give you furosemide 40 mg once every\nmorning, and we will check your kidney\nfunction and potassium.\n ملی Jگرام ص;بح کے وAق@ت ا\u0007یک40 م\fیں \u001aآ\u0018پ کو Aف\fیوروس\fیما\"ئMڈ\n\"بار دوں Jگا، اور ہم \u001aآ\u0018پ کی Jگردے کی کارکردJگی اور\n\u0007پو\u0007ٹا?ش \fیم کی \u0004ج ا\"نQچ کر\u0007یں Jگے۔\nPage 2 of 2\n",
+     "fonts": [
+      "MPDFAA+NotoNaskhArabic",
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/alg-03-sulfa-furosemide-trap_doctor_p1.png"
+    }
+   },
+   "state": {
+    "allergies": [
+     {
+      "substance": "sulfonamide",
+      "class": [
+       "sulfonamide_antibiotic"
+      ],
+      "reaction": "itching and rash",
+      "severity": "unknown"
+     }
+    ],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "furosemide",
+      "dose_mg": 40,
+      "frequency_per_day": 1,
+      "daily_dose_mg": 40,
+      "dose_raw": null,
+      "as_needed": null,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [
+     "body_swelling"
+    ],
+    "investigations": [
+     "creatinine:ordered",
+     "electrolytes:ordered"
+    ],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": [
+     "allergies",
+     "sweating_breathlessness"
+    ]
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "info",
+     "status": "open",
+     "title": "Allergy conflict · ALG-DOC-01",
+     "body": "Allergy to sulfonamide mentioned, but the reaction or its severity was not captured. Suggested question: 'What happened when you took it?'",
+     "ask_text": null,
+     "grounding": "ALG-DOC-01",
+     "rule_ids": [
+      "ALG-DOC-01"
+     ],
+     "t_min": 1.25
+    },
+    {
+     "id": "c002",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about antibiotic reaction",
+     "body": "Need details of itching and rash severity after sulfa antibiotic.",
+     "ask_text": "What happened when you took the sulfa antibiotic?",
+     "grounding": "ALG-DOC-01",
+     "rule_ids": [],
+     "t_min": 2.75
+    },
+    {
+     "id": "c003",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "info",
+     "status": "open",
+     "title": "Allergy conflict · ALG-SULFA-02",
+     "body": "Sulfa-antibiotic allergy reported. Furosemide is a non-antibiotic sulfonamide; evidence shows no specific cross-reactivity.",
+     "ask_text": null,
+     "grounding": "ALG-SULFA-02",
+     "rule_ids": [
+      "ALG-SULFA-02"
+     ],
+     "t_min": 3.5
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about reaction severity",
+     "body": "Patient reported rash from sulfa antibiotic but severity details (e.g., swelling, breathing difficulty) were not captured.",
+     "ask_text": "Did you have any swelling, trouble breathing, or other serious symptoms when you took the antibiotic?",
+     "grounding": "ALG-DOC-01",
+     "rule_ids": [],
+     "t_min": 3.5
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": "ALG-DOC-01",
+     "action": "shown",
+     "severity": "info",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-DOC-01",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": null,
+     "rule_id": null,
+     "action": "rejected",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about leg pain/redness",
+     "reason": "grounding 'u006' not found (use a fired rule id, an idiom id, an open checklist id)",
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about antibiotic reaction",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c003",
+     "rule_id": "ALG-SULFA-02",
+     "action": "shown",
+     "severity": "info",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-SULFA-02",
+     "reason": null,
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about reaction severity",
+     "reason": null,
+     "t_min": 3.5
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state (talk loop) → +allergy sulfonamide (itching and rash, unknown)",
+    "1.25 tool: update_state → +body_swelling, asked:allergies",
+    "1.25 tool: check_safety_rules → ALG-DOC-01",
+    "1.25 card: + info safety card c001: Allergy conflict · ALG-DOC-01 [ALG-DOC-01]",
+    "1.25 tool: final_answer([]) → no cards",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 2.1s, 1764/855 tok ($0.0013)",
+    "2.00 tool: update_state deferred: u005 (question, batched with the answer)",
+    "2.00 tool: check_safety_rules → ALG-DOC-01",
+    "2.00 agent: copilot skipped: nothing new in u005",
+    "2.75 tool: update_state → asked:sweating_breathlessness",
+    "2.75 tool: check_safety_rules → ALG-DOC-01",
+    "2.75 card: ✗ rejected ask card 'Ask about leg pain/redness': grounding 'u006' not found (use a fired rule id, an idiom id, an open checklist id)",
+    "2.75 agent: copilot step 1 error: final_answer: Fix and call final_answer again with only the corrected cards: card 1: grounding 'u006' not found (use a fired rule id, an idiom id, an open checklist id)",
+    "2.75 agent: copilot step 2 error: Error while parsing tool call from model output: Message contains no content and no tool calls",
+    "2.75 card: + info ask card c002: Ask about antibiotic reaction [ALG-DOC-01]",
+    "2.75 tool: final_answer([ask 'Ask about antibiotic reaction']) → c002",
+    "2.75 agent: copilot: 3 step(s), 1 tool call(s), 3.3s, 5921/1691 tok ($0.0033)",
+    "3.50 tool: update_state (prescription gate) → +rx furosemide 40 mg x1/day",
+    "3.50 card: + info safety card c003: Allergy conflict · ALG-SULFA-02 [ALG-SULFA-02]",
+    "3.50 tool: check_prescription(furosemide) → ALG-SULFA-02",
+    "3.50 tool: update_state → creatinine ordered, electrolytes ordered",
+    "3.50 tool: check_safety_rules → ALG-SULFA-02, ALG-DOC-01",
+    "3.50 card: + info ask card c004: Ask about reaction severity [ALG-DOC-01]",
+    "3.50 tool: final_answer([ask 'Ask about reaction severity']) → c004",
+    "3.50 agent: copilot: 1 step(s), 1 tool call(s), 1.2s, 1967/588 tok ($0.0011)",
+    "4.50 tool: care_plan_llm → 4 keys in 1.9s",
+    "4.50 tool: note_llm → 3 items (llm)",
+    "4.50 tool: draft_note → 38 lines",
+    "4.50 tool: care_plan_llm retry → 1 missing line(s) requested",
+    "4.50 tool: build_care_plan → 1 medicine(s), 1 avoid, 0 red flag(s), 0 excluded",
+    "4.50 tool: check_care_plan → ok",
+    "4.50 tool: draft_outputs() → note drafted (llm): 4 sections, 38 lines; care plan: medicines Furose…",
+    "4.50 tool: render_outputs → doctor_pdf, patient_pdf",
+    "4.50 tool: render_outputs() → rendered: doctor_pdf, patient_pdf, wa_link, sms_link; 0 warning(s).",
+    "4.50 agent: wrap-up agent: 3 step(s), 2 tool call(s), 7.7s, 1157/237 tok ($0.0006)",
+    "4.50 agent: wrap-up agent: ok=True steps=3",
+    "4.50 system: wrap-up done (agent) in 7.7s: 1 warning(s)"
+   ],
+   "stats": {
+    "runs": 5,
+    "latency_s": [
+     0.0,
+     6.62,
+     0.0,
+     6.08,
+     4.06
+    ],
+    "extract_tokens": [
+     11375,
+     2396
+    ],
+    "agent_tokens": [
+     9652,
+     3134
+    ],
+    "cost_usd": 0.01150695
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 6.62,
+     "extract_s": 4.44,
+     "agent_s": 2.11,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5482,
+     "output_tokens": 1770,
+     "extract_tokens": [
+      3718,
+      915
+     ],
+     "agent_tokens": [
+      1764,
+      855
+     ],
+     "cost_usd": 0.002503
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 6.08,
+     "extract_s": 2.74,
+     "agent_s": 3.32,
+     "agent_steps": 3,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 9721,
+     "output_tokens": 2423,
+     "extract_tokens": [
+      3800,
+      732
+     ],
+     "agent_tokens": [
+      5921,
+      1691
+     ],
+     "cost_usd": 0.00446
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 4.06,
+     "extract_s": 2.89,
+     "agent_s": 1.16,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5824,
+     "output_tokens": 1337,
+     "extract_tokens": [
+      3857,
+      749
+     ],
+     "agent_tokens": [
+      1967,
+      588
+     ],
+     "cost_usd": 0.00227
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794025628.220504,
+     "latency_s": 6.67,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Allergy conflict · ALG-DOC-01",
+     "severity": "info"
+    },
+    "c002": {
+     "turn": 3,
+     "wall": 1794025640.5633678,
+     "latency_s": 8.1,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about antibiotic reaction",
+     "severity": "info"
+    },
+    "c003": {
+     "turn": 4,
+     "wall": 1794025641.62875,
+     "latency_s": 1.07,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Allergy conflict · ALG-SULFA-02",
+     "severity": "info"
+    },
+    "c004": {
+     "turn": 4,
+     "wall": 1794025646.86061,
+     "latency_s": 6.3,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about reaction severity",
+     "severity": "info"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 6.67,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [
+      "ALG-DOC-01"
+     ],
+     "title": "Allergy conflict · ALG-DOC-01"
+    },
+    {
+     "card": "c002",
+     "turn": 3,
+     "latency_s": 8.1,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about antibiotic reaction"
+    },
+    {
+     "card": "c003",
+     "turn": 4,
+     "latency_s": 1.07,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [
+      "ALG-SULFA-02"
+     ],
+     "title": "Allergy conflict · ALG-SULFA-02"
+    },
+    {
+     "card": "c004",
+     "turn": 4,
+     "latency_s": 6.3,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about reaction severity"
+    }
+   ],
+   "rules_seen": {
+    "ALG-DOC-01": {
+     "turn": 1,
+     "latency_s": 6.67,
+     "card": "c001",
+     "severity": "info",
+     "family": "drug_allergy",
+     "message": "Allergy to sulfonamide mentioned, but the reaction or its severity was not captured. Suggested question: 'What happened when you took it?'"
+    },
+    "ALG-SULFA-02": {
+     "turn": 4,
+     "latency_s": 1.07,
+     "card": "c003",
+     "severity": "info",
+     "family": "drug_allergy",
+     "message": "Sulfa-antibiotic allergy reported. Furosemide is a non-antibiotic sulfonamide; evidence shows no specific cross-reactivity."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      10144,
+      3253,
+      9
+     ],
+     "openai/gpt-oss-120b|groq": [
+      11375,
+      2396,
+      3
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      9652,
+      3134,
+      3,
+      6.5937418937683105,
+      0
+     ],
+     "wrap-up agent": [
+      1157,
+      237,
+      1,
+      7.742042779922485,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.00949,
+    "cost_agent_usd": 0.00631,
+    "cost_usd": 0.0158,
+    "llm_usage_delta": {
+     "calls": 20,
+     "prompt_tokens": 32328,
+     "completion_tokens": 9020
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 38.9,
+   "checks": [
+    {
+     "type": "no_hold",
+     "desc": "not held: furosemide",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "flag",
+     "desc": "ALG-SULFA-02",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "ALG-DOC-01@t1 info; ALG-SULFA-02@t4 info",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT ALG-SULFA-01",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT card severity=critical",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "prescribed includes furosemide",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "prescribed=['furosemide']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "allergy recorded: sulf",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "allergies=sulfonamide ['sulfonamide_antibiotic']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "care plan lists furosemide",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "medicines: furosemide furosemide furosemide 40 mg",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-03-sulfa-furosemide-trap_patient.pdf pages=1 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-03-sulfa-furosemide-trap_doctor.pdf pages=2 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "every character sent to the PDFs has a glyph in a bundled font",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has arabic text",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "227 arabic chars",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient sheet labels exist for ur",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title label = 'آپ کی دوائیں اور دیکھ بھال کی ہدایات'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF title names the language",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title='Your medicines and care instructions (Urdu)'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF names the patient language (Urdu)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "wrap-up reached the review/sent screen",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "screen=sent agentic=agent",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "alg-08-idiom-allergy-cephalexin",
+   "title": "Allergy told only as 'my body swelled, lips too' with 'that red amoxi capsule'; cephalexin next (R1 side chain)",
+   "category": "allergy",
+   "patient_lang": "ne",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 3.28,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 3.28
+     },
+     "utt": "u003",
+     "english": "You have a skin infection on the leg. Have you ever reacted badly to a medicine?",
+     "translation": "तपाईंको खुट्टामा छालाको संक्रमण छ। के तपाईंले कहिल्यै कुनै औषधिमा खराब प्रतिक्रिया देख्नुभएको छ?",
+     "wait_s": 1.22,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.02,
+     "talk": {
+      "drugs": [
+       {
+        "name": "amoxicillin",
+        "intent": "mention"
+       }
+      ],
+      "allergies": [
+       {
+        "substance": "amoxicillin",
+        "reaction": "liver swelling, lip numbness"
+       }
+      ],
+      "tests": [],
+      "s": 1.01
+     },
+     "utt": "u004",
+     "english": "One time when I took that red‑yellow capsule at night, my liver swelled up and my lips became numb. I don’t remember the name, it was something like amoxi.",
+     "translation": "",
+     "wait_s": 7.78,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.97,
+     "talk": {
+      "drugs": [
+       {
+        "name": "cephalexin",
+        "intent": "prescribe",
+        "dose_mg": 500,
+        "frequency_per_day": 4,
+        "dose": "500 mg four times a day"
+       }
+      ],
+      "allergies": [
+       {
+        "substance": "amoxicillin",
+        "reaction": "my liver swelled up and my lips became numb"
+       }
+      ],
+      "tests": [],
+      "s": 0.97
+     },
+     "utt": "u005",
+     "english": "Okay. Then I'll give you cephalexin 500 mg four times a day for seven days.",
+     "translation": "ठीक छ। अब म तपाईंलाई सेफालेक्सिन ५०० मि.ग्रा. दिनमा चार पटक सात दिनको लागि दिनेछु।",
+     "held": {
+      "turn": 2,
+      "rule": "ALG-PEN-02",
+      "drug": "cephalexin",
+      "headline": "Penicillin/aminopenicillin allergy reported.",
+      "rule_ids": [
+       "ALG-PEN-02"
+      ],
+      "drug_norm": "cephalexin",
+      "resolution": "withdrawn"
+     },
+     "wait_s": 0.0,
+     "open_cards": [
+      "c002",
+      "c001"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": null,
+     "action": "held_else",
+     "had_held": true,
+     "process_s": 0.0,
+     "wait_s": 0.0,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.92,
+     "talk": {
+      "drugs": [
+       {
+        "name": "clindamycin",
+        "intent": "prescribe",
+        "dose_mg": 300,
+        "frequency_per_day": 4,
+        "dose": "300 mg"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "s": 0.91
+     },
+     "utt": "u006",
+     "english": "Let's use clindamycin 300 mg four times a day for seven days instead.",
+     "translation": "हामीले क्लिन्डामाइसिन ३०० मि.ग्रा. दिनमा चार पटक सात दिनको लागि प्रयोग गरौं।",
+     "wait_s": 5.15,
+     "open_cards": [
+      "c001"
+     ]
+    }
+   ],
+   "holds": [
+    {
+     "turn": 2,
+     "rule": "ALG-PEN-02",
+     "drug": "cephalexin",
+     "headline": "Penicillin/aminopenicillin allergy reported.",
+     "rule_ids": [
+      "ALG-PEN-02"
+     ],
+     "drug_norm": "cephalexin",
+     "resolution": "withdrawn"
+    }
+   ],
+   "errors": [],
+   "started": "2026-11-07T07:26:56",
+   "end_visit_s": 7.46,
+   "approve_s": 0.58,
+   "screen": "sent",
+   "warnings": [
+    "Dropped from history: “Allergic reaction to amoxicillin with liver swelling and lip numbness”: not stated by anyone in the consultation (Allergic)."
+   ],
+   "review_warnings": [],
+   "wrapup_metrics": {
+    "total_s": 7.454,
+    "draft_note_s": 1.891,
+    "care_plan_s": 2.719,
+    "check_s": 0.0,
+    "render_s": 1.379,
+    "agent_s": 7.454,
+    "mode": "agent",
+    "agent_steps": 3,
+    "llm_calls": 3,
+    "note_source": "llm",
+    "note_llm_calls": 1,
+    "note_chunks": 0,
+    "care_plan_llm_s": 2.714,
+    "llm_prompt_tokens": 4181,
+    "llm_completion_tokens": 2145
+   },
+   "agentic": "agent",
+   "care_plan": {
+    "lang": "ne",
+    "medicines": [
+     {
+      "drug": "clindamycin",
+      "name": "Clindamycin",
+      "name_native": "क्लिन्डामाइसिन",
+      "title_en": "Clindamycin 300 mg",
+      "note_en": "Take 300 mg 4 times a day. For 7 days.",
+      "note_native": "दिनमा 4 पटक 300 mg लिऊँ। 7 दिनका लागि।",
+      "prn": false
+     }
+    ],
+    "avoid": [
+     {
+      "substance": "amoxicillin",
+      "en": "Amoxicillin medicines, for example amoxicillin. You are allergic.",
+      "native": "अमोक्सिसिलिन औषधिहरू, उदाहरणका लागि अमोक्सिसिलिन। तपाईंलाई एलर्जी छ।"
+     }
+    ],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {
+     "en": "",
+     "native": ""
+    }
+   },
+   "note_md": "# Consultation note\n\nEncounter E46DF423 · 07 Nov 2026 07:26 · Patient language: Nepali · Interpreter: Bayan AI\n\n## Allergies\n\n- Amoxicillin: liver swelling, lip numbness, reported as severe\n\n## Presenting complaint\n\nskin infection on the leg\n\n## Medication changes\n\n- Clindamycin 300 mg, 4 times a day, for 7 days: started\n\n## Information given to patient\n\n- Care plan given in Nepali (QR code to the plan page and PDF).\n\n## Safety alerts\n\n- Drug allergy reported; cephalexin was then prescribed. The instruction was held.\n",
+   "pdf": {
+    "patient": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-08-idiom-allergy-cephalexin_patient.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 70435,
+     "pages": 1,
+     "title": "Your medicines and care instructions (Nepali)",
+     "text": "तपाईं\u0005को औषधि\u000b र हेरचाह नि\u0011र्दे\u0013शन\nYour medicines and care instructions\n07 Nov 2026\nतपाईं\u0005को औषधि\u000b\nYour medicines\nक्लि\u0017\u0018न्डामाइसि\u001eन 300 mg\nClindamycin 300 mg\nदि\u0002नमा 4 पटक 300 mg लि\rऊँ। 7 दि\u0002नका लागि\u0014।\nTake 300 mg 4 times a day. For 7 days.\nदैनि\u0011क तालि\u0018का\nDaily schedule\nऔषधि\u000b\nMedicine\nबि&हानको खाना\nBreakfast\nदि)उँसोको खाना\nLunch\nबेलुकाको खाना\nDinner\nसुत्ने बेला\nBedtime\nक्लि\u0017\u0018न्डामाइसि\u001eन\nClindamycin\n300 mg\n300 mg\n300 mg\n300 mg\n300 mg\n300 mg\n300 mg\n300 mg\nनखानुहोस्\nDo not take\nअमोक्सि\u0018\u0019सि\u0019लि\rन औषधि\u001eहरू, उदाहरणका लागि\u0014 अमोक्सि\u0018\u0019सि\u0019लि\rन। तपाईं)लाई+ एलर्जी. छ।\nAmoxicillin medicines, for example amoxicillin. You are allergic.\nआपतकालीन अवस्थामा, 999 मा कल गर्नु<=होस्।\nIn an emergency, call 999.\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansDevanagari",
+      "MPDFAA+NotoSansDevanagariBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/alg-08-idiom-allergy-cephalexin_patient_p1.png"
+    },
+    "doctor": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-08-idiom-allergy-cephalexin_doctor.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 76065,
+     "pages": 2,
+     "title": "Consultation note",
+     "text": "Bayan AI\nInterpreter & Clinical Safety Copilot\nConsultation note\nEncounter E46DF423\n07 Nov 2026, 07:26\nPatient ID\nP-E46DF4\nAge / sex\nNot recorded\nPatient language\nNepali\nClinician language\nEnglish\nInterpretation\nBayan AI\nConsent to interpretation\nRecorded (patient\nagreed)\nEncounter start\n2026-11-07 07:26\nDuration\n4 min\nAllergies\nAmoxicillin: liver swelling, lip numbness, reported as severe\nPresenting complaint\nskin infection on the leg\nMedication changes\nMedicine\nDose\nRoute\nFrequency\nDuration\nStatus\nClindamycin\n300\nmg\n4 times a day\n7 days\nStarted\nInformation given to patient\nCare plan given in Nepali (QR code to the plan page and PDF).\nSafety alerts\nDrug allergy reported; cephalexin was then prescribed. The instruction was held.\nReviewed by\nSignature\nDate/time\nPage 1 of 2\n\nTranscript\nTime\nSpeaker\nSaid\nInterpreted\n00:00\nInterpreter\nनमस्ते। म बयान हुँ। म तपाईं\u000e र डाक्टरको कुरा अनुवाद\nगर्छु\u001b\u001c। के तपाईं\u000e आफ्नो आवाज प्रशोधन गर्न\u001c सहमति(\nदि*नुहुन्छ?\nConsent: Hello, I am Bayan. I translate\nbetween you and the doctor. Your voice is\nprocessed to translate it and is not stored.\nDo you agree?\n00:00\nPatient\nYes\nYes (consent given on screen)\n00:30\nClinician\nYou have a skin infection on the leg. Have\nyou ever reacted badly to a medicine?\nतपाईं\u000eको खुट्टामा छालाको संक्रमण छ। के तपाईं\u000eले कहि5ल्यै\nकुनै औषधि;मा खराब प्रति(क्रि=या देख्नुभएको छ?\n01:15\nPatient\nएकपटक त्यो रातो-पहेँलो क्याप्सुल खाँदा मेरो जिFउ सबै\nफुलेर आयो, ओठ पनिM सुन्निOएको थिQयो। नाम त याद छैन,\nअमोक्सी जस्तो केही थिQयो।\nOne time when I took that red‑yellow\ncapsule at night, my liver swelled up and\nmy lips became numb. I don’t remember\nthe name, it was something like amoxi.\n02:00\nClinician\nHeld\nOkay. Then I'll give you cephalexin 500\nmg four times a day for seven days.\nNot spoken (held by the safety check).\n03:30\nClinician\nLet's use clindamycin 300 mg four times a\nday for seven days instead.\nहामीले क्लिTUन्डामाइसिXन 300 मि\\.ग्रा. दि*नमा चार पटक\nसात दि*नको लागिa प्रयोग गरौं।\nPage 2 of 2\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansDevanagari",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/alg-08-idiom-allergy-cephalexin_doctor_p1.png"
+    }
+   },
+   "state": {
+    "allergies": [
+     {
+      "substance": "amoxicillin",
+      "class": [
+       "penicillin"
+      ],
+      "reaction": "liver swelling, lip numbness",
+      "severity": "severe"
+     }
+    ],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "clindamycin",
+      "dose_mg": 300,
+      "frequency_per_day": 4,
+      "daily_dose_mg": 1200,
+      "dose_raw": "300 mg",
+      "as_needed": null,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": [
+     "allergies"
+    ]
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "No systemic symptom check",
+     "body": "The doctor has only asked about drug allergies; fever or other systemic signs of infection have not been queried.",
+     "ask_text": null,
+     "grounding": "u003",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c002",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "critical",
+     "status": "resolved",
+     "title": "Allergy conflict · ALG-PEN-02",
+     "body": "Penicillin/aminopenicillin allergy reported. Cephalexin shares a similar R1 side chain with amoxicillin/ampicillin.",
+     "ask_text": null,
+     "grounding": "ALG-PEN-02",
+     "rule_ids": [
+      "ALG-PEN-02"
+     ],
+     "t_min": 2.0
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "No systemic symptom check",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "ALG-PEN-02",
+     "action": "shown",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-PEN-02",
+     "reason": null,
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "ALG-PEN-02",
+     "action": "acknowledge",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-PEN-02",
+     "reason": "sentence withdrawn by the clinician (said something else)",
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "ALG-PEN-02",
+     "action": "resolved",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-PEN-02",
+     "reason": "rule no longer fires",
+     "t_min": 2.75
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state (talk loop) → +allergy amoxicillin (liver swelling, lip numbness, severe)",
+    "1.25 tool: update_state → asked:allergies",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 card: + caution observation card c001: No systemic symptom check [u003]",
+    "1.25 tool: final_answer([observation 'No systemic symptom check']) → c001",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 2.2s, 1777/900 tok ($0.0013)",
+    "2.00 tool: update_state (prescription gate) → +rx cephalexin 500 mg x4/day",
+    "2.00 card: + critical safety card c002: Allergy conflict · ALG-PEN-02 [ALG-PEN-02]",
+    "2.00 tool: check_prescription(cephalexin) → ALG-PEN-02 · HOLD",
+    "2.75 card: doctor acknowledge c002: Allergy conflict · ALG-PEN-02 (sentence withdrawn by the clinician (said something else))",
+    "2.75 card: ✓ resolved c002: Allergy conflict · ALG-PEN-02",
+    "2.75 tool: withdraw u005 (sentence withdrawn by the clinician (said something else)) → -rx cephalexin",
+    "3.50 tool: update_state (prescription gate) → +rx clindamycin 300 mg x4/day",
+    "3.50 tool: check_prescription(clindamycin) → no on_prescribe rule fires",
+    "3.50 tool: update_state → no new facts",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 tool: final_answer([observation 'Missing systemic symptom check']) → duplicate",
+    "3.50 agent: copilot: 1 step(s), 1 tool call(s), 1.3s, 1827/934 tok ($0.0013)",
+    "4.50 tool: care_plan_llm → 4 keys in 1.8s",
+    "4.50 tool: note_llm → 1 items (llm)",
+    "4.50 tool: draft_note → 24 lines",
+    "4.50 tool: care_plan_llm retry → 1 missing line(s) requested",
+    "4.50 tool: build_care_plan → 1 medicine(s), 1 avoid, 0 red flag(s), 0 excluded",
+    "4.50 tool: check_care_plan → ok",
+    "4.50 tool: draft_outputs() → note drafted (llm): 4 sections, 24 lines; care plan: medicines Clinda…",
+    "4.50 tool: render_outputs → doctor_pdf, patient_pdf",
+    "4.50 tool: render_outputs() → rendered: doctor_pdf, patient_pdf, wa_link, sms_link; 0 warning(s).",
+    "4.50 agent: wrap-up agent: 3 step(s), 2 tool call(s), 7.5s, 1162/260 tok ($0.0006)",
+    "4.50 agent: wrap-up agent: ok=True steps=3",
+    "4.50 system: wrap-up done (agent) in 7.5s: 1 warning(s)"
+   ],
+   "stats": {
+    "runs": 3,
+    "latency_s": [
+     0.0,
+     6.56,
+     3.92
+    ],
+    "extract_tokens": [
+     7613,
+     1676
+    ],
+    "agent_tokens": [
+     3604,
+     1834
+    ],
+    "cost_usd": 0.00655845
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 6.56,
+     "extract_s": 4.33,
+     "agent_s": 2.16,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5559,
+     "output_tokens": 1826,
+     "extract_tokens": [
+      3782,
+      926
+     ],
+     "agent_tokens": [
+      1777,
+      900
+     ],
+     "cost_usd": 0.002559
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 3.92,
+     "extract_s": 2.58,
+     "agent_s": 1.32,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5658,
+     "output_tokens": 1684,
+     "extract_tokens": [
+      3831,
+      750
+     ],
+     "agent_tokens": [
+      1827,
+      934
+     ],
+     "cost_usd": 0.002477
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794025629.634767,
+     "latency_s": 8.79,
+     "source": "agent",
+     "kind": "observation",
+     "title": "No systemic symptom check",
+     "severity": "caution"
+    },
+    "c002": {
+     "turn": 2,
+     "wall": 1794025630.6092029,
+     "latency_s": 0.97,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Allergy conflict · ALG-PEN-02",
+     "severity": "critical"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 8.79,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "No systemic symptom check"
+    },
+    {
+     "card": "c002",
+     "turn": 2,
+     "latency_s": 0.97,
+     "status": "open",
+     "severity": "critical",
+     "rule_ids": [
+      "ALG-PEN-02"
+     ],
+     "title": "Allergy conflict · ALG-PEN-02"
+    },
+    {
+     "card": "c002",
+     "turn": 3,
+     "latency_s": 0.0,
+     "status": "resolved",
+     "severity": "critical",
+     "rule_ids": [
+      "ALG-PEN-02"
+     ],
+     "title": "Allergy conflict · ALG-PEN-02"
+    }
+   ],
+   "rules_seen": {
+    "ALG-PEN-02": {
+     "turn": 2,
+     "latency_s": 0.97,
+     "card": "c002",
+     "severity": "critical",
+     "family": "drug_allergy",
+     "message": "Penicillin/aminopenicillin allergy reported. Cephalexin shares a similar R1 side chain with amoxicillin/ampicillin."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      7717,
+      2809,
+      7
+     ],
+     "openai/gpt-oss-120b|groq": [
+      7613,
+      1676,
+      2
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      3604,
+      1834,
+      2,
+      3.4810359477996826,
+      0
+     ],
+     "wrap-up agent": [
+      1162,
+      260,
+      1,
+      7.453704118728638,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.00721,
+    "cost_agent_usd": 0.00324,
+    "cost_usd": 0.01045,
+    "llm_usage_delta": {
+     "calls": 14,
+     "prompt_tokens": 20096,
+     "completion_tokens": 6579
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 28.6,
+   "checks": [
+    {
+     "type": "hold",
+     "desc": "held: cephalexin ALG-PEN-02/ALG-CEPH-01 at turn 2",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "t2 cephalexin ALG-PEN-02 ['ALG-PEN-02']",
+     "gap": false,
+     "note": "lip/face swelling = severe reaction: ALG-PEN-02 escalates to critical",
+     "auto": false
+    },
+    {
+     "type": "no_hold",
+     "desc": "not held: clindamycin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "flag",
+     "desc": "ALG-PEN-02 severity=critical",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "ALG-PEN-02@t2 critical",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "prescribed includes clindamycin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "prescribed=['clindamycin']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "prescribed excludes cephalexin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "prescribed=['clindamycin']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "allergy recorded: amox",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "allergies=amoxicillin ['penicillin']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "care plan lists clindamycin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "medicines: clindamycin clindamycin clindamycin 300 mg",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "care plan does NOT list cephalexin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "medicines: clindamycin clindamycin clindamycin 300 mg",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-08-idiom-allergy-cephalexin_patient.pdf pages=1 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-08-idiom-allergy-cephalexin_doctor.pdf pages=2 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "every character sent to the PDFs has a glyph in a bundled font",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has devanagari text",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "247 devanagari chars",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient sheet labels exist for ne",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title label = 'तपाईंको औषधि र हेरचाह निर्देशन'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF title names the language",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title='Your medicines and care instructions (Nepali)'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF names the patient language (Nepali)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF records the held instruction",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has a Safety alerts section",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "wrap-up reached the review/sent screen",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "screen=sent agentic=agent",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "alg-10-speak-anyway-override",
+   "title": "Penicillin hives, doctor overrides the hold ('speak it anyway') for amoxicillin",
+   "category": "allergy",
+   "patient_lang": "ko",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 3.23,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 3.23
+     },
+     "utt": "u003",
+     "english": "Do you have any drug allergies?",
+     "translation": "약 알레르기가 있나요?",
+     "wait_s": 1.22,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.86,
+     "talk": {
+      "drugs": [],
+      "allergies": [
+       {
+        "substance": "penicillin",
+        "reaction": "hives"
+       }
+      ],
+      "tests": [],
+      "s": 0.86
+     },
+     "utt": "u004",
+     "english": "I had a penicillin injection before and got hives. It was just a little itchy.",
+     "translation": "",
+     "wait_s": 6.84,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.98,
+     "talk": {
+      "drugs": [
+       {
+        "name": "amoxicillin",
+        "intent": "prescribe",
+        "dose_mg": 500,
+        "frequency_per_day": 3,
+        "dose": "500 mg"
+       }
+      ],
+      "allergies": [
+       {
+        "substance": "penicillin",
+        "reaction": "hives"
+       }
+      ],
+      "tests": [],
+      "s": 0.98
+     },
+     "utt": "u005",
+     "english": "That sounds mild. I'll still give you amoxicillin 500 mg three times a day for five days, and we will watch for any rash.",
+     "translation": "그 정도라면 가볍네요. 저는 여전히 아목시실린 500 mg을 하루에 세 번, 5일 동안 드리겠습니다. 그리고 발진이 생기는지 살펴보겠습니다.",
+     "held": {
+      "turn": 2,
+      "rule": "ALG-PEN-01",
+      "drug": "amoxicillin",
+      "headline": "The patient reported a penicillin allergy. Amoxicillin is a penicillin.",
+      "rule_ids": [
+       "ALG-PEN-01"
+      ],
+      "drug_norm": "amoxicillin",
+      "resolution": "overridden"
+     },
+     "wait_s": 0.0,
+     "open_cards": [
+      "c002",
+      "c001"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": null,
+     "action": "held_anyway",
+     "had_held": true,
+     "process_s": 0.0,
+     "wait_s": 4.43,
+     "open_cards": [
+      "c001",
+      "c003"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.93,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.93
+     },
+     "utt": "u006",
+     "english": "If you get a rash, swelling or trouble breathing, stop it and come back immediately.",
+     "translation": "발진이나 부기, 호흡 곤란이 생기면 약을 중단하고 바로 오세요.",
+     "wait_s": 3.42,
+     "open_cards": [
+      "c001",
+      "c003"
+     ]
+    }
+   ],
+   "holds": [
+    {
+     "turn": 2,
+     "rule": "ALG-PEN-01",
+     "drug": "amoxicillin",
+     "headline": "The patient reported a penicillin allergy. Amoxicillin is a penicillin.",
+     "rule_ids": [
+      "ALG-PEN-01"
+     ],
+     "drug_norm": "amoxicillin",
+     "resolution": "overridden"
+    }
+   ],
+   "errors": [],
+   "started": "2026-11-07T07:26:56",
+   "end_visit_s": 7.83,
+   "approve_s": 0.54,
+   "screen": "sent",
+   "warnings": [
+    "amoxicillin kept on the patient's sheet: ALG-PEN-01 overridden by the clinician."
+   ],
+   "review_warnings": [],
+   "wrapup_metrics": {
+    "total_s": 7.823,
+    "draft_note_s": 2.03,
+    "care_plan_s": 3.026,
+    "check_s": 0.0,
+    "render_s": 1.434,
+    "agent_s": 7.823,
+    "mode": "agent",
+    "agent_steps": 3,
+    "llm_calls": 3,
+    "note_source": "llm",
+    "note_llm_calls": 1,
+    "note_chunks": 0,
+    "care_plan_llm_s": 3.023,
+    "llm_prompt_tokens": 4336,
+    "llm_completion_tokens": 2685
+   },
+   "agentic": "agent",
+   "care_plan": {
+    "lang": "ko",
+    "medicines": [
+     {
+      "drug": "amoxicillin",
+      "name": "Amoxicillin",
+      "name_native": "아목시실린",
+      "title_en": "Amoxicillin 500 mg",
+      "note_en": "Take 500 mg 3 times a day. For 5 days. Stop it and come back immediately if you get a rash, swelling or trouble breathing.",
+      "note_native": "하루에 500 mg을 3번 복용하십시오. 5일 동안 복용하십시오. 발진, 부기 또는 호흡 곤란이 생기면 즉시 중단하고 바로 돌아오십시오.",
+      "prn": false
+     }
+    ],
+    "avoid": [
+     {
+      "substance": "penicillin",
+      "en": "Penicillin medicines, for example amoxicillin. You are allergic.",
+      "native": "페니실린 약물, 예를 들어 아목시실린. 당신은 알레르기가 있습니다."
+     }
+    ],
+    "red_flags": [
+     {
+      "en": "You develop a rash.",
+      "native": "발진이 생깁니다."
+     },
+     {
+      "en": "You develop swelling.",
+      "native": "부기가 생깁니다."
+     },
+     {
+      "en": "You have trouble breathing.",
+      "native": "호흡이 곤란합니다."
+     }
+    ],
+    "advice": [],
+    "follow_up": {
+     "en": "",
+     "native": ""
+    }
+   },
+   "note_md": "# Consultation note\n\nEncounter AF30FD52 · 07 Nov 2026 07:26 · Patient language: Korean · Interpreter: Bayan AI\n\n## Allergies\n\n- Penicillin: hives, reported as moderate\n\n## History\n\n- Penicillin injection previously caused hives, mild itching.\n\n## Plan\n\n- If rash, swelling or trouble breathing occurs, stop medication and return immediately.\n\n## Medication changes\n\n- Amoxicillin 500 mg, 3 times a day, for 5 days: started\n\n## Information given to patient\n\n- We will watch for any rash while you take amoxicillin.\n- If rash, swelling or trouble breathing occurs, stop medication and come back immediately.\n- Care plan given in Korean (QR code to the plan page and PDF).\n\n## Safety alerts\n\n- Penicillin allergy reported; amoxicillin was then prescribed. The clinician continued it (spoken anyway by clinician).\n",
+   "pdf": {
+    "patient": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-10-speak-anyway-override_patient.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 73367,
+     "pages": 1,
+     "title": "Your medicines and care instructions (Korean)",
+     "text": "복용 약과 주의사항\nYour medicines and care instructions\n07 Nov 2026\n복용 약\nYour medicines\n아목시실린 500 mg\nAmoxicillin 500 mg\n하루에 500 mg을 3번 복용하십시오. 5일 동안 복용하십시오. 발진, 부기 또는 호흡 곤란이\n생기면 즉시 중단하고 바로 돌아오십시오.\nTake 500 mg 3 times a day. For 5 days. Stop it and come back immediately if you get a rash, swelling or\ntrouble breathing.\n하루 일정\nDaily schedule\n약\nMedicine\n아침식사\nBreakfast\n점심식사\nLunch\n저녁식사\nDinner\n아목시실린\nAmoxicillin\n500 mg\n500 mg\n500 mg\n복용 금지\nDo not take\n페니실린 약물, 예를 들어 아목시실린. 당신은 알레르기가 있습니다.\nPenicillin medicines, for example amoxicillin. You are allergic.\n999에 전화하거나 바로 오세요\nCall 999 or come back now if\n발진이 생깁니다.\nYou develop a rash.\n부기가 생깁니다.\nYou develop swelling.\n호흡이 곤란합니다.\nYou have trouble breathing.\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansKR",
+      "MPDFAA+NotoSansKRBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/alg-10-speak-anyway-override_patient_p1.png"
+    },
+    "doctor": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-10-speak-anyway-override_doctor.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 80225,
+     "pages": 2,
+     "title": "Consultation note",
+     "text": "Bayan AI\nInterpreter & Clinical Safety Copilot\nConsultation note\nEncounter AF30FD52\n07 Nov 2026, 07:26\nPatient ID\nP-AF30FD\nAge / sex\nNot recorded\nPatient language\nKorean\nClinician language\nEnglish\nInterpretation\nBayan AI\nConsent to interpretation\nRecorded (patient\nagreed)\nEncounter start\n2026-11-07 07:26\nDuration\n4 min\nAllergies\nPenicillin: hives, reported as moderate\nHistory\nPenicillin injection previously caused hives, mild itching.\nPlan\nIf rash, swelling or trouble breathing occurs, stop medication and return immediately.\nMedication changes\nMedicine\nDose\nRoute\nFrequency\nDuration\nStatus\nAmoxicillin\n500\nmg\n3 times a day\n5 days\nStarted\nInformation given to patient\nWe will watch for any rash while you take amoxicillin.\nIf rash, swelling or trouble breathing occurs, stop medication and come back immediately.\nCare plan given in Korean (QR code to the plan page and PDF).\nSafety alerts\nPenicillin allergy reported; amoxicillin was then prescribed. The clinician continued it (spoken anyway by\nclinician).\nReviewed by\nSignature\nDate/time\nPage 1 of 2\n\nTranscript\nTime\nSpeaker\nSaid\nInterpreted\n00:00\nInterpreter\n안녕하세요, 저는 바얀입니다. 환자분과 의사\n선생님 사이에서 통역합니다. 환자분의 목소리는\n통역을 위해서만 처리되며 저장되지 않습니다.\n동의하십니까?\nConsent: Hello, I am Bayan. I translate\nbetween you and the doctor. Your voice is\nprocessed to translate it and is not stored.\nDo you agree?\n00:00\nPatient\nYes\nYes (consent given on screen)\n00:30\nClinician\nDo you have any drug allergies?\n약 알레르기가 있나요?\n01:15\nPatient\n예전에 페니실린 주사 맞고 두드러기가\n났었어요. 그냥 좀 가려웠어요.\nI had a penicillin injection before and got\nhives. It was just a little itchy.\n02:00\nClinician\nThat sounds mild. I'll still give you\namoxicillin 500 mg three times a day for\nfive days, and we will watch for any rash.\n그 정도라면 가볍네요. 저는 여전히 아목시실린\n500 mg을 하루에 세 번, 5일 동안 드리겠습니다.\n그리고 발진이 생기는지 살펴보겠습니다.\n03:30\nClinician\nIf you get a rash, swelling or trouble\nbreathing, stop it and come back\nimmediately.\n발진이나 부기, 호흡 곤란이 생기면 약을 중단하고\n바로 오세요.\nPage 2 of 2\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansKR",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/alg-10-speak-anyway-override_doctor_p1.png"
+    }
+   },
+   "state": {
+    "allergies": [
+     {
+      "substance": "penicillin",
+      "class": [
+       "penicillin"
+      ],
+      "reaction": "hives",
+      "severity": "moderate"
+     }
+    ],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "amoxicillin",
+      "dose_mg": 500,
+      "frequency_per_day": 3,
+      "daily_dose_mg": 1500,
+      "dose_raw": "500 mg",
+      "as_needed": null,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": [
+     "allergies"
+    ]
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Allergy severity not fully characterized",
+     "body": "Patient reports hives after penicillin injection but does not describe breathing difficulty or swelling, so severity is unclear.",
+     "ask_text": null,
+     "grounding": "u004",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c002",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "critical",
+     "status": "overridden",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "body": "Penicillin allergy reported (“I had a penicillin injection before and got hives. It was just a little itchy.”, 01:15). Amoxicillin is a penicillin.",
+     "ask_text": null,
+     "grounding": "ALG-PEN-01",
+     "rule_ids": [
+      "ALG-PEN-01"
+     ],
+     "t_min": 2.0
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about allergy severity",
+     "body": "Penicillin reaction may be severe; need details on symptoms and treatment needed.",
+     "ask_text": "Did you ever have trouble breathing, swelling, or need treatment after the penicillin injection?",
+     "grounding": "ALG-PEN-01",
+     "rule_ids": [],
+     "t_min": 2.75
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Allergy severity not fully characterized",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "ALG-PEN-01",
+     "action": "shown",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "reason": null,
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "ALG-PEN-01",
+     "action": "override",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "reason": "spoken anyway by clinician",
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about allergy severity",
+     "reason": null,
+     "t_min": 2.75
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state (talk loop) → +allergy penicillin (hives, unknown)",
+    "1.25 tool: update_state → asked:allergies",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 card: + caution observation card c001: Allergy severity not fully characterized [u004]",
+    "1.25 tool: final_answer([observation 'Allergy severity not fully characterized']) → c001",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 2.1s, 1716/653 tok ($0.0011)",
+    "2.00 tool: update_state (prescription gate) → +rx amoxicillin 500 mg x3/day",
+    "2.00 card: + critical safety card c002: Allergy conflict · ALG-PEN-01 [ALG-PEN-01]",
+    "2.00 tool: check_prescription(amoxicillin) → ALG-PEN-01 · HOLD",
+    "2.75 card: doctor override c002: Allergy conflict · ALG-PEN-01 (spoken anyway by clinician)",
+    "2.75 tool: override u005 (spoken anyway by clinician)",
+    "2.75 tool: update_state → no new facts",
+    "2.75 tool: check_safety_rules → ALG-PEN-01",
+    "2.75 card: + info ask card c003: Ask about allergy severity [ALG-PEN-01]",
+    "2.75 tool: final_answer([ask 'Ask about allergy severity']) → c003",
+    "2.75 agent: copilot: 1 step(s), 1 tool call(s), 1.1s, 1824/339 tok ($0.0009)",
+    "3.50 tool: update_state → no new facts",
+    "3.50 tool: check_safety_rules → ALG-PEN-01",
+    "3.50 agent: copilot skipped: nothing new in u006",
+    "4.50 tool: care_plan_llm → 4 keys in 1.9s",
+    "4.50 tool: note_llm → 4 items (llm)",
+    "4.50 tool: draft_note → 30 lines",
+    "4.50 tool: care_plan_llm retry → 1 missing line(s) requested",
+    "4.50 tool: build_care_plan → 1 medicine(s), 1 avoid, 3 red flag(s), 0 excluded",
+    "4.50 tool: check_care_plan → ok",
+    "4.50 tool: draft_outputs() → note drafted (llm): 4 sections, 30 lines; care plan: medicines Amoxic…",
+    "4.50 tool: render_outputs → doctor_pdf, patient_pdf",
+    "4.50 tool: render_outputs() → rendered: doctor_pdf, patient_pdf, wa_link, sms_link; 0 warning(s).",
+    "4.50 agent: wrap-up agent: 3 step(s), 2 tool call(s), 7.8s, 1155/255 tok ($0.0006)",
+    "4.50 agent: wrap-up agent: ok=True steps=3",
+    "4.50 system: wrap-up done (agent) in 7.8s: 1 warning(s)"
+   ],
+   "stats": {
+    "runs": 4,
+    "latency_s": [
+     0.0,
+     5.62,
+     3.22,
+     2.22
+    ],
+    "extract_tokens": [
+     11313,
+     1733
+    ],
+    "agent_tokens": [
+     3540,
+     992
+    ],
+    "cost_usd": 0.0072423
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 5.62,
+     "extract_s": 3.41,
+     "agent_s": 2.09,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5437,
+     "output_tokens": 1253,
+     "extract_tokens": [
+      3721,
+      600
+     ],
+     "agent_tokens": [
+      1716,
+      653
+     ],
+     "cost_usd": 0.002098
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 3.22,
+     "extract_s": 2.1,
+     "agent_s": 1.11,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5605,
+     "output_tokens": 840,
+     "extract_tokens": [
+      3781,
+      501
+     ],
+     "agent_tokens": [
+      1824,
+      339
+     ],
+     "cost_usd": 0.001836
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 2.22,
+     "extract_s": 2.21,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 3811,
+     "output_tokens": 632,
+     "extract_tokens": [
+      3811,
+      632
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001046
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794025628.496941,
+     "latency_s": 7.7,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Allergy severity not fully characterized",
+     "severity": "caution"
+    },
+    "c002": {
+     "turn": 2,
+     "wall": 1794025629.487582,
+     "latency_s": 0.99,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Allergy conflict · ALG-PEN-01",
+     "severity": "critical"
+    },
+    "c003": {
+     "turn": 3,
+     "wall": 1794025633.912398,
+     "latency_s": 4.42,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about allergy severity",
+     "severity": "info"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 7.7,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Allergy severity not fully characterized"
+    },
+    {
+     "card": "c002",
+     "turn": 2,
+     "latency_s": 0.99,
+     "status": "open",
+     "severity": "critical",
+     "rule_ids": [
+      "ALG-PEN-01"
+     ],
+     "title": "Allergy conflict · ALG-PEN-01"
+    },
+    {
+     "card": "c002",
+     "turn": 3,
+     "latency_s": 0.02,
+     "status": "overridden",
+     "severity": "critical",
+     "rule_ids": [
+      "ALG-PEN-01"
+     ],
+     "title": "Allergy conflict · ALG-PEN-01"
+    },
+    {
+     "card": "c003",
+     "turn": 3,
+     "latency_s": 4.42,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about allergy severity"
+    }
+   ],
+   "rules_seen": {
+    "ALG-PEN-01": {
+     "turn": 2,
+     "latency_s": 0.99,
+     "card": "c002",
+     "severity": "critical",
+     "family": "drug_allergy",
+     "message": "Penicillin allergy reported (“I had a penicillin injection before and got hives. It was just a little itchy.”, 01:15). Amoxicillin is a penicillin."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      7809,
+      2936,
+      7
+     ],
+     "openai/gpt-oss-120b|groq": [
+      11313,
+      1733,
+      3
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      3540,
+      992,
+      2,
+      3.203861951828003,
+      0
+     ],
+     "wrap-up agent": [
+      1155,
+      255,
+      1,
+      7.821722030639648,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.00793,
+    "cost_agent_usd": 0.00258,
+    "cost_usd": 0.01051,
+    "llm_usage_delta": {
+     "calls": 15,
+     "prompt_tokens": 23817,
+     "completion_tokens": 5916
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 30.4,
+   "checks": [
+    {
+     "type": "hold",
+     "desc": "held: amoxicillin ALG-PEN-01 at turn 2",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "t2 amoxicillin ALG-PEN-01 ['ALG-PEN-01']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "prescribed includes amoxicillin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "prescribed=['amoxicillin']",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "care_plan",
+     "desc": "care plan lists amoxicillin",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "medicines: amoxicillin amoxicillin amoxicillin 500 mg",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-10-speak-anyway-override_patient.pdf pages=1 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/alg-10-speak-anyway-override_doctor.pdf pages=2 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "every character sent to the PDFs has a glyph in a bundled font",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has hangul text",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "150 hangul chars",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient sheet labels exist for ko",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title label = '복용 약과 주의사항'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF title names the language",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title='Your medicines and care instructions (Korean)'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF names the patient language (Korean)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF records the clinician's override",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has a Safety alerts section",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF contains 'penicillin'",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF contains 'continued'",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "wrap-up reached the review/sent screen",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "screen=sent agentic=agent",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "dose-09-tramadol-qds-plus-prn",
+   "title": "Tramadol 100 mg QDS plus 100 mg at night if needed (500 mg/day)",
+   "category": "dose",
+   "patient_lang": "tr",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.76,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.76
+     },
+     "utt": "u003",
+     "english": "Any allergies to medicines?",
+     "translation": "İlaçlara karşı herhangi bir alerjiniz var mı?",
+     "wait_s": 1.21,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.8,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.8
+     },
+     "utt": "u004",
+     "english": "No doctor sir, I have no allergy.",
+     "translation": "",
+     "wait_s": 5.1,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.93,
+     "talk": {
+      "drugs": [
+       {
+        "name": "tramadol",
+        "intent": "prescribe",
+        "dose_mg": 100,
+        "frequency_per_day": 5,
+        "dose": "100 mg QDS, plus another 100 mg at night if the pain wakes you"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "s": 0.93
+     },
+     "utt": "u005",
+     "english": "For the kidney stone pain, tramadol 100 mg QDS, plus another 100 mg at night if the pain wakes you.",
+     "translation": "Böbrek taşı ağrısı için tramadol 100 mg dört kez günde, ayrıca ağrı sizi uyanırsa gece ek 100 mg.",
+     "held": {
+      "turn": 2,
+      "rule": "DOSE-TRAM-01",
+      "drug": "tramadol",
+      "headline": "Tramadol 500 mg/day exceeds 400 mg/day.",
+      "rule_ids": [
+       "DOSE-TRAM-01"
+      ],
+      "drug_norm": "tramadol",
+      "resolution": "withdrawn"
+     },
+     "wait_s": 0.0,
+     "open_cards": [
+      "c002",
+      "c001"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": null,
+     "action": "held_else",
+     "had_held": true,
+     "process_s": 0.0,
+     "wait_s": 0.0,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.96,
+     "talk": {
+      "drugs": [
+       {
+        "name": "tramadol",
+        "intent": "prescribe",
+        "frequency_per_day": 4,
+        "dose": "50 to 100 mg every six hours as needed, maximum 400 mg in 24 hours"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "s": 0.96
+     },
+     "utt": "u006",
+     "english": "Tramadol 50 to 100 mg every six hours as needed, maximum 400 mg in 24 hours.",
+     "translation": "Tramadol 50 ila 100 mg, her altı saatte gerektiğinde, 24 saatte maksimum 400 mg.",
+     "wait_s": 6.18,
+     "open_cards": [
+      "c003",
+      "c001"
+     ]
+    }
+   ],
+   "holds": [
+    {
+     "turn": 2,
+     "rule": "DOSE-TRAM-01",
+     "drug": "tramadol",
+     "headline": "Tramadol 500 mg/day exceeds 400 mg/day.",
+     "rule_ids": [
+      "DOSE-TRAM-01"
+     ],
+     "drug_norm": "tramadol",
+     "resolution": "withdrawn"
+    }
+   ],
+   "errors": [],
+   "started": "2026-11-07T07:27:24",
+   "end_visit_s": 6.34,
+   "approve_s": 0.51,
+   "screen": "sent",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {
+    "total_s": 6.332,
+    "draft_note_s": 1.297,
+    "care_plan_s": 2.738,
+    "check_s": 0.0,
+    "render_s": 1.095,
+    "agent_s": 6.332,
+    "mode": "agent",
+    "agent_steps": 3,
+    "llm_calls": 3,
+    "note_source": "llm",
+    "note_llm_calls": 1,
+    "note_chunks": 0,
+    "care_plan_llm_s": 2.736,
+    "llm_prompt_tokens": 3983,
+    "llm_completion_tokens": 1708
+   },
+   "agentic": "agent",
+   "care_plan": {
+    "lang": "tr",
+    "medicines": [
+     {
+      "drug": "tramadol",
+      "name": "Tramadol",
+      "name_native": "",
+      "title_en": "Tramadol as directed",
+      "note_en": "Take as directed only when needed. No more than 4 times a day.",
+      "note_native": "Talimatına göre sadece gerektiğinde alınız. Günde 4 kezden fazla olmayınız.",
+      "prn": true
+     }
+    ],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {
+     "en": "",
+     "native": ""
+    }
+   },
+   "note_md": "# Consultation note\n\nEncounter 109247D8 · 07 Nov 2026 07:27 · Patient language: Turkish · Interpreter: Bayan AI\n\n## Allergies\n\n- No known allergies recorded\n\n## Medication changes\n\n- Tramadol, up to 4 times a day, as needed: started\n\n## Information given to patient\n\n- Care plan given in Turkish (QR code to the plan page and PDF).\n\n## Safety alerts\n\n- Tramadol 500 mg/day exceeds 400 mg/day. Acknowledged by the clinician.\n- A prescribing instruction was held and not interpreted to the patient.\n",
+   "pdf": {
+    "patient": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/dose-09-tramadol-qds-plus-prn_patient.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 62657,
+     "pages": 1,
+     "title": "Your medicines and care instructions (Turkish)",
+     "text": "İlaçlarınız ve bakım talimatları\nYour medicines and care instructions\n07 Nov 2026\nİlaçlarınız\nYour medicines\nTramadol talimatına göre\nTramadol as directed\nTalimatına göre sadece gerektiğinde alınız. Günde 4 kezden fazla olmayınız.\nTake as directed only when needed. No more than 4 times a day.\nAcil durumda 999'i arayın.\nIn an emergency, call 999.\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/dose-09-tramadol-qds-plus-prn_patient_p1.png"
+    },
+    "doctor": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/dose-09-tramadol-qds-plus-prn_doctor.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 68533,
+     "pages": 2,
+     "title": "Consultation note",
+     "text": "Bayan AI\nInterpreter & Clinical Safety Copilot\nConsultation note\nEncounter 109247D8\n07 Nov 2026, 07:27\nPatient ID\nP-109247\nAge / sex\nNot recorded\nPatient language\nTurkish\nClinician language\nEnglish\nInterpretation\nBayan AI\nConsent to interpretation\nRecorded (patient\nagreed)\nEncounter start\n2026-11-07 07:27\nDuration\n4 min\nAllergies\nNo known allergies recorded\nMedication changes\nMedicine\nDose\nRoute\nFrequency\nDuration\nStatus\nTramadol\nUp to 4 times a day, as\nneeded\nStarted\nInformation given to patient\nCare plan given in Turkish (QR code to the plan page and PDF).\nSafety alerts\nTramadol 500 mg/day exceeds 400 mg/day. Acknowledged by the clinician.\nA prescribing instruction was held and not interpreted to the patient.\nReviewed by\nSignature\nDate/time\nPage 1 of 2\n\nTranscript\nTime\nSpeaker\nSaid\nInterpreted\n00:00\nInterpreter\nMerhaba, ben Bayan. Sizinle doktor\narasında çeviri yapıyorum. Sesiniz çeviri\niçin işlenir ve kaydedilmez. Kabul ediyor\nmusunuz?\nConsent: Hello, I am Bayan. I translate\nbetween you and the doctor. Your voice is\nprocessed to translate it and is not stored.\nDo you agree?\n00:00\nPatient\nYes\nYes (consent given on screen)\n00:30\nClinician\nAny allergies to medicines?\nİlaçlara karşı herhangi bir alerjiniz var mı?\n01:15\nPatient\nHayır doktor bey, alerjim yok.\nNo doctor sir, I have no allergy.\n02:00\nClinician\nHeld\nFor the kidney stone pain, tramadol 100\nmg QDS, plus another 100 mg at night if\nthe pain wakes you.\nNot spoken (held by the safety check).\n03:30\nClinician\nTramadol 50 to 100 mg every six hours as\nneeded, maximum 400 mg in 24 hours.\nTramadol 50 ila 100 mg, her altı saatte\ngerektiğinde, 24 saatte maksimum 400\nmg.\nPage 2 of 2\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/dose-09-tramadol-qds-plus-prn_doctor_p1.png"
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "tramadol",
+      "dose_mg": null,
+      "frequency_per_day": 4,
+      "daily_dose_mg": null,
+      "dose_raw": "50 to 100 mg",
+      "as_needed": true,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": [
+     "allergies"
+    ]
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Medication history missing",
+     "body": "No meds recorded after allergy question.",
+     "ask_text": null,
+     "grounding": "u004",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c002",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "critical",
+     "status": "resolved",
+     "title": "Dose ceiling · DOSE-TRAM-01",
+     "body": "Tramadol 500 mg/day exceeds 400 mg/day.",
+     "ask_text": null,
+     "grounding": "DOSE-TRAM-01",
+     "rule_ids": [
+      "DOSE-TRAM-01"
+     ],
+     "t_min": 2.0
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Medication history not recorded",
+     "body": "No current medications were listed before prescribing tramadol (u006).",
+     "ask_text": null,
+     "grounding": "u006",
+     "rule_ids": [],
+     "t_min": 3.5
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Medication history missing",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "DOSE-TRAM-01",
+     "action": "shown",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Dose ceiling · DOSE-TRAM-01",
+     "reason": null,
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "DOSE-TRAM-01",
+     "action": "acknowledge",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Dose ceiling · DOSE-TRAM-01",
+     "reason": "sentence withdrawn by the clinician (said something else)",
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "DOSE-TRAM-01",
+     "action": "resolved",
+     "severity": "critical",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Dose ceiling · DOSE-TRAM-01",
+     "reason": "rule no longer fires",
+     "t_min": 2.75
+    },
+    {
+     "card_id": null,
+     "rule_id": null,
+     "action": "rejected",
+     "severity": "caution",
+     "kind": "missed",
+     "source": "agent",
+     "title": "Missing medication history",
+     "reason": "grounding 'med_history' not found (use a fired rule id, an idiom id, an open checklist id)",
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Medication history not recorded",
+     "reason": null,
+     "t_min": 3.5
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state → asked:allergies",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 card: + caution observation card c001: Medication history missing [u004]",
+    "1.25 tool: final_answer([observation 'Medication history missing']) → c001",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 2.1s, 1678/711 tok ($0.0011)",
+    "2.00 tool: update_state (prescription gate) → +rx tramadol 100 mg x5/day",
+    "2.00 card: + critical safety card c002: Dose ceiling · DOSE-TRAM-01 [DOSE-TRAM-01]",
+    "2.00 tool: check_prescription(tramadol) → DOSE-TRAM-01 · HOLD",
+    "2.75 card: doctor acknowledge c002: Dose ceiling · DOSE-TRAM-01 (sentence withdrawn by the clinician (said something else))",
+    "2.75 card: ✓ resolved c002: Dose ceiling · DOSE-TRAM-01",
+    "2.75 tool: withdraw u005 (sentence withdrawn by the clinician (said something else)) → -rx tramadol",
+    "3.50 tool: update_state (prescription gate) → +rx tramadol x4/day",
+    "3.50 tool: check_prescription(tramadol) → no on_prescribe rule fires",
+    "3.50 tool: update_state → no new facts",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 card: ✗ rejected missed card 'Missing medication history': grounding 'med_history' not found (use a fired rule id, an idiom id, an open checklist id)",
+    "3.50 agent: copilot step 1 error: final_answer: Fix and call final_answer again with only the corrected cards: card 1: grounding 'med_history' not found (use a fired rule id, an idiom id, an open checklist id)",
+    "3.50 card: + caution observation card c003: Medication history not recorded [u006]",
+    "3.50 tool: final_answer([observation 'Medication history not recorded']) → c003",
+    "3.50 agent: copilot: 2 step(s), 1 tool call(s), 2.3s, 3610/1180 tok ($0.0021)",
+    "4.50 tool: note_llm → 0 items (llm)",
+    "4.50 tool: draft_note → 21 lines",
+    "4.50 tool: care_plan_llm → 5 keys in 1.9s",
+    "4.50 tool: care_plan_llm retry → 1 missing line(s) requested",
+    "4.50 tool: build_care_plan → 1 medicine(s), 0 avoid, 0 red flag(s), 0 excluded",
+    "4.50 tool: check_care_plan → ok",
+    "4.50 tool: draft_outputs() → note drafted (llm): 4 sections, 21 lines; care plan: medicines Tramad…",
+    "4.50 tool: render_outputs → doctor_pdf, patient_pdf",
+    "4.50 tool: render_outputs() → rendered: doctor_pdf, patient_pdf, wa_link, sms_link; 0 warning(s).",
+    "4.50 agent: wrap-up agent: 3 step(s), 2 tool call(s), 6.3s, 1150/229 tok ($0.0006)",
+    "4.50 agent: wrap-up agent: ok=True steps=3",
+    "4.50 system: wrap-up done (agent) in 6.3s: 0 warning(s)"
+   ],
+   "stats": {
+    "runs": 3,
+    "latency_s": [
+     0.0,
+     3.89,
+     4.96
+    ],
+    "extract_tokens": [
+     7420,
+     927
+    ],
+    "agent_tokens": [
+     5288,
+     1891
+    ],
+    "cost_usd": 0.006561299999999999
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 3.89,
+     "extract_s": 1.84,
+     "agent_s": 2.05,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5363,
+     "output_tokens": 992,
+     "extract_tokens": [
+      3685,
+      281
+     ],
+     "agent_tokens": [
+      1678,
+      711
+     ],
+     "cost_usd": 0.001884
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 4.96,
+     "extract_s": 2.64,
+     "agent_s": 2.31,
+     "agent_steps": 2,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 7345,
+     "output_tokens": 1826,
+     "extract_tokens": [
+      3735,
+      646
+     ],
+     "agent_tokens": [
+      3610,
+      1180
+     ],
+     "cost_usd": 0.003193
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794025652.789685,
+     "latency_s": 5.9,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Medication history missing",
+     "severity": "caution"
+    },
+    "c002": {
+     "turn": 2,
+     "wall": 1794025653.720455,
+     "latency_s": 0.93,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Dose ceiling · DOSE-TRAM-01",
+     "severity": "critical"
+    },
+    "c003": {
+     "turn": 4,
+     "wall": 1794025660.863426,
+     "latency_s": 7.14,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Medication history not recorded",
+     "severity": "caution"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 5.9,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Medication history missing"
+    },
+    {
+     "card": "c002",
+     "turn": 2,
+     "latency_s": 0.93,
+     "status": "open",
+     "severity": "critical",
+     "rule_ids": [
+      "DOSE-TRAM-01"
+     ],
+     "title": "Dose ceiling · DOSE-TRAM-01"
+    },
+    {
+     "card": "c002",
+     "turn": 3,
+     "latency_s": 0.0,
+     "status": "resolved",
+     "severity": "critical",
+     "rule_ids": [
+      "DOSE-TRAM-01"
+     ],
+     "title": "Dose ceiling · DOSE-TRAM-01"
+    },
+    {
+     "card": "c003",
+     "turn": 4,
+     "latency_s": 7.14,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Medication history not recorded"
+    }
+   ],
+   "rules_seen": {
+    "DOSE-TRAM-01": {
+     "turn": 2,
+     "latency_s": 0.93,
+     "card": "c002",
+     "severity": "critical",
+     "family": "dose_ceiling",
+     "message": "Tramadol 500 mg/day exceeds 400 mg/day."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      7388,
+      2146,
+      7
+     ],
+     "openai/gpt-oss-120b|groq": [
+      7420,
+      927,
+      2
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      5288,
+      1891,
+      2,
+      4.358158826828003,
+      0
+     ],
+     "wrap-up agent": [
+      1150,
+      229,
+      1,
+      6.3310041427612305,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.006,
+    "cost_agent_usd": 0.00384,
+    "cost_usd": 0.00985,
+    "llm_usage_delta": {
+     "calls": 15,
+     "prompt_tokens": 21246,
+     "completion_tokens": 5193
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 22.8,
+   "checks": [
+    {
+     "type": "hold",
+     "desc": "held: tramadol DOSE-TRAM-01 at turn 2",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "t2 tramadol DOSE-TRAM-01 ['DOSE-TRAM-01']",
+     "gap": false,
+     "note": "500 mg/day only if the extractor counts the PRN dose in the frequency",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/dose-09-tramadol-qds-plus-prn_patient.pdf pages=1 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/dose-09-tramadol-qds-plus-prn_doctor.pdf pages=2 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "every character sent to the PDFs has a glyph in a bundled font",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has the native title (tr)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "native title 'İlaçlarınız ve bakım talimatları'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient sheet labels exist for tr",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title label = 'İlaçlarınız ve bakım talimatları'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF title names the language",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title='Your medicines and care instructions (Turkish)'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF names the patient language (Turkish)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF records the held instruction",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has a Safety alerts section",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "wrap-up reached the review/sent screen",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "screen=sent agentic=agent",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "heat-01-collapse-site-brain-hot",
+   "title": "Worker collapsed on site, confused and vomiting, 'dimaag taatyo'; no core temperature at first",
+   "category": "heat",
+   "patient_lang": "ne",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.88,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.88
+     },
+     "utt": "u003",
+     "english": "What happened today?",
+     "translation": "आज के भयो?",
+     "wait_s": 1.22,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.83,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.83
+     },
+     "utt": "u004",
+     "english": "I was working on the site in the afternoon under the sun, dimaag taataeyo, and then I fell. I am still feeling dizzy, and I vomited twice.",
+     "translation": "",
+     "wait_s": 6.13,
+     "open_cards": [
+      "c003",
+      "c001",
+      "c005",
+      "c002",
+      "c004"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.77,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.77
+     },
+     "utt": "u005",
+     "english": "Do you know where you are now? What day is it?",
+     "translation": "के तपाईंलाई थाहा छ तपाईं अहिले कहाँ हुनुहुन्छ? आज कति हो?",
+     "wait_s": 1.22,
+     "open_cards": [
+      "c003",
+      "c001",
+      "c005",
+      "c002",
+      "c004"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.06,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 1.06
+     },
+     "utt": "u006",
+     "english": "I don't know... is it a hospital? Today... is it Monday?",
+     "translation": "",
+     "wait_s": 4.02,
+     "open_cards": [
+      "c003",
+      "c007",
+      "c001",
+      "c005",
+      "c006",
+      "c002",
+      "c004"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.99,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.99
+     },
+     "utt": "u007",
+     "english": "Nurse, get a rectal temperature now and start cooling him with cold water and fans.",
+     "translation": "नर्स, अहिले रेक्टल तापक्रम लिऊँ र चिसो पानी र पंखा प्रयोग गरेर उहाँलाई शीतल बनाउन सुरु गरौं।",
+     "wait_s": 4.83,
+     "open_cards": [
+      "c001",
+      "c005",
+      "c006",
+      "c002"
+     ]
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T07:27:26",
+   "end_visit_s": 8.3,
+   "approve_s": 0.55,
+   "screen": "sent",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {
+    "total_s": 8.297,
+    "draft_note_s": 1.193,
+    "care_plan_s": 3.501,
+    "check_s": 0.0,
+    "agent_s": 7.189,
+    "render_s": 1.108,
+    "mode": "agent+fallback",
+    "agent_steps": 4,
+    "llm_calls": 3,
+    "note_source": "llm",
+    "note_llm_calls": 1,
+    "note_chunks": 0,
+    "care_plan_llm_s": 3.5,
+    "llm_prompt_tokens": 4695,
+    "llm_completion_tokens": 2727
+   },
+   "agentic": "agent+fallback",
+   "care_plan": {
+    "lang": "ne",
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [
+     {
+      "en": "Get rectal temperature now and start cooling with water and fans.",
+      "native": "अब रेक्टल तापक्रम जाँच गर्नुहोस् र पानी र पंखा प्रयोग गरी शीतल गर्नुहोस्।"
+     }
+    ],
+    "follow_up": {
+     "en": "",
+     "native": ""
+    }
+   },
+   "note_md": "# Consultation note\n\nEncounter 3F694F81 · 07 Nov 2026 07:27 · Patient language: Nepali · Interpreter: Bayan AI\n\n## Allergies\n\n- No known allergies recorded\n\n## Presenting complaint\n\nCollapse after heat exposure with dizziness and vomiting\n\n## History\n\n- Patient was working on a construction site in the afternoon under the sun when he collapsed\n- Patient reports ongoing dizziness since the collapse\n- Patient vomited twice after the incident\n- Heat exposure noted as a contributing factor\n- Occupation: construction site work\n\n## Observations and investigations\n\n- Temp core: Pending\n\n## Plan\n\n- Obtain rectal temperature and initiate active cooling with cold water and fans\n\n## Information given to patient\n\n- Care plan given in Nepali (QR code to the plan page and PDF).\n\n## Safety alerts\n\n- The patient described collapse as \"dimaag taataeyo\" (my brain got hot), which can hide heat illness.\n- Heat illness, without core. Then ordered.\n",
+   "pdf": {
+    "patient": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/heat-01-collapse-site-brain-hot_patient.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 65279,
+     "pages": 1,
+     "title": "Your medicines and care instructions (Nepali)",
+     "text": "तपाईं\u0005को औषधि\u000b र हेरचाह नि\u0011र्दे\u0013शन\nYour medicines and care instructions\n07 Nov 2026\nअन्य नि\u0011र्दे\u0013शन\nOther instructions\nअब रेक्टल तापक्रम जाँच गर्नु\u0012\u0013होस् र पानी र पंखा प्रयोग गरी शीतल गर्नु\u0012\u0013होस्।\nGet rectal temperature now and start cooling with water and fans.\nआपतकालीन अवस्थामा, 999 मा कल गर्नु%&होस्।\nIn an emergency, call 999.\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansDevanagari",
+      "MPDFAA+NotoSansDevanagariBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/heat-01-collapse-site-brain-hot_patient_p1.png"
+    },
+    "doctor": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/heat-01-collapse-site-brain-hot_doctor.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 75732,
+     "pages": 2,
+     "title": "Consultation note",
+     "text": "Bayan AI\nInterpreter & Clinical Safety Copilot\nConsultation note\nEncounter 3F694F81\n07 Nov 2026, 07:27\nPatient ID\nP-3F694F\nAge / sex\nNot recorded\nPatient language\nNepali\nClinician language\nEnglish\nInterpretation\nBayan AI\nConsent to interpretation\nRecorded (patient\nagreed)\nEncounter start\n2026-11-07 07:27\nDuration\n4 min\nAllergies\nNo known allergies recorded\nPresenting complaint\nCollapse after heat exposure with dizziness and vomiting\nHistory\nPatient was working on a construction site in the afternoon under the sun when he collapsed\nPatient reports ongoing dizziness since the collapse\nPatient vomited twice after the incident\nHeat exposure noted as a contributing factor\nOccupation: construction site work\nObservations and investigations\nTest\nStatus\nResult (as stated by clinician)\nTemp core\nOrdered\nPending\nPlan\nObtain rectal temperature and initiate active cooling with cold water and fans\nInformation given to patient\nCare plan given in Nepali (QR code to the plan page and PDF).\nSafety alerts\nThe patient described collapse as \"dimaag taataeyo\" (my brain got hot), which can hide heat illness.\nHeat illness, without core. Then ordered.\nReviewed by\nSignature\nDate/time\nPage 1 of 2\n\nTranscript\nTime\nSpeaker\nSaid\nInterpreted\n00:00\nInterpreter\nनमस्ते। म बयान हुँ। म तपाईं\u000e र डाक्टरको कुरा अनुवाद\nगर्छु\u001b\u001c। के तपाईं\u000e आफ्नो आवाज प्रशोधन गर्न\u001c सहमति(\nदि*नुहुन्छ?\nConsent: Hello, I am Bayan. I translate\nbetween you and the doctor. Your voice is\nprocessed to translate it and is not stored.\nDo you agree?\n00:00\nPatient\nYes\nYes (consent given on screen)\n00:30\nClinician\nWhat happened today?\nआज के भयो?\n01:15\nPatient\nदि*उँसो साइटमा घाममा काम गर्दै3 थि5एँ, दि*माग तात्यो,\nअनि: ढलेँ। अहि?ले पनि: अलमल्ल भइरहेको छ, दुई\u001c पटक\nबान्ता भयो।\nI was working on the site in the afternoon\nunder the sun, dimaag taataeyo, and then\nI fell. I am still feeling dizzy, and I vomited\ntwice.\n02:00\nClinician\nDo you know where you are now? What\nday is it?\nके तपाईं\u000eलाई\u001c थाहा छ तपाईं\u000e अहि?ले कहाँ हुनुहुन्छ? आज\nकति( हो?\n02:45\nPatient\nथाहा छैन... अस्पताल हो किG? आज... सोमबार किG?\nI don't know... is it a hospital? Today... is it\nMonday?\n03:30\nClinician\nNurse, get a rectal temperature now and\nstart cooling him with cold water and\nfans.\nनर्स\u001c, अहि?ले रेक्टल तापक्रम लिKऊँ र चिNसो पानी र पंखा\nप्रयोग गरेर उहाँलाई\u001c शीतल बनाउन सुरु गरौं।\nPage 2 of 2\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansDevanagari",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/heat-01-collapse-site-brain-hot_doctor_p1.png"
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [],
+    "stopped_meds": [],
+    "symptoms": [
+     "collapse",
+     "dizziness",
+     "vomiting",
+     "vomiting_in_heat"
+    ],
+    "investigations": [
+     "temp_core:ordered"
+    ],
+    "assessments": [],
+    "disposition": null,
+    "patient": {
+     "heat_exposure": true
+    },
+    "idiom_hits": [
+     "npi-009"
+    ],
+    "questions_asked": []
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "lexicon",
+     "kind": "idiom",
+     "severity": "caution",
+     "status": "open",
+     "title": "Idiom: dimaag taataeyo (दिमाग तात्यो)",
+     "body": "Literal: my brain got hot. Likely meanings: Anger with a felt heat in the head (high); Headache (low); Literal heat illness or fever in an outdoor worker (low). Can mask: Heat exhaustion or heat stroke (outdoor work in summer, confusion, collapse); Fever or meningitis.",
+     "ask_text": null,
+     "grounding": "npi-009",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c002",
+     "source": "fallback",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Do you mean you feel angry, or does your head actually feel hot or painful?",
+     "body": "'dimaag taataeyo' can mask: Heat exhaustion or heat stroke (outdoor work in summer, confusion, collapse); Fever or meningitis",
+     "ask_text": "Do you mean you feel angry, or does your head actually feel hot or painful?",
+     "grounding": "npi-009",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c003",
+     "source": "rules",
+     "kind": "missed",
+     "severity": "critical",
+     "status": "resolved",
+     "title": "Heat-illness workup",
+     "body": "WORK-HEAT-01: Heat exposure plus collapse (“I was working on the site in the afternoon under the sun, ... and then I fell.”, 01:15), but no core (rectal) temperature recorded. Suspect exertional heat stroke.",
+     "ask_text": null,
+     "grounding": "heat_illness",
+     "rule_ids": [
+      "WORK-HEAT-01"
+     ],
+     "t_min": 1.25
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about active cooling",
+     "body": "Patient worked in heat and collapsed; cooling measures not yet documented.",
+     "ask_text": "Did you try to cool down, like drinking water or moving to shade?",
+     "grounding": "active_cooling",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c005",
+     "source": "agent",
+     "kind": "missed",
+     "severity": "caution",
+     "status": "open",
+     "title": "CK not ordered",
+     "body": "Heat illness can cause rhabdomyolysis; CK not in state.",
+     "ask_text": null,
+     "grounding": "ck",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c006",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about fluid intake",
+     "body": "Patient worked in heat and is dizzy/vomiting; fluid intake not yet asked.",
+     "ask_text": "How much water did you drink and how long were you working in the heat?",
+     "grounding": "ask_fluid_intake",
+     "rule_ids": [],
+     "t_min": 2.75
+    },
+    {
+     "id": "c007",
+     "source": "agent",
+     "kind": "missed",
+     "severity": "caution",
+     "status": "resolved",
+     "title": "No active cooling started",
+     "body": "Heat exposure with collapse; active cooling not recorded.",
+     "ask_text": null,
+     "grounding": "active_cooling",
+     "rule_ids": [],
+     "t_min": 2.75
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "idiom",
+     "source": "lexicon",
+     "title": "Idiom: dimaag taataeyo (दिमाग तात्यो)",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "fallback",
+     "title": "Do you mean you feel angry, or does your head actually feel hot or painful?",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c003",
+     "rule_id": "WORK-HEAT-01",
+     "action": "shown",
+     "severity": "critical",
+     "kind": "missed",
+     "source": "rules",
+     "title": "Heat-illness workup",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about active cooling",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c005",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "missed",
+     "source": "agent",
+     "title": "CK not ordered",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c006",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about fluid intake",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c007",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "missed",
+     "source": "agent",
+     "title": "No active cooling started",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c003",
+     "rule_id": "WORK-HEAT-01",
+     "action": "resolved",
+     "severity": "critical",
+     "kind": "missed",
+     "source": "rules",
+     "title": "Heat-illness workup",
+     "reason": "rule no longer fires",
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c007",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "caution",
+     "kind": "missed",
+     "source": "agent",
+     "title": "No active cooling started",
+     "reason": "checklist item done",
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about active cooling",
+     "reason": "checklist item done",
+     "t_min": 3.5
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: lookup_idiom('दिमाग तात्यो') → npi-009 (talk loop)",
+    "1.25 card: + caution idiom card c001: Idiom: dimaag taataeyo (दिमाग तात्यो) [npi-009]",
+    "1.25 card: + info ask card c002: Do you mean you feel angry, or does your head actually feel hot or painful? [npi-009]",
+    "1.25 tool: lookup_idiom('दिमाग तात्यो') → npi-009",
+    "1.25 tool: update_state → +collapse, +dizziness, +vomiting, +vomiting_in_heat, heat_exposure=True, +idiom npi-009",
+    "1.25 tool: check_safety_rules → WORK-HEAT-01",
+    "1.25 card: + critical missed card c003: Heat-illness workup [WORK-HEAT-01]",
+    "1.25 card: + info ask card c004: Ask about active cooling [active_cooling]",
+    "1.25 card: + caution missed card c005: CK not ordered [ck]",
+    "1.25 tool: final_answer([ask 'Ask about active cooling', missed 'CK not ordered']) → c004; c005",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 2.2s, 2014/697 tok ($0.0012)",
+    "2.00 tool: update_state deferred: u005 (question, batched with the answer)",
+    "2.00 tool: check_safety_rules → WORK-HEAT-01",
+    "2.00 agent: copilot skipped: nothing new in u005",
+    "2.75 tool: update_state → no new facts",
+    "2.75 tool: check_safety_rules → WORK-HEAT-01",
+    "2.75 card: + info ask card c006: Ask about fluid intake [ask_fluid_intake]",
+    "2.75 card: + caution missed card c007: No active cooling started [active_cooling]",
+    "2.75 tool: final_answer([ask 'Ask about fluid intake', missed 'No active cooling started']) → c006; c007",
+    "2.75 agent: copilot: 1 step(s), 1 tool call(s), 1.3s, 2094/540 tok ($0.0011)",
+    "3.50 tool: update_state → temp_core ordered, +active_cooling",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 card: ✓ resolved c003: Heat-illness workup",
+    "3.50 card: ✓ resolved c007: No active cooling started (checklist item done)",
+    "3.50 card: ✓ resolved c004: Ask about active cooling (checklist item done)",
+    "3.50 tool: final_answer([ask 'Ask about fluid intake', missed 'CK not ordered']) → duplicate; duplicate",
+    "3.50 agent: copilot: 1 step(s), 1 tool call(s), 1.2s, 2052/503 tok ($0.0011)",
+    "4.50 tool: note_llm → 7 items (llm)",
+    "4.50 tool: draft_note → 37 lines",
+    "4.50 tool: care_plan_llm → 4 keys in 2.2s",
+    "4.50 tool: care_plan_llm retry → 0 missing line(s) requested",
+    "4.50 tool: build_care_plan → 0 medicine(s), 0 avoid, 0 red flag(s), 0 excluded",
+    "4.50 tool: check_care_plan → ok",
+    "4.50 tool: draft_outputs() → note drafted (llm): 4 sections, 37 lines; care plan: medicines none; …",
+    "4.50 agent: wrap-up agent step 2 error: Error while parsing tool call from model output: Message contains no content and no tool calls",
+    "4.50 agent: wrap-up agent step 3 error: Error while parsing tool call from model output: Message contains no content and no tool calls",
+    "4.50 agent: wrap-up agent step 4 error: Error while parsing tool call from model output: Message contains no content and no tool calls",
+    "4.50 agent: wrap-up agent: 4 step(s), 1 tool call(s), 7.2s, 1600/264 tok ($0.0008)",
+    "4.50 agent: wrap-up agent: ok=True steps=4",
+    "4.50 tool: render_outputs → doctor_pdf, patient_pdf",
+    "4.50 system: wrap-up done (agent+fallback) in 8.3s: 0 warning(s)"
+   ],
+   "stats": {
+    "runs": 5,
+    "latency_s": [
+     0.0,
+     4.91,
+     0.0,
+     2.8,
+     3.62
+    ],
+    "extract_tokens": [
+     11424,
+     1678
+    ],
+    "agent_tokens": [
+     6160,
+     1740
+    ],
+    "cost_usd": 0.0087179
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 4.91,
+     "extract_s": 2.73,
+     "agent_s": 2.17,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5756,
+     "output_tokens": 1446,
+     "extract_tokens": [
+      3742,
+      749
+     ],
+     "agent_tokens": [
+      2014,
+      697
+     ],
+     "cost_usd": 0.002351
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 2.8,
+     "extract_s": 1.53,
+     "agent_s": 1.26,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5920,
+     "output_tokens": 827,
+     "extract_tokens": [
+      3826,
+      287
+     ],
+     "agent_tokens": [
+      2094,
+      540
+     ],
+     "cost_usd": 0.001927
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 3.62,
+     "extract_s": 2.39,
+     "agent_s": 1.23,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5908,
+     "output_tokens": 1145,
+     "extract_tokens": [
+      3856,
+      642
+     ],
+     "agent_tokens": [
+      2052,
+      503
+     ],
+     "cost_usd": 0.002155
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794025649.695769,
+     "latency_s": 0.86,
+     "source": "lexicon",
+     "kind": "idiom",
+     "title": "Idiom: dimaag taataeyo (दिमाग तात्यो)",
+     "severity": "caution"
+    },
+    "c002": {
+     "turn": 1,
+     "wall": 1794025649.695769,
+     "latency_s": 0.86,
+     "source": "fallback",
+     "kind": "ask",
+     "title": "Do you mean you feel angry, or does your head actually feel hot or painful?",
+     "severity": "info"
+    },
+    "c003": {
+     "turn": 1,
+     "wall": 1794025653.637457,
+     "latency_s": 4.8,
+     "source": "rules",
+     "kind": "missed",
+     "title": "Heat-illness workup",
+     "severity": "critical"
+    },
+    "c004": {
+     "turn": 1,
+     "wall": 1794025655.8004532,
+     "latency_s": 6.96,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about active cooling",
+     "severity": "info"
+    },
+    "c005": {
+     "turn": 1,
+     "wall": 1794025655.8004532,
+     "latency_s": 6.96,
+     "source": "agent",
+     "kind": "missed",
+     "title": "CK not ordered",
+     "severity": "caution"
+    },
+    "c006": {
+     "turn": 3,
+     "wall": 1794025662.866039,
+     "latency_s": 5.08,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about fluid intake",
+     "severity": "info"
+    },
+    "c007": {
+     "turn": 3,
+     "wall": 1794025662.866039,
+     "latency_s": 5.08,
+     "source": "agent",
+     "kind": "missed",
+     "title": "No active cooling started",
+     "severity": "caution"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 0.86,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Idiom: dimaag taataeyo (दिमाग तात्यो)"
+    },
+    {
+     "card": "c002",
+     "turn": 1,
+     "latency_s": 0.86,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Do you mean you feel angry, or does your head actually feel hot or painful?"
+    },
+    {
+     "card": "c003",
+     "turn": 1,
+     "latency_s": 4.8,
+     "status": "open",
+     "severity": "critical",
+     "rule_ids": [
+      "WORK-HEAT-01"
+     ],
+     "title": "Heat-illness workup"
+    },
+    {
+     "card": "c004",
+     "turn": 1,
+     "latency_s": 6.96,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about active cooling"
+    },
+    {
+     "card": "c005",
+     "turn": 1,
+     "latency_s": 6.96,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "CK not ordered"
+    },
+    {
+     "card": "c006",
+     "turn": 3,
+     "latency_s": 5.08,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about fluid intake"
+    },
+    {
+     "card": "c007",
+     "turn": 3,
+     "latency_s": 5.08,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "No active cooling started"
+    },
+    {
+     "card": "c003",
+     "turn": 4,
+     "latency_s": 4.58,
+     "status": "resolved",
+     "severity": "critical",
+     "rule_ids": [
+      "WORK-HEAT-01"
+     ],
+     "title": "Heat-illness workup"
+    },
+    {
+     "card": "c004",
+     "turn": 4,
+     "latency_s": 4.58,
+     "status": "resolved",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about active cooling"
+    },
+    {
+     "card": "c007",
+     "turn": 4,
+     "latency_s": 4.58,
+     "status": "resolved",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "No active cooling started"
+    }
+   ],
+   "rules_seen": {
+    "WORK-HEAT-01": {
+     "turn": 1,
+     "latency_s": 4.8,
+     "card": "c003",
+     "severity": "critical",
+     "family": "missing_workup",
+     "message": "Heat exposure plus collapse (“I was working on the site in the afternoon under the sun, ... and then I fell.”, 01:15), but no core (rectal) temperature recorded. Suspect exertional heat stroke."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      9000,
+      2980,
+      8
+     ],
+     "openai/gpt-oss-120b|groq": [
+      11424,
+      1678,
+      3
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      6160,
+      1740,
+      3,
+      4.66435980796814,
+      0
+     ],
+     "wrap-up agent": [
+      1600,
+      264,
+      1,
+      7.188806056976318,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.00836,
+    "cost_agent_usd": 0.00422,
+    "cost_usd": 0.01258,
+    "llm_usage_delta": {
+     "calls": 18,
+     "prompt_tokens": 28184,
+     "completion_tokens": 6662
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 30.8,
+   "checks": [
+    {
+     "type": "flag",
+     "desc": "idiom grounding=npi-009 by turn 1",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "lexicon/idiom/caution 'Idiom: dimaag taataeyo (दिमाग तात्यो)'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "flag",
+     "desc": "WORK-HEAT-01 severity=critical by turn 3",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "WORK-HEAT-01@t1 critical",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "patient.heat_exposure == True",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "patient.heat_exposure=True",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/heat-01-collapse-site-brain-hot_patient.pdf pages=1 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/heat-01-collapse-site-brain-hot_doctor.pdf pages=2 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "every character sent to the PDFs has a glyph in a bundled font",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has devanagari text",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "129 devanagari chars",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient sheet labels exist for ne",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title label = 'तपाईंको औषधि र हेरचाह निर्देशन'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF title names the language",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title='Your medicines and care instructions (Nepali)'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF names the patient language (Nepali)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has a Safety alerts section",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "wrap-up reached the review/sent screen",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "screen=sent agentic=agent+fallback",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "heat-02-matha-gorom-diclofenac",
+   "title": "Bengali labourer, 'matha gorom', dark urine, little water; doctor gives diclofenac",
+   "category": "heat",
+   "patient_lang": "bn",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.79,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.79
+     },
+     "utt": "u003",
+     "english": "Tell me what is wrong. Any allergies?",
+     "translation": "আপনি কী ভুল আছে তা বলুন। কোনো অ্যালার্জি আছে কি?",
+     "wait_s": 1.22,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.86,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.85
+     },
+     "utt": "u004",
+     "english": "No allergies. I work outdoors all day, my head gets hot, shorir durbol. I drink little water, urine is yellow.",
+     "translation": "",
+     "wait_s": 5.99,
+     "open_cards": [
+      "c001",
+      "c003",
+      "c002",
+      "c004",
+      "c005"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.97,
+     "talk": {
+      "drugs": [
+       {
+        "name": "diclofenac",
+        "intent": "prescribe",
+        "dose_mg": 50,
+        "frequency_per_day": 3,
+        "dose": "50 mg"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "s": 0.96
+     },
+     "utt": "u005",
+     "english": "You look dry. For the headache and body pain take diclofenac 50 mg three times a day.",
+     "translation": "আপনার ত্বক শুষ্ক দেখাচ্ছে। মাথাব্যথা ও শরীরের ব্যথার জন্য ডিক্লোফেনাক ৫০ মিগ্রা দিনে তিনবার নিন।",
+     "wait_s": 5.56,
+     "open_cards": [
+      "c006",
+      "c001",
+      "c003",
+      "c007",
+      "c002",
+      "c004",
+      "c005"
+     ]
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T07:27:33",
+   "end_visit_s": 6.98,
+   "approve_s": 0.55,
+   "screen": "sent",
+   "warnings": [
+    "Dropped from history: “no known allergies”: not stated by anyone in the consultation (no known).",
+    "Dropped from history: “moderate dehydration”: not stated by anyone in the consultation (dehydration)."
+   ],
+   "review_warnings": [],
+   "wrapup_metrics": {
+    "total_s": 6.973,
+    "draft_note_s": 1.292,
+    "care_plan_s": 2.986,
+    "check_s": 0.0,
+    "render_s": 1.139,
+    "agent_s": 6.973,
+    "mode": "agent",
+    "agent_steps": 3,
+    "llm_calls": 3,
+    "note_source": "llm",
+    "note_llm_calls": 1,
+    "note_chunks": 0,
+    "care_plan_llm_s": 2.982,
+    "llm_prompt_tokens": 4263,
+    "llm_completion_tokens": 2368
+   },
+   "agentic": "agent",
+   "care_plan": {
+    "lang": "bn",
+    "medicines": [
+     {
+      "drug": "diclofenac",
+      "name": "Diclofenac",
+      "name_native": "ডিক্লোফেনাক",
+      "title_en": "Diclofenac 50 mg",
+      "note_en": "Take 50 mg 3 times a day.",
+      "note_native": "দিনে ৩ বার ৫০ মিগ্রা নিন।",
+      "prn": false
+     }
+    ],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {
+     "en": "",
+     "native": ""
+    }
+   },
+   "note_md": "# Consultation note\n\nEncounter CDBED5F3 · 07 Nov 2026 07:27 · Patient language: Bengali · Interpreter: Bayan AI\n\n## Allergies\n\n- No known allergies recorded\n\n## Presenting complaint\n\nheadache and body weakness\n\n## History\n\n- head gets hot\n- body weakness\n- works outdoors all day\n- low fluid intake, yellow urine\n\n## Observations and investigations\n\n- Patient appears dry\n\n## Medication changes\n\n- Diclofenac 50 mg, 3 times a day: started\n\n## Information given to patient\n\n- Care plan given in Bengali (QR code to the plan page and PDF).\n\n## Safety alerts\n\n- The patient described weakness as \"shorir durbol\" (my body is weak), which can hide heat illness.\n- The patient described weakness as \"matha gorom\" (my head is hot), which can hide heat illness.\n- NSAID prescribed to a dehydrated, heat-exposed patient.\n",
+   "pdf": {
+    "patient": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/heat-02-matha-gorom-diclofenac_patient.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 67325,
+     "pages": 1,
+     "title": "Your medicines and care instructions (Bengali)",
+     "text": "আপনার ওষুধ ও যত্নে\f\r র নি\u000fর্দে\u0011\u0012 শনা\nYour medicines and care instructions\n07 Nov 2026\nআপনার ওষুধ\nYour medicines\nডি\u0015ক্ল\u0017\n\u0018\nোফে\u001bনাক 50 মি\u001eগ্রা\nDiclofenac 50 mg\nদি\u0002নে\u0004 3 বার 50 মি\tগ্রা নি\u0004ন।\nTake 50 mg 3 times a day.\nদৈ\u0011নি\u000fক সময়& সূচি)\nDaily schedule\nওষুধ\nMedicine\nসকালে+র খাবার\nBreakfast\nদুপুরে1র খাবার\nLunch\nরাতে3র খাবার\nDinner\nডি\u0015ক্ল\u0017\n\u0018\nোফে\u001bনাক\nDiclofenac\n50 মি\u001eগ্রা\n50 mg\n50 মি\u001eগ্রা\n50 mg\n50 মি\u001eগ্রা\n50 mg\nজরুরি1 অবস্থায়& 999 নম্ব= রে1 কল করুন।\nIn an emergency, call 999.\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBengali",
+      "MPDFAA+NotoSansBengaliBold",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/heat-02-matha-gorom-diclofenac_patient_p1.png"
+    },
+    "doctor": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/heat-02-matha-gorom-diclofenac_doctor.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 77043,
+     "pages": 2,
+     "title": "Consultation note",
+     "text": "Bayan AI\nInterpreter & Clinical Safety Copilot\nConsultation note\nEncounter CDBED5F3\n07 Nov 2026, 07:27\nPatient ID\nP-CDBED5\nAge / sex\nNot recorded\nPatient language\nBengali\nClinician language\nEnglish\nInterpretation\nBayan AI\nConsent to interpretation\nRecorded (patient\nagreed)\nEncounter start\n2026-11-07 07:27\nDuration\n2 min\nAllergies\nNo known allergies recorded\nPresenting complaint\nheadache and body weakness\nHistory\nhead gets hot\nbody weakness\nworks outdoors all day\nlow fluid intake, yellow urine\nObservations and investigations\nPatient appears dry\nMedication changes\nMedicine\nDose\nRoute\nFrequency\nDuration\nStatus\nDiclofenac\n50 mg\n3 times a day\nStarted\nInformation given to patient\nCare plan given in Bengali (QR code to the plan page and PDF).\nSafety alerts\nThe patient described weakness as \"shorir durbol\" (my body is weak), which can hide heat illness.\nThe patient described weakness as \"matha gorom\" (my head is hot), which can hide heat illness.\nNSAID prescribed to a dehydrated, heat-exposed patient.\nReviewed by\nSignature\nDate/time\nPage 1 of 2\n\nTranscript\nTime\nSpeaker\nSaid\nInterpreted\n00:00\nInterpreter\nহ্যাল\u0005ো, আমি\t বায়\f ান। আমি\t আপনার এবং\nডাক্ত\u0016 ারে\u0018র মধ্যে\u001b\u001c অনুবাদ করি\u0018। আপনার কণ্ঠ% স্ব\u0016 র\nঅনুবাদে)র জন্য প্রক্রি/\u00160 য়\f াকৃত হয়\f এবং সংরক্ষণ করা\nহয়\f না। আপনি7 কি9 সম্মত?\nConsent: Hello, I am Bayan. I translate\nbetween you and the doctor. Your voice is\nprocessed to translate it and is not stored.\nDo you agree?\n00:00\nPatient\nYes\nYes (consent given on screen)\n00:30\nClinician\nTell me what is wrong. Any allergies?\nআপনি7 কী ভুল আছেB তা বলুন। ক9োন7ো অ্যালার্জিFGH\nআছেB কি9?\n01:15\nPatient\nএলার্জিFGH নে7ই। সারাদি)ন র\u0018োদে) কাজ করি\u0018, মাথা গরম\nহয়েP\f থাকে9, শরীর দুর্বFল। পানি7 কম খাই, প্রস্রাব\nহলুদ।\nNo allergies. I work outdoors all day, my\nhead gets hot, shorir durbol. I drink little\nwater, urine is yellow.\n02:00\nClinician\nYou look dry. For the headache and body\npain take diclofenac 50 mg three times a\nday.\nআপনার ত্বক শুষ্ক]^ দে)খাচ্ছেaB। মাথাব্যথা ও শরীরে\u0018র\nব্যথার জন্য ডিdক্লfg োফেiনাক 50 মি\tগ্রা দি)নে7 তিnনবার\nনি7ন।\nPage 2 of 2\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBengali",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/png/heat-02-matha-gorom-diclofenac_doctor_p1.png"
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "diclofenac",
+      "dose_mg": 50,
+      "frequency_per_day": 3,
+      "daily_dose_mg": 150,
+      "dose_raw": "50 mg",
+      "as_needed": null,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [
+     "weakness"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {
+     "heat_exposure": true,
+     "dehydration": "moderate"
+    },
+    "idiom_hits": [
+     "ben-005",
+     "ben-003"
+    ],
+    "questions_asked": [
+     "allergies"
+    ]
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "lexicon",
+     "kind": "idiom",
+     "severity": "caution",
+     "status": "open",
+     "title": "Idiom: shorir durbol (শরীর দুর্বল)",
+     "body": "Literal: my body is weak. Likely meanings: Fatigue with low mood or stress (medium); Anaemia, diabetes, infection or dehydration (medium); Focal weakness from stroke (low). Can mask: Stroke; Anaemia; Hyperglycaemia; Heat exhaustion.",
+     "ask_text": null,
+     "grounding": "ben-005",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c002",
+     "source": "fallback",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Is the weakness everywhere, or in one arm or leg?",
+     "body": "'shorir durbol' can mask: Stroke; Anaemia; Hyperglycaemia; Heat exhaustion",
+     "ask_text": "Is the weakness everywhere, or in one arm or leg?",
+     "grounding": "ben-005",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c003",
+     "source": "lexicon",
+     "kind": "idiom",
+     "severity": "caution",
+     "status": "open",
+     "title": "Idiom: matha gorom (মাথা গরম)",
+     "body": "Literal: my head is hot. Likely meanings: Anger, temper or irritability (high); Literal heat illness or fever in a heat-exposed worker (low). Can mask: Heat stroke (confusion, collapse); Fever or meningitis.",
+     "ask_text": null,
+     "grounding": "ben-003",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c004",
+     "source": "fallback",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Do you mean you feel angry, or does your head feel hot?",
+     "body": "'matha gorom' can mask: Heat stroke (confusion, collapse); Fever or meningitis",
+     "ask_text": "Do you mean you feel angry, or does your head feel hot?",
+     "grounding": "ben-003",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c005",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about thirst",
+     "body": "Patient reports low water intake and yellow urine; thirst could indicate dehydration or hyperglycemia.",
+     "ask_text": "Are you feeling thirsty?",
+     "grounding": "ben-005",
+     "rule_ids": [],
+     "t_min": 1.25
+    },
+    {
+     "id": "c006",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "caution",
+     "status": "open",
+     "title": "Heat & medication · HEAT-MED-01",
+     "body": "NSAID prescribed to a dehydrated, heat-exposed patient. Kidney injury risk is higher. Consider paracetamol and rehydration first.",
+     "ask_text": null,
+     "grounding": "HEAT-MED-01",
+     "rule_ids": [
+      "HEAT-MED-01"
+     ],
+     "t_min": 2.0
+    },
+    {
+     "id": "c007",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "info",
+     "status": "open",
+     "title": "Dehydration with NSAID risk",
+     "body": "Patient reports little water intake and yellow urine (u004) while diclofenac prescribed, increasing kidney injury risk.",
+     "ask_text": null,
+     "grounding": "HEAT-MED-01",
+     "rule_ids": [],
+     "t_min": 2.0
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "idiom",
+     "source": "lexicon",
+     "title": "Idiom: shorir durbol (শরীর দুর্বল)",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "fallback",
+     "title": "Is the weakness everywhere, or in one arm or leg?",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "idiom",
+     "source": "lexicon",
+     "title": "Idiom: matha gorom (মাথা গরম)",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "fallback",
+     "title": "Do you mean you feel angry, or does your head feel hot?",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c005",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about thirst",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": null,
+     "rule_id": null,
+     "action": "rejected",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about dizziness or fainting",
+     "reason": "ask-card cap reached (3 open); wait for the doctor",
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c006",
+     "rule_id": "HEAT-MED-01",
+     "action": "shown",
+     "severity": "caution",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Heat & medication · HEAT-MED-01",
+     "reason": null,
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c007",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Dehydration with NSAID risk",
+     "reason": null,
+     "t_min": 2.0
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: lookup_idiom('শরীর দুর্বল') → ben-005 (talk loop)",
+    "1.25 card: + caution idiom card c001: Idiom: shorir durbol (শরীর দুর্বল) [ben-005]",
+    "1.25 card: + info ask card c002: Is the weakness everywhere, or in one arm or leg? [ben-005]",
+    "1.25 tool: lookup_idiom('মাথা গরম') → ben-003 (talk loop)",
+    "1.25 card: + caution idiom card c003: Idiom: matha gorom (মাথা গরম) [ben-003]",
+    "1.25 card: + info ask card c004: Do you mean you feel angry, or does your head feel hot? [ben-003]",
+    "1.25 tool: lookup_idiom('শরীর দুর্বল') → ben-005",
+    "1.25 tool: lookup_idiom('মাথা গরম') → ben-003",
+    "1.25 tool: update_state → +weakness, heat_exposure=True, asked:allergies, +idiom ben-003, +idiom ben-005",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 card: + info ask card c005: Ask about thirst [ben-005]",
+    "1.25 card: ✗ rejected ask card 'Ask about dizziness or fainting': ask-card cap reached (3 open); wait for the doctor",
+    "1.25 tool: final_answer([ask 'Ask about thirst', ask 'Ask about dizziness or fainting']) → c005; rejected: ask-card cap reached (3 open); wait for the doctor",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 1.4s, 1923/1084 tok ($0.0015)",
+    "2.00 tool: update_state (prescription gate) → +rx diclofenac 50 mg x3/day",
+    "2.00 tool: check_prescription(diclofenac) → no on_prescribe rule fires",
+    "2.00 tool: update_state → dehydration=moderate",
+    "2.00 tool: check_safety_rules → HEAT-MED-01",
+    "2.00 card: + caution safety card c006: Heat & medication · HEAT-MED-01 [HEAT-MED-01]",
+    "2.00 card: + info observation card c007: Dehydration with NSAID risk [HEAT-MED-01]",
+    "2.00 tool: final_answer([missed 'Renal function not checked', observation 'Dehydration with NSAID risk']) → duplicate; c007",
+    "2.00 agent: copilot: 1 step(s), 1 tool call(s), 1.4s, 2035/961 tok ($0.0014)",
+    "3.00 tool: note_llm → 6 items (llm)",
+    "3.00 tool: draft_note → 37 lines",
+    "3.00 tool: care_plan_llm → 4 keys in 1.9s",
+    "3.00 tool: care_plan_llm retry → 0 missing line(s) requested",
+    "3.00 tool: build_care_plan → 1 medicine(s), 0 avoid, 0 red flag(s), 0 excluded",
+    "3.00 tool: check_care_plan → ok",
+    "3.00 tool: draft_outputs() → note drafted (llm): 4 sections, 37 lines; care plan: medicines Diclof…",
+    "3.00 tool: render_outputs → doctor_pdf, patient_pdf",
+    "3.00 tool: render_outputs() → rendered: doctor_pdf, patient_pdf, wa_link, sms_link; 0 warning(s).",
+    "3.00 agent: wrap-up agent: 3 step(s), 2 tool call(s), 7.0s, 1150/237 tok ($0.0006)",
+    "3.00 agent: wrap-up agent: ok=True steps=3",
+    "3.00 system: wrap-up done (agent) in 7.0s: 2 warning(s)"
+   ],
+   "stats": {
+    "runs": 3,
+    "latency_s": [
+     0.0,
+     4.76,
+     4.35
+    ],
+    "extract_tokens": [
+     7536,
+     1823
+    ],
+    "agent_tokens": [
+     3958,
+     2045
+    ],
+    "cost_usd": 0.006923899999999999
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 4.76,
+     "extract_s": 3.36,
+     "agent_s": 1.38,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5660,
+     "output_tokens": 1957,
+     "extract_tokens": [
+      3737,
+      873
+     ],
+     "agent_tokens": [
+      1923,
+      1084
+     ],
+     "cost_usd": 0.002701
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 4.35,
+     "extract_s": 2.93,
+     "agent_s": 1.41,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "fallback": 0,
+     "input_tokens": 5834,
+     "output_tokens": 1911,
+     "extract_tokens": [
+      3799,
+      950
+     ],
+     "agent_tokens": [
+      2035,
+      961
+     ],
+     "cost_usd": 0.002715
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794025657.281554,
+     "latency_s": 0.88,
+     "source": "lexicon",
+     "kind": "idiom",
+     "title": "Idiom: shorir durbol (শরীর দুর্বল)",
+     "severity": "caution"
+    },
+    "c002": {
+     "turn": 1,
+     "wall": 1794025657.281554,
+     "latency_s": 0.88,
+     "source": "fallback",
+     "kind": "ask",
+     "title": "Is the weakness everywhere, or in one arm or leg?",
+     "severity": "info"
+    },
+    "c003": {
+     "turn": 1,
+     "wall": 1794025657.281554,
+     "latency_s": 0.88,
+     "source": "lexicon",
+     "kind": "idiom",
+     "title": "Idiom: matha gorom (মাথা গরম)",
+     "severity": "caution"
+    },
+    "c004": {
+     "turn": 1,
+     "wall": 1794025657.281554,
+     "latency_s": 0.88,
+     "source": "fallback",
+     "kind": "ask",
+     "title": "Do you mean you feel angry, or does your head feel hot?",
+     "severity": "info"
+    },
+    "c005": {
+     "turn": 1,
+     "wall": 1794025663.248257,
+     "latency_s": 6.85,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about thirst",
+     "severity": "info"
+    },
+    "c006": {
+     "turn": 2,
+     "wall": 1794025668.372819,
+     "latency_s": 5.12,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Heat & medication · HEAT-MED-01",
+     "severity": "caution"
+    },
+    "c007": {
+     "turn": 2,
+     "wall": 1794025669.779108,
+     "latency_s": 6.53,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Dehydration with NSAID risk",
+     "severity": "info"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 0.88,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Idiom: shorir durbol (শরীর দুর্বল)"
+    },
+    {
+     "card": "c002",
+     "turn": 1,
+     "latency_s": 0.88,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Is the weakness everywhere, or in one arm or leg?"
+    },
+    {
+     "card": "c003",
+     "turn": 1,
+     "latency_s": 0.88,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Idiom: matha gorom (মাথা গরম)"
+    },
+    {
+     "card": "c004",
+     "turn": 1,
+     "latency_s": 0.88,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Do you mean you feel angry, or does your head feel hot?"
+    },
+    {
+     "card": "c005",
+     "turn": 1,
+     "latency_s": 6.85,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about thirst"
+    },
+    {
+     "card": "c006",
+     "turn": 2,
+     "latency_s": 5.12,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [
+      "HEAT-MED-01"
+     ],
+     "title": "Heat & medication · HEAT-MED-01"
+    },
+    {
+     "card": "c007",
+     "turn": 2,
+     "latency_s": 6.53,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Dehydration with NSAID risk"
+    }
+   ],
+   "rules_seen": {
+    "HEAT-MED-01": {
+     "turn": 2,
+     "latency_s": 5.12,
+     "card": "c006",
+     "severity": "caution",
+     "family": "heat_medication",
+     "message": "NSAID prescribed to a dehydrated, heat-exposed patient. Kidney injury risk is higher. Consider paracetamol and rehydration first."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      7767,
+      2649,
+      7
+     ],
+     "openai/gpt-oss-120b|groq": [
+      7536,
+      1823,
+      2
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      3958,
+      2045,
+      2,
+      2.7936360836029053,
+      0
+     ],
+     "wrap-up agent": [
+      1150,
+      237,
+      1,
+      6.973252773284912,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.0072,
+    "cost_agent_usd": 0.0035,
+    "cost_usd": 0.0107,
+    "llm_usage_delta": {
+     "calls": 14,
+     "prompt_tokens": 20411,
+     "completion_tokens": 6754
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 24.0,
+   "checks": [
+    {
+     "type": "flag",
+     "desc": "idiom grounding=ben-003 by turn 1",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "lexicon/idiom/caution 'Idiom: matha gorom (মাথা গরম)'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "flag",
+     "desc": "HEAT-MED-01",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "HEAT-MED-01@t2 caution",
+     "gap": false,
+     "note": "needs dehydration >= moderate in the state; the doctor said 'you look dry'",
+     "auto": false
+    },
+    {
+     "type": "state",
+     "desc": "patient.heat_exposure == True",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "patient.heat_exposure=True",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/heat-02-matha-gorom-diclofenac_patient.pdf pages=1 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-072653-fix1/pdf/heat-02-matha-gorom-diclofenac_doctor.pdf pages=2 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "every character sent to the PDFs has a glyph in a bundled font",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has bengali text",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "170 bengali chars",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient sheet labels exist for bn",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title label = 'আপনার ওষুধ ও যত্নের নির্দেশনা'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF title names the language",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title='Your medicines and care instructions (Bengali)'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF names the patient language (Bengali)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has a Safety alerts section",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "wrap-up reached the review/sent screen",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "screen=sent agentic=agent",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  }
+ ]
+}

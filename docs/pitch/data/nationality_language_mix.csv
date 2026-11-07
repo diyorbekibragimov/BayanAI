@@ -1,0 +1,11 @@
+community,estimate_people,estimate_date,main_patient_languages,in_moph_bill_of_rights,bayan_support,source,confidence,note
+India,836784,2024-2025,Malayalam; Hindi; Tamil; Telugu,"Hindi, Malayalam","yes (ml, hi, ta)",https://www.findeasy.in/indian-population-in-qatar/,low,"secondary site citing MEA; older official 2019 figure ~700,000"
+Nepal,400000,2018-07,Nepali,Nepali,"yes (ne, Indic voice)",https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,embassy-based estimate
+Bangladesh,400000,2019-04,Bengali,Bengali,yes (bn),https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,embassy-based estimate
+Egypt,300000,2018-05,Arabic,Arabic,doctor-side language,https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,
+Philippines,236000,2019-07,Filipino/Tagalog,Filipino,yes (tl),https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,
+Pakistan,150000,2019-07,Urdu; Pashto; Punjabi,Urdu,yes (ur),https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,
+Sri Lanka,140000,2018-09,Sinhala; Tamil,none,Tamil yes; Sinhala check,https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,
+Kenya,30000,2019-03,Swahili; English,none,yes (sw),https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,
+Indonesia,27350,2019-04,Indonesian,none,yes (id),https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,
+Ethiopia,25000,2018-01,Amharic; Oromo; Tigrinya,none,check,https://web.archive.org/web/20181122162153/http://priyadsouza.com/population-of-qatar-by-nationality-in-2017/,low,

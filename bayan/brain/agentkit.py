@@ -35,14 +35,16 @@ from typing import Any, Callable
 
 from . import llm
 
-AGENT_MODEL = os.environ.get("BAYAN_AGENT_LLM", llm.LLM_MODEL)
-AGENT_PROVIDER = os.environ.get("BAYAN_AGENT_PROVIDER", "cerebras")    # NOT groq: tool calls fail there
+# The brain model (BAYAN_BRAIN_LLM / BAYAN_BRAIN_PROVIDER) wins; BAYAN_AGENT_LLM / BAYAN_AGENT_PROVIDER still work.
+AGENT_MODEL = llm.BRAIN_MODEL or os.environ.get("BAYAN_AGENT_LLM", llm.LLM_MODEL)
+AGENT_PROVIDER = llm.BRAIN_PROVIDER or os.environ.get("BAYAN_AGENT_PROVIDER", "cerebras")  # NOT groq: tool calls fail
 AGENT_TOOL_CHOICE = os.environ.get("BAYAN_AGENT_TOOL_CHOICE", "")       # "" = smolagents default ("required")
 AGENT_REASONING = os.environ.get("BAYAN_AGENT_REASONING", "medium")   # never "high": 12 s, empty replies
 AGENT_HTTP_TIMEOUT = int(os.environ.get("BAYAN_AGENT_HTTP_TIMEOUT", "15"))
 AGENT_MAX_TOKENS = int(os.environ.get("BAYAN_AGENT_MAX_TOKENS", "6000"))  # reasoning tokens count against it
-PRICE_IN_PER_M = float(os.environ.get("BAYAN_PRICE_IN", "0.35"))      # Cerebras gpt-oss-120b, $ per 1M input tokens
-PRICE_OUT_PER_M = float(os.environ.get("BAYAN_PRICE_OUT", "0.75"))
+# $ per 1M tokens for the agent model on its provider (llm.MODEL_PRICES); BAYAN_PRICE_IN / _OUT override.
+PRICE_IN_PER_M = float(os.environ.get("BAYAN_PRICE_IN") or llm.price(AGENT_MODEL, AGENT_PROVIDER)[0])
+PRICE_OUT_PER_M = float(os.environ.get("BAYAN_PRICE_OUT") or llm.price(AGENT_MODEL, AGENT_PROVIDER)[1])
 
 _model_factory: Callable[[], Any] | None = None
 
@@ -67,11 +69,11 @@ def make_model():
     if _model_factory is not None:
         return _model_factory()
     from smolagents import InferenceClientModel
-    kwargs: dict[str, Any] = dict(temperature=0, max_tokens=AGENT_MAX_TOKENS)
-    if AGENT_REASONING:
-        kwargs["extra_body"] = {"reasoning_effort": AGENT_REASONING}
-    if AGENT_TOOL_CHOICE:
-        kwargs["tool_choice"] = AGENT_TOOL_CHOICE
+    kwargs = model_kwargs()
+    if not llm.provider_known(AGENT_PROVIDER):   # e.g. deepinfra on an older huggingface_hub: the HF router
+        return InferenceClientModel(model_id=f"{AGENT_MODEL}:{AGENT_PROVIDER}", base_url=llm.ROUTER_URL,
+                                    api_key=os.environ.get("HF_TOKEN") or llm.HF_TOKEN, timeout=AGENT_HTTP_TIMEOUT,
+                                    retry=False, **kwargs)
     return InferenceClientModel(
         model_id=AGENT_MODEL,
         provider=AGENT_PROVIDER,
@@ -80,6 +82,17 @@ def make_model():
         retry=False,               # rate-limit retries sleep 60 s; the deterministic fallback is better
         **kwargs,
     )
+
+
+def model_kwargs() -> dict[str, Any]:
+    """Completion kwargs for the agent model (reasoning_effort only for gpt-oss; see llm.reasoning_body)."""
+    kwargs: dict[str, Any] = dict(temperature=0, max_tokens=AGENT_MAX_TOKENS)
+    extra = llm.reasoning_body(AGENT_MODEL, AGENT_REASONING)
+    if extra:
+        kwargs["extra_body"] = extra
+    if AGENT_TOOL_CHOICE:
+        kwargs["tool_choice"] = AGENT_TOOL_CHOICE
+    return kwargs
 
 
 def cost_usd(input_tokens: int, output_tokens: int) -> float:

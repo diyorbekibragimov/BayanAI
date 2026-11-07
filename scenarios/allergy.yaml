@@ -1,0 +1,206 @@
+# Allergy conflicts: brand names, class words, cross-reactivity, late / denied / idiom-only allergies,
+# withdraw-then-re-prescribe, "speak it anyway". Rule ids: data/safety_rules.json (ALG-*).
+- id: alg-01-augmentin-brand
+  title: Penicillin rash, doctor prescribes Augmentin by brand name, then switches to azithromycin
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "Hello, I'm Dr. Sara. What brings you in today?"}
+    - {role: patient, text: "नमस्ते डाक्टर साब। तीन दिनदेखि घाँटी एकदमै दुखेको छ, निल्नै गाह्रो, अनि ज्वरो पनि आइराख्छ।"}
+    - {role: doctor, text: "Do you have any allergy to any medicine?"}
+    - {role: patient, text: "अँ, पहिले एकपटक पेनिसिलिन खाँदा जिउभरि डाबर आएर चिलाएको थियो।"}
+    - {role: doctor, text: "Okay. I'll give you Augmentin 625, one tablet three times a day for five days."}
+    - {action: held_else}
+    - {role: doctor, text: "Instead, take azithromycin 500 mg once a day for three days, and paracetamol 1 g up to three times a day for the fever."}
+  expect:
+    must_hold: [{drug: co-amoxiclav, rule: ALG-PEN-01, turn: 4}]
+    must_not_hold: [azithromycin, paracetamol]
+    must_flag: [{rule: ALG-PEN-01, severity: critical, by_turn: 4}]
+    must_not_flag: [{rule: ALG-ASK-01}]
+    state: {prescribed_has: [azithromycin, paracetamol], prescribed_not: [co-amoxiclav], allergy_has: [penicillin]}
+    care_plan: {meds_has: [azithromycin], meds_not: [augmentin, co-amoxiclav, amoxicillin], avoid_has: [penicillin]}
+    pdf: {patient_meds_not: [augmentin, co-amoxiclav, amoxicillin], doctor_contains: [penicillin]}
+
+- id: alg-02-sulfa-class-bactrim
+  title: "'Sulfa' class allergy (blisters) and a co-trimoxazole prescription for a UTI"
+  patient_lang: bn
+  turns:
+    - {role: doctor, text: "What is the problem today?"}
+    - {role: patient, text: "প্রস্রাব করার সময় খুব জ্বালাপোড়া করে, বারবার বাথরুমে যেতে হয়, দুই দিন ধরে।"}
+    - {role: doctor, text: "Are you allergic to any medicines?"}
+    - {role: patient, text: "হ্যাঁ, সালফা ওষুধে একবার আমার সারা গায়ে ফোসকা পড়ে গিয়েছিল, হাসপাতালে ভর্তি হতে হয়েছিল।"}
+    - {role: doctor, text: "Alright. I'm prescribing Bactrim, co-trimoxazole, two tablets twice a day for three days."}
+    - {action: held_else}
+    - {role: doctor, text: "Let's use nitrofurantoin 100 mg twice a day for five days instead, and drink plenty of water."}
+  expect:
+    must_hold: [{drug: co-trimoxazole, rule_any: [ALG-SULFA-01, ALG-PEN-03], turn: 4}]
+    must_not_hold: [nitrofurantoin]
+    must_flag: [{rule: ALG-SULFA-01, severity: critical, by_turn: 4}]
+    state: {prescribed_has: [nitrofurantoin], prescribed_not: [co-trimoxazole]}
+    care_plan: {meds_has: [nitrofurantoin], meds_not: [bactrim, co-trimoxazole], avoid_has: [sulfa]}
+    pdf: {patient_meds_not: [bactrim, co-trimoxazole]}
+
+- id: alg-03-sulfa-furosemide-trap
+  title: Sulfa-antibiotic allergy, furosemide prescribed (non-antibiotic sulfonamide, info only, must not hold)
+  patient_lang: ur
+  turns:
+    - {role: doctor, text: "Your legs are swollen. Any allergies to medicines?"}
+    - {role: patient, text: "جی، سلفا والی اینٹی بائیوٹک سے مجھے خارش اور دانے نکل آئے تھے۔"}
+    - {role: doctor, text: "Okay. Do you have shortness of breath when lying flat?"}
+    - {role: patient, text: "نہیں ڈاکٹر صاحب، بس پاؤں سوجے رہتے ہیں، شام کو زیادہ۔"}
+    - {role: doctor, text: "I'll give you furosemide 40 mg once every morning, and we will check your kidney function and potassium."}
+  expect:
+    must_not_hold: [furosemide]
+    must_flag: [{rule: ALG-SULFA-02}]
+    must_not_flag: [{rule: ALG-SULFA-01}, {severity: critical}]
+    state: {prescribed_has: [furosemide], allergy_has: [sulf]}
+    care_plan: {meds_has: [furosemide]}
+
+- id: alg-04-brufen-aspirin-asthma
+  title: Aspirin-induced breathlessness, doctor prescribes Brufen by brand
+  patient_lang: ml
+  turns:
+    - {role: doctor, text: "Tell me about the pain."}
+    - {role: patient, text: "മുട്ടിന് ഭയങ്കര വേദനയാണ് ഡോക്ടറേ, പടി കയറാൻ പറ്റുന്നില്ല."}
+    - {role: doctor, text: "Any allergy or bad reaction to a medicine?"}
+    - {role: patient, text: "ഒരിക്കൽ ആസ്പിരിൻ കഴിച്ചപ്പോൾ ശ്വാസം മുട്ടി, ആശുപത്രിയിൽ പോകേണ്ടി വന്നു."}
+    - {role: doctor, text: "Take Brufen 400 three times a day after food for one week."}
+    - {action: held_else}
+    - {role: doctor, text: "No Brufen then. Paracetamol 1 g up to four times a day, and apply a warm compress."}
+  expect:
+    must_hold: [{drug: ibuprofen, rule: ALG-NSAID-01, turn: 4}]
+    must_not_hold: [paracetamol]
+    state: {prescribed_has: [paracetamol], prescribed_not: [ibuprofen]}
+    care_plan: {meds_has: [paracetamol], meds_not: [brufen, ibuprofen]}
+    pdf: {patient_meds_not: [brufen, ibuprofen]}
+
+- id: alg-05-same-drug-paracetamol
+  title: Hives with Panadol, doctor prescribes paracetamol under another brand (Biogesic)
+  patient_lang: tl
+  turns:
+    - {role: doctor, text: "What brings you here?"}
+    - {role: patient, text: "Doc, masakit po ang ulo ko at may lagnat ako simula kahapon."}
+    - {role: doctor, text: "Any allergies to medicine?"}
+    - {role: patient, text: "Opo doc, sa Panadol po, namamantal ako tapos namamaga yung mata ko."}
+    - {role: doctor, text: "Okay, take Biogesic 500 mg, two tablets every six hours if you have fever."}
+  expect:
+    must_hold:
+      - {drug: paracetamol, gap: true, note: "No rule matches an allergy to the SAME non-class drug (paracetamol, metronidazole, ciprofloxacin...). ALG-* rules are class-based only."}
+    must_flag:
+      - {kind_any: [observation, missed, ask], keywords: [allerg, panadol, paracetamol], note: "copilot agent should notice the same-drug conflict"}
+    state: {allergy_has: [paracetamol]}
+
+- id: alg-06-late-allergy-after-rx
+  title: Amoxicillin prescribed before asking allergies; patient remembers throat swelling with penicillin
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "You have a chest infection. I'll start amoxicillin 500 mg three times a day for five days."}
+    - {role: patient, text: "ठीक है डॉक्टर साहब।"}
+    - {role: doctor, text: "Drink warm fluids and rest."}
+    - {role: patient, text: "डॉक्टर साहब, एक बात याद आई, कई साल पहले पेनिसिलिन के इंजेक्शन से मेरा गला सूज गया था, साँस रुकने लगी थी।"}
+    - {role: doctor, text: "Thank you for telling me. Stop the amoxicillin. I'll give you azithromycin 500 mg once a day for three days instead."}
+  expect:
+    must_not_hold: [azithromycin]
+    must_flag:
+      - {rule: ALG-ASK-01, by_turn: 0}
+      - {rule_any: [ALG-PEN-01, ALG-PEN-02], severity: critical, by_turn: 3}
+    state: {prescribed_has: [azithromycin], prescribed_not: [amoxicillin], allergy_has: [penicillin]}
+    care_plan: {meds_has: [azithromycin], meds_not: [amoxicillin], avoid_has: [penicillin]}
+    pdf: {patient_meds_not: [amoxicillin]}
+
+- id: alg-07-denied-then-remembered
+  title: Allergy denied, amoxicillin prescribed, then the patient remembers swelling with a penicillin injection
+  patient_lang: sw
+  turns:
+    - {role: doctor, text: "Do you have any allergies to medicines?"}
+    - {role: patient, text: "Hapana daktari, sina mzio wowote."}
+    - {role: doctor, text: "You have an ear infection. Amoxicillin 500 mg three times a day for seven days."}
+    - {role: patient, text: "Subiri daktari... nakumbuka sasa, nilipochomwa sindano ya penisilini mwaka juzi mwili wangu wote ulivimba na nikapata vipele."}
+    - {role: doctor, text: "Thank you. We will not use amoxicillin. Take azithromycin 500 mg once a day for three days."}
+  expect:
+    must_not_hold: [azithromycin]
+    must_flag: [{rule_any: [ALG-PEN-01, ALG-PEN-02], severity: critical, by_turn: 3}]
+    must_not_flag: [{rule: ALG-ASK-01}]
+    state: {prescribed_has: [azithromycin], prescribed_not: [amoxicillin], allergy_has: [penicillin]}
+    care_plan: {meds_has: [azithromycin], meds_not: [amoxicillin], avoid_has: [penicillin]}
+
+- id: alg-08-idiom-allergy-cephalexin
+  title: Allergy told only as 'my body swelled, lips too' with 'that red amoxi capsule'; cephalexin next (R1 side chain)
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "You have a skin infection on the leg. Have you ever reacted badly to a medicine?"}
+    - {role: patient, text: "एकपटक त्यो रातो-पहेँलो क्याप्सुल खाँदा मेरो जिउ सबै फुलेर आयो, ओठ पनि सुन्निएको थियो। नाम त याद छैन, अमोक्सी जस्तो केही थियो।"}
+    - {role: doctor, text: "Okay. Then I'll give you cephalexin 500 mg four times a day for seven days."}
+    - {action: held_else}
+    - {role: doctor, text: "Let's use clindamycin 300 mg four times a day for seven days instead."}
+  expect:
+    must_hold: [{drug: cephalexin, rule_any: [ALG-PEN-02, ALG-CEPH-01], turn: 2, note: "lip/face swelling = severe reaction: ALG-PEN-02 escalates to critical"}]
+    must_not_hold: [clindamycin]
+    must_flag: [{rule: ALG-PEN-02, severity: critical}]
+    state: {allergy_has: [amox], prescribed_not: [cephalexin], prescribed_has: [clindamycin]}
+    care_plan: {meds_not: [cephalexin], meds_has: [clindamycin]}
+
+- id: alg-09-withdraw-then-represcribe
+  title: Penicillin rash; amoxicillin held and withdrawn, then the doctor goes back to it
+  patient_lang: ta
+  turns:
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "பென்சிலின் ஊசி போட்டதும் உடம்பெல்லாம் தடிப்பு வந்துச்சு டாக்டர்."}
+    - {role: doctor, text: "Amoxicillin 500 three times a day for your sinus infection."}
+    - {action: held_else}
+    - {role: doctor, text: "Okay, no amoxicillin. Azithromycin 500 mg once a day for three days."}
+    - {role: patient, text: "சரி டாக்டர்."}
+    - {role: doctor, text: "Actually, let's go back to amoxicillin, 500 mg three times a day, it works better for sinusitis."}
+    - {action: held_else}
+  expect:
+    must_hold:
+      - {drug: amoxicillin, rule: ALG-PEN-01, turn: 2}
+      - {drug: amoxicillin, rule: ALG-PEN-01, turn: 6}
+    must_not_hold: [azithromycin]
+    state: {prescribed_not: [amoxicillin], prescribed_has: [azithromycin]}
+    care_plan: {meds_not: [amoxicillin], meds_has: [azithromycin], avoid_has: [penicillin]}
+    pdf: {patient_meds_not: [amoxicillin]}
+
+- id: alg-10-speak-anyway-override
+  title: Penicillin hives, doctor overrides the hold ('speak it anyway') for amoxicillin
+  patient_lang: ko
+  turns:
+    - {role: doctor, text: "Do you have any drug allergies?"}
+    - {role: patient, text: "예전에 페니실린 주사 맞고 두드러기가 났었어요. 그냥 좀 가려웠어요."}
+    - {role: doctor, text: "That sounds mild. I'll still give you amoxicillin 500 mg three times a day for five days, and we will watch for any rash."}
+    - {action: held_anyway}
+    - {role: doctor, text: "If you get a rash, swelling or trouble breathing, stop it and come back immediately."}
+  expect:
+    must_hold: [{drug: amoxicillin, rule: ALG-PEN-01, turn: 2}]
+    state: {prescribed_has: [amoxicillin]}
+    care_plan: {meds_has: [amoxicillin], note: "the clinician's override stands; the plan should carry the drug"}
+    pdf: {doctor_contains: [penicillin, continued]}
+
+- id: alg-11-ceftriaxone-mild-pen-trap
+  title: Mild penicillin rash years ago; ceftriaxone IM (dissimilar side chain, info only, must not hold)
+  patient_lang: es
+  turns:
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "Sí, doctor, a la penicilina. Hace muchos años me salió una roncha leve en el brazo, nada más."}
+    - {role: doctor, text: "Okay. For this gonorrhoea infection I'll give you ceftriaxone 500 mg as one injection in the muscle today."}
+  expect:
+    must_not_hold: [ceftriaxone]
+    must_flag: [{rule: ALG-PEN-04}]
+    must_not_flag: [{severity: critical, source: rules}, {rule: ALG-PEN-01}]
+    state: {prescribed_has: [ceftriaxone], allergy_has: [penicillin]}
+
+- id: alg-12-arabic-doctor-augmentin
+  title: Arabic-speaking doctor, Urdu patient with anaphylaxis to penicillin; Augmentin with Arabic-Indic digits
+  patient_lang: ur
+  doctor_lang: ar
+  turns:
+    - {role: doctor, text: "هل عندك حساسية من أي دواء؟"}
+    - {role: patient, text: "جی ہاں، پینسلین کے ٹیکے سے میرا پورا جسم سوج گیا تھا اور سانس لینا مشکل ہو گیا تھا۔"}
+    - {role: doctor, text: "سأعطيك أوجمنتين ٦٢٥ ملغ ثلاث مرات يوميا لمدة خمسة أيام."}
+    - {action: held_else}
+    - {role: doctor, text: "بدلا من ذلك، خذ أزيثرومايسين ٥٠٠ ملغ مرة واحدة يوميا لمدة ثلاثة أيام."}
+  expect:
+    must_hold: [{drug: co-amoxiclav, rule: ALG-PEN-01, turn: 2}]
+    must_not_hold: [azithromycin]
+    state: {prescribed_has: [azithromycin], prescribed_not: [co-amoxiclav], allergy_has: [penicillin]}
+    care_plan: {meds_has: [azithromycin], meds_not: [augmentin, co-amoxiclav]}
+    pdf: {patient_meds_not: [augmentin, co-amoxiclav, amoxicillin]}

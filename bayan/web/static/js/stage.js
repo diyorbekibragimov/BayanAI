@@ -43,7 +43,7 @@
     sw: {name:'Swahili', inLang:'kwa Kiswahili', again:'Rudia', slower:'Polepole', yes:'Ndiyo', no:'Hapana'},
     ko: {name:'Korean', inLang:'한국어로', again:'다시 말해 주세요', slower:'천천히', yes:'예', no:'아니요'}
   };
-  Object.keys(MORE).forEach((c) => { const m = MORE[c]; LANGS[c] = {name: m.en, inLang: m.in_lang, again: m.again, slower: m.slower, yes: m.yes, no: m.no}; });
+  Object.keys(MORE).forEach((c) => { const m = MORE[c]; if (!LANGS[c]) LANGS[c] = {name: m.en, inLang: m.in_lang, again: m.again, slower: m.slower, yes: m.yes, no: m.no}; });
   const ICON = {
     allergy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8A6F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16.5h.01"></path></svg>',
     test: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0E8A6F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"></path></svg>',
@@ -83,7 +83,7 @@
       .forEach((id) => { const el = $(id); if (el) el.setAttribute('lang', UI); });
     notesKey = ''; sugKey = ''; stepsKey = ''; moreBuilt = ''; if (moreOpen) buildMore(); paintChips();
   }
-  let V = null, lastS = '', appliedEl = null, selLang = 'ne', panelOpen = false;
+  let V = null, lastS = '', appliedEl = null, selLang = 'ne', panelOpen = false, lastCid = '';
   let tokNotice = 0, demoTried = false, tokOpen = 0, tokClose = 0, tokEnd = 0, tokStop = 0, capKey = '', planKey = '', notesKey = '', sugKey = '', stepsKey = '', patKey = '';
   let clockBase = null;
 
@@ -91,7 +91,7 @@
   const css = (el, s) => { if (el && el.__css !== s) { el.style.cssText = s; el.__css = s; } };
   const txt = (el, t) => { if (el && el.textContent !== (t || '')) el.textContent = t || ''; };
   const lay = (on, pos, z, bg) => 'position:absolute;' + pos + ';z-index:' + (z || 3) + ';' + (bg ? 'background:' + bg + ';' : '') +
-    'transition:opacity .55s ease ' + (on ? '.3s' : '0s') + ', transform .8s ' + EASE + ' ' + (on ? '.25s' : '0s') + ', right .55s ' + EASE + ';' +
+    'transition:opacity .55s ease ' + (on ? '.3s' : '0s') + ', transform .8s ' + EASE + ' ' + (on ? '.25s' : '0s') + ', right .55s ' + EASE + ', left .55s ' + EASE + ';' +
     'opacity:' + (on ? 1 : 0) + ';transform:' + (on ? 'none' : 'translateY(18px)') + ';pointer-events:' + (on ? 'auto' : 'none');
   const box = (cx, cy, s, z) => 'position:absolute;z-index:' + z + ';pointer-events:none;left:' + (cx - s / 2) + 'px;top:' + (cy - s / 2) + 'px;width:' + s + 'px;height:' + s + 'px;' +
     'transition:left .9s ' + EASE + ', top .9s ' + EASE + ', width .9s ' + EASE + ', height .9s ' + EASE;
@@ -116,6 +116,10 @@
     if (ox !== OX || oy !== OY || fw !== FW) { OX = ox; OY = oy; FW = fw; if (typeof V !== 'undefined' && V) apply(V); }
   }
   window.addEventListener('resize', fitFrames);
+  document.addEventListener('scroll', (e) => {
+    const f = e.target && e.target.classList && e.target.classList.contains('bz-frame') ? e.target : null;
+    if (f && (f.scrollLeft || f.scrollTop)) { f.scrollLeft = 0; f.scrollTop = 0; }
+  }, true);
 
   // ---------------------------------------------------------------- tap to talk (browser recording)
   // One utterance per tap: record mono PCM, downsample to 16 kHz int16, send it as {act:"audio"}.
@@ -229,17 +233,30 @@
   }
 
   // Bayan's voice: PCM chunks appended to a hidden element (.bz-au); scheduled back to back with WebAudio.
-  // Captions start at the exact moment the first chunk starts playing.
+  // Captions start at the exact moment the first chunk starts playing. Every item carries its consultation id
+  // (data-c): only the consultation on screen speaks; a dropped one (Home, No, new consultation) never plays again,
+  // even if its chunks were already on the wire.
   const played = new Map();  // utterance id -> last chunk played; a re-render can never replay a chunk
-  let pctx = null, pKey = '', pIdx = -1, pEnd = 0, pStart = 0, pTimer = null, pSources = [], pMuted = '';
-  function stopVoice() {
-    pSources.forEach((x) => { try { x.stop(); } catch (e) { /* already stopped */ } }); pSources = [];
-    pMuted = pKey; pEnd = 0; audioPlaying = false; clearTimeout(pTimer);
+  const deadC = new Set();   // consultations dropped on this page
+  const slowBuf = new Map(); // "Slower" replays: utterance id -> chunks, played once the last one is in
+  let pctx = null, pKey = '', pIdx = -1, pEnd = 0, pStart = 0, pTimer = null, pSources = [], pMuted = '', pCid = '';
+  let slowEl = null;         // one <audio> element, unlocked on the Slower tap (Safari plays it later without a gesture)
+  const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+  function stopVoice(cid) {  // everything, or only one consultation's voice
+    const hit = (x) => !cid || x.__c === cid;
+    pSources.filter(hit).forEach((x) => { try { x.stop(); } catch (e) { /* already stopped */ } });
+    pSources = pSources.filter((x) => !hit(x));
+    if (!cid || pCid === cid) { slowBuf.clear(); pMuted = pKey; pEnd = 0; audioPlaying = false; clearTimeout(pTimer); }
   }
+  function dropConsult(cid) { if (cid) deadC.add(cid); stopVoice(cid || undefined); }
+  const curCid = () => { const el = document.querySelector('.bz-s[data-c]'); return el ? el.dataset.c : ''; };
   function playCtx() {
     if (!pctx) pctx = new (window.AudioContext || window.webkitAudioContext)();
     if (pctx.state === 'suspended') pctx.resume();
     return pctx;
+  }
+  function primeSlow() {
+    try { if (!slowEl) slowEl = new Audio(); slowEl.src = SILENT_WAV; const q = slowEl.play(); if (q && q.catch) q.catch(() => {}); } catch (e) { /* no audio */ }
   }
   function startCaption() { document.querySelectorAll('#bz-cap-native .w').forEach((w) => { w.style.animationPlayState = 'running'; }); }
   function retimeCaption(dur) {  // real clip length is known: spread the words over it
@@ -247,20 +264,75 @@
     const total = ws.reduce((a, w) => a + w.textContent.length, 0), rate = total / Math.max(0.6, dur - 0.7);
     let chars = 0; ws.forEach((w) => { w.style.animationDelay = (0.35 + chars / rate).toFixed(2) + 's'; chars += w.textContent.length; });
   }
+  function b64i16(p) {
+    const bin = atob(p), n = bin.length >> 1, out = new Int16Array(n);
+    for (let j = 0; j < n; j++) out[j] = bin.charCodeAt(2 * j) | (bin.charCodeAt(2 * j + 1) << 8);  // Int16Array wraps
+    return out;
+  }
+  // Slower: the same clip with longer sentence gaps (gap sample positions from the server), played at `rate` with the
+  // pitch preserved (an <audio> element; WebAudio's playbackRate would lower the voice).
+  function stretchGaps(pcm, gaps, extra) {
+    const at = gaps.filter((g) => g > 0 && g < pcm.length).sort((a, b) => a - b);
+    const out = new Int16Array(pcm.length + at.length * extra);
+    let src = 0, dst = 0;
+    at.forEach((g) => { out.set(pcm.subarray(src, g), dst); dst += g - src + extra; src = g; });
+    out.set(pcm.subarray(src), dst);
+    return out;
+  }
+  function wavBlob(pcm, sr) {
+    const b = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(b);
+    const w = (o, s) => { for (let k = 0; k < s.length; k++) v.setUint8(o + k, s.charCodeAt(k)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + pcm.length * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, pcm.length * 2, true);
+    new Int16Array(b, 44).set(pcm);
+    return new Blob([b], {type: 'audio/wav'});
+  }
+  function slowItem(key, it) {
+    let b = slowBuf.get(key); if (!b) { b = {sr: 0, parts: []}; slowBuf.set(key, b); }
+    if (!it.dataset.end) { if (!b.sr) b.sr = +it.dataset.sr; if (+it.dataset.sr === b.sr) b.parts.push(b64i16(it.dataset.p)); return; }
+    slowBuf.delete(key);
+    if (!b.parts.length || !b.sr) return;
+    let n = 0; b.parts.forEach((x) => { n += x.length; });
+    const pcm = new Int16Array(n); let o = 0; b.parts.forEach((x) => { pcm.set(x, o); o += x.length; });
+    const rate = +it.dataset.rate || 1, gaps = (it.dataset.gaps || '').split(',').filter(Boolean).map(Number);
+    const out = stretchGaps(pcm, gaps, Math.round((+it.dataset.gapx || 0) * rate * b.sr));
+    const dur = out.length / b.sr / rate;
+    const a = slowEl || new Audio(); slowEl = a;
+    const url = URL.createObjectURL(wavBlob(out, b.sr));
+    let live = true;
+    const h = {stop() { live = false; try { a.pause(); } catch (e) { /* gone */ } URL.revokeObjectURL(url); }, el: a, rate: rate, dur: dur, __c: it.dataset.c};
+    window.__bzSlowLast = h;  // for the static test harness
+    const done = () => { if (!live) return; live = false; pSources = pSources.filter((x) => x !== h); URL.revokeObjectURL(url); audioPlaying = false; paintLive(); };
+    a.onended = done; a.onerror = done;
+    a.onplaying = () => { if (!live) return; lastPlayAt = performance.now(); startCaption(); paintLive(); };
+    a.preservesPitch = true; a.mozPreservesPitch = true; a.webkitPreservesPitch = true;
+    a.src = url;
+    a.defaultPlaybackRate = rate; a.playbackRate = rate;  // after src: loading resets playbackRate to the default
+    pSources.push(h); audioPlaying = true; pEnd = 0;
+    retimeCaption(dur);
+    const q = a.play(); if (q && q.catch) q.catch(done);
+    clearTimeout(pTimer);
+    pTimer = setTimeout(() => { audioPlaying = false; paintLive(); }, dur * 1000 + 1500);
+  }
   function playVoice() {
     const items = document.querySelectorAll('#bayan-voice .bz-au'); if (!items.length) return;
-    const key = items[0].dataset.k;
+    const key = items[0].dataset.k, cid = items[0].dataset.c || '';
+    // Not this consultation's voice: a dropped one never plays; another one waits until the stage shows it.
+    if (!cid || deadC.has(cid) || cid !== curCid()) return;
     if (key !== pKey) { if (pKey) played.set(pKey, pIdx); pKey = key; pIdx = played.has(key) ? played.get(key) : -1; }
-    if (key === pMuted) return;  // the visit was dropped: never resume its voice
+    if (key === pMuted) return;  // stopped on purpose: never resume this utterance
+    pCid = cid;
     const ctx = playCtx();
     items.forEach((it) => {
-      const i = +it.dataset.i; if (it.dataset.k !== key || i <= pIdx) return;
+      const i = +it.dataset.i; if (it.dataset.k !== key || it.dataset.c !== cid || i <= pIdx) return;
       pIdx = i; played.set(key, i);
+      if (it.dataset.rate) { slowItem(key, it); return; }
       if (it.dataset.end) { retimeCaption(+it.dataset.dur); return; }
-      const bin = atob(it.dataset.p), n = bin.length >> 1, sr = +it.dataset.sr;
+      const pcm = b64i16(it.dataset.p), n = pcm.length, sr = +it.dataset.sr;
       const buf = ctx.createBuffer(1, n, sr), ch = buf.getChannelData(0);
-      for (let j = 0; j < n; j++) { let v = bin.charCodeAt(2 * j) | (bin.charCodeAt(2 * j + 1) << 8); if (v >= 32768) v -= 65536; ch[j] = v / 32768; }
-      const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); pSources.push(src);
+      for (let j = 0; j < n; j++) ch[j] = pcm[j] / 32768;
+      const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); src.__c = cid; pSources.push(src);
       src.onended = () => { pSources = pSources.filter((x) => x !== src); };
       const first = i === 0, at = Math.max(ctx.currentTime + (first ? 0.15 : 0.02), pEnd);
       src.start(at); pEnd = at + buf.duration;
@@ -283,7 +355,7 @@
   function setSpk(who) { if ((who === 'doctor' || who === 'patient') && !rec) { spk = who; if (V) apply(V); } }
   // Home: drop the visit (recording, playback, panels) and start fresh, keeping the doctor's language.
   function goHome() {
-    cancelRec(); stopVoice(); releaseMic();
+    cancelRec(); dropConsult(V && V.cid); releaseMic();
     panelOpen = false; confirmOpen = false; localProc = 0;
     window.__bayanAct = JSON.stringify({act: 'home', lang: UI, n: Date.now()});
   }
@@ -293,8 +365,8 @@
     if (mc) {
       mc.classList.toggle('sel', !!m);
       const n = $('bz-more-n'), e = $('bz-more-e');
-      if (m) { n.textContent = m.native; n.setAttribute('lang', selLang); e.textContent = LN(selLang); }
-      else { n.textContent = T('more'); n.removeAttribute('lang'); e.textContent = T('more_sub'); }
+      if (m) { n.textContent = m.native; n.setAttribute('lang', selLang); e.textContent = UI === 'ar' ? LN(selLang) : m.en; }
+      else { n.textContent = T('more'); n.removeAttribute('lang'); e.textContent = T('more_count', {n: Object.keys(MORE).length}); }
     }
     document.querySelectorAll('#bz-more-list .mlang').forEach((x) => { const on = x.dataset.id === selLang; x.classList.toggle('sel', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
   }
@@ -317,11 +389,13 @@
     const q = (($('bz-more-q') || {}).value || '').trim().toLowerCase();
     let shown = 0;
     document.querySelectorAll('#bz-more-list .mlang').forEach((x) => { const on = !q || x.dataset.q.includes(q); x.style.display = on ? 'flex' : 'none'; shown += on ? 1 : 0; });
-    const none = $('bz-more-none'); if (none) none.style.display = shown ? 'none' : 'block';
+    // No match: the message sits right under the search row and the (empty) list area is hidden.
+    const none = $('bz-more-none'); if (none) none.hidden = !!shown;
+    const list = $('bz-more-list'); if (list) list.hidden = !shown;
   }
   function setMore(open) {
     moreOpen = open; const mc = $('bz-more-chip'); if (mc) mc.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) { buildMore(); paintChips(); const q = $('bz-more-q'); if (q) { q.value = ''; filterMore(); setTimeout(() => q.focus(), 120); } }
+    if (open) { buildMore(); paintChips(); const q = $('bz-more-q'); if (q) { q.value = ''; filterMore(); setTimeout(() => q.focus({preventScroll: true}), 600); } }
     if (V) apply(V);
   }
   document.addEventListener('input', (e) => { if (e.target && e.target.id === 'bz-more-q') filterMore(); }, true);
@@ -353,6 +427,9 @@
     if (act === 'start') { p.lang = selLang; p.doc = UI; getMic().catch(() => {}); }  // ask for the microphone early, during consent
     if (act === 'demo') { p.lang = 'ne'; }
     if (act === 'end' || act === 'consent_no' || act === 'new') stopMic();
+    if (act === 'consent_no' || act === 'new') dropConsult(V && V.cid);  // the server drops this visit: so does its voice
+    if (act === 'end') stopVoice();
+    if (act === 'slower') primeSlow();
     if (act === 'approve') { if (V && V.screen !== 'review') { window.__bayanAct = ''; return; } p.text = ($('careplan') || {}).value || ''; p.force = !!(V.review && V.review.confirm); }
     if (act === 'ask') { panelOpen = false; if (V) apply(V); }
     if (act === 'unlock') { p.code = ($('bz-code') || {}).value || ''; }
@@ -390,7 +467,8 @@
   function paintLive() {
     if (!V) return;
     const proc = !!localProc && !rec;
-    const turnIdle = V.screen === 'live' && ['idle', 'doctor', 'patient'].includes(V.live) && !V.processing && !V.speak && !proc;
+    // A new turn is shown only once Bayan has said the last one (queued voice, speech and the settle pause are over).
+    const turnIdle = V.screen === 'live' && ['idle', 'doctor', 'patient'].includes(V.live) && !V.processing && !V.queued && !V.speak && !proc;
     const spkCol = spk === 'doctor' ? '#1F6FB2' : '#0E8A6F';
     const st = rec ? [T('st_listening'), '0:00', spkCol] : proc ? [T('st_translating'), '', '#173430']
       : turnIdle ? [spk === 'doctor' ? T('turn_doc') : T('turn_pat'), T('st_tap'), spkCol] : (V.status || ['', '', '#173430']);
@@ -489,6 +567,7 @@
     const M = (s) => RTL ? s.replace(/\b(left|right)\b/g, (m) => (m === 'left' ? 'right' : 'left')).replace('translateX(100%)', 'translateX(-100%)') : s;
     const mx = (cx) => (RTL ? FW - cx : cx);
     root.__applied = true;
+    if (v.cid && v.cid !== lastCid) { if (lastCid) dropConsult(lastCid); lastCid = v.cid; playVoice(); }  // a new consultation: the old one's voice stops
     const scr = v.screen, live = scr === 'live';
     const cap = live && v.live === 'caption', rev = scr === 'review' || scr === 'sent';
     const think = scr === 'wrap', held = live && v.live === 'held', done = scr === 'sent';
@@ -499,10 +578,13 @@
     if (v.closeNotes !== tokClose) { const fire = v.closeNotes > tokClose; tokClose = v.closeNotes; if (fire) panelOpen = false; }
     const showPanel = panelOpen && notesOn;
     if (v.turnSeq !== turnSeq) { turnSeq = v.turnSeq; if (!rec) spk = v.turn || 'doctor'; }
-    const turnIdle = live && ['idle', 'doctor', 'patient'].includes(v.live) && !v.processing && !v.speak && !localProc;
+    const turnIdle = live && ['idle', 'doctor', 'patient'].includes(v.live) && !v.processing && !v.queued && !v.speak && !localProc;
     const tint = turnIdle || (rec && live) ? (spk === 'doctor' ? 'd' : 'p') : (v.tint || 'n');
 
-    const geo = cap ? {s: 64, cx: 76, cy: 62} : rev ? {s: 48, cx: FW - 392, cy: 64} : think ? {s: 220, cx: 230 + OX, cy: 380 + OY} : {s: 280, cx: 230 + OX, cy: 380 + OY};
+    // More… open on the start screen: the pearl steps aside (smaller, further out) and the content slides over,
+    // so every language box stays visible next to the panel.
+    const roomMore = scr === 'start' && moreOpen, MORE_W = 304, PEARL_SHIFT = roomMore ? 110 : 0;
+    const geo = cap ? {s: 64, cx: 76, cy: 62} : rev ? {s: 48, cx: FW - 392, cy: 64} : roomMore ? {s: 210, cx: 230 - PEARL_SHIFT + OX, cy: 380 + OY} : think ? {s: 220, cx: 230 + OX, cy: 380 + OY} : {s: 280, cx: 230 + OX, cy: 380 + OY};
     const shadowCol = {n: 'rgba(31,111,178,.32)', d: 'rgba(31,111,178,.45)', p: 'rgba(14,138,111,.42)', h: 'rgba(194,65,12,.38)'}[tint];
     const glowD = cap ? 420 : rev ? 220 : 1000;
     geo.cx = mx(geo.cx);
@@ -537,16 +619,18 @@
     css($('bz-hright'), M('position:absolute;right:40px;top:26px;z-index:6;display:flex;align-items:center;gap:16px;transition:opacity .5s;opacity:' + (hdr ? 1 : 0) + ';pointer-events:' + (hdr ? 'auto' : 'none')));
 
     const showStatus = !cap && !rev;
-    css($('bz-status'), M('position:absolute;left:' + OX + 'px;top:' + (552 + OY) + 'px;width:460px;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 40px;' +
-      'transition:opacity .5s ease ' + (showStatus ? '.35s' : '0s') + ';opacity:' + (showStatus ? 1 : 0)));
+    css($('bz-status'), M('position:absolute;left:' + (OX - PEARL_SHIFT) + 'px;top:' + (552 - (roomMore ? 30 : 0) + OY) + 'px;width:460px;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 40px;' +
+      'transition:opacity .5s ease ' + (showStatus ? '.35s' : '0s') + ', left .9s ' + EASE + ', top .9s ' + EASE + ';opacity:' + (showStatus ? 1 : 0)));
     if (localProc && v.ack === localProc) localProc = 0;  // the server has taken this recording (its own render)
     if (rec && !(live && v.live !== 'held' && v.live !== 'confirm' && (v.live !== 'caption' || v.settle))) cancelRec();
 
     const RP = 'left:' + (500 + OX) + 'px;top:' + (96 + OY) + 'px;right:' + (56 + OX) + 'px;bottom:' + (40 + OY) + 'px';
     const RPX = 'left:' + (500 + OX) + 'px;top:' + (96 + OY) + 'px;right:' + (showPanel ? 424 : 56 + OX) + 'px;bottom:' + (40 + OY) + 'px';
-    css($('L-start'), M(lay(scr === 'start', RP)));
+    const RPS = roomMore ? 'left:' + (390 + OX) + 'px;top:' + (96 + OY) + 'px;right:' + (MORE_W + 32) + 'px;bottom:' + (40 + OY) + 'px' : RP;
+    css($('L-start'), M(lay(scr === 'start', RPS)));
     if (scr !== 'start') moreOpen = false;
-    css($('bz-more'), M('position:absolute;top:92px;right:0;bottom:0;width:400px;z-index:6;overflow:hidden;border-left:1px solid #E3EAE9;border-top:1px solid #E3EAE9;border-top-left-radius:20px;background:#FFFFFF;display:flex;flex-direction:column;' +
+    // the same docked side panel as Notes: flush right (left in RTL), under the header, full height, slides in
+    css($('bz-more'), M('position:absolute;top:92px;right:0;bottom:0;width:' + MORE_W + 'px;z-index:6;overflow:hidden;border-left:1px solid #E3EAE9;border-top:1px solid #E3EAE9;border-top-left-radius:20px;background:#FFFFFF;display:flex;flex-direction:column;' +
       'transition:transform .55s ' + EASE + ', visibility 0s linear ' + (moreOpen ? '0s' : '.55s') + ';transform:' + (moreOpen ? 'none' : 'translateX(100%)') +
       ';visibility:' + (moreOpen ? 'visible' : 'hidden') + ';pointer-events:' + (moreOpen ? 'auto' : 'none')));
     css($('L-consent'), M(lay(scr === 'consent', RP)));
@@ -612,13 +696,17 @@
     $('careplan').readOnly = done || !!r.sending;
     const rp = $('bz-report');
     if (rp) { if (r.doctor_pdf && (done || scr === 'review')) { if (rp.getAttribute('href') !== r.doctor_pdf) rp.setAttribute('href', r.doctor_pdf); rp.style.display = 'inline-block'; } else { rp.removeAttribute('href'); rp.style.display = 'none'; } }
-    const w = (r.warnings || []).join(' ');
-    txt($('bz-warn'), w); $('bz-warn').style.display = w && !done ? 'block' : 'none';
-    $('bz-warn').style.fontWeight = r.confirm ? '600' : '400';
+    const ws = r.warnings || [], wk = JSON.stringify(ws) + (r.confirm ? '!' : '');
+    const wl = $('bz-warn');
+    if (wl.__k !== wk) {
+      wl.__k = wk; wl.textContent = '';
+      ws.forEach((t) => { const li = document.createElement('li'); li.textContent = t; if (r.confirm) li.className = 'strong'; wl.appendChild(li); });
+    }
+    wl.style.display = ws.length && !done ? 'flex' : 'none';
     txt($('bz-rev-title'), done ? T('sent_title') : T('for_patient'));
     const ap = $('bz-approve'); txt(ap, done ? T('sent') : r.sending ? T('sending') : r.confirm ? T('send_anyway') : T('approve'));
     ap.style.background = done ? '#0B6E59' : '#0E8A6F'; ap.disabled = done || !!r.sending; ap.style.cursor = done ? 'default' : 'pointer';
-    css($('bz-new'), 'align-self:stretch;margin-top:12px;height:52px;border-radius:16px;border:1px solid #BFE3D8;background:#FFFFFF;color:#0B6E59;font-size:16px;font-weight:500;transition:opacity .5s;' +
+    css($('bz-new'), 'align-self:stretch;margin-top:12px;height:52px;border-radius:16px;border:1px solid #BFE3D8;background:#FFFFFF;color:#0B6E59;font-size:16px;font-weight:500;' +
       'opacity:' + (done ? 1 : 0) + ';pointer-events:' + (done ? 'auto' : 'none'));
 
     // caption
@@ -627,6 +715,7 @@
     const capEl = $('bz-cap-native'); setLang(capEl, lang); capEl.style.fontSize = fit(c.native, 68, 40, 30);
     if (c.key) words(capEl, c.native, c.rate, c.key, !!c.audio);
     txt($('bz-cap-en'), c.en ? '“' + c.en + '”' : '');
+    $('bz-cap-novoice').style.display = c.key && c.audio === false ? 'block' : 'none';  // silent: text only, said so
     setLang($('bz-again'), lang); txt($('bz-again'), L.again); setLang($('bz-slower'), lang); txt($('bz-slower'), L.slower);
 
     // clock

@@ -1,0 +1,67 @@
+# Qatar summer, outdoor workers, heat illness, heat-impairing medicines and Ramadan fasting.
+- id: heat-01-collapse-site-brain-hot
+  title: Worker collapsed on site, confused and vomiting, 'dimaag taatyo'; no core temperature at first
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "What happened today?"}
+    - {role: patient, text: "दिउँसो साइटमा घाममा काम गर्दै थिएँ, दिमाग तात्यो, अनि ढलेँ। अहिले पनि अलमल्ल भइरहेको छ, दुई पटक बान्ता भयो।"}
+    - {role: doctor, text: "Do you know where you are now? What day is it?"}
+    - {role: patient, text: "थाहा छैन... अस्पताल हो कि? आज... सोमबार कि?"}
+    - {role: doctor, text: "Nurse, get a rectal temperature now and start cooling him with cold water and fans."}
+  expect:
+    must_flag:
+      - {kind: idiom, grounding: npi-009, by_turn: 1}
+      - {rule: WORK-HEAT-01, severity: critical, by_turn: 3}
+    state: {patient: {heat_exposure: true}}
+
+- id: heat-02-matha-gorom-diclofenac
+  title: Bengali labourer, 'matha gorom', dark urine, little water; doctor gives diclofenac
+  patient_lang: bn
+  turns:
+    - {role: doctor, text: "Tell me what is wrong. Any allergies?"}
+    - {role: patient, text: "এলার্জি নেই। সারাদিন রোদে কাজ করি, মাথা গরম হয়ে থাকে, শরীর দুর্বল। পানি কম খাই, প্রস্রাব হলুদ।"}
+    - {role: doctor, text: "You look dry. For the headache and body pain take diclofenac 50 mg three times a day."}
+  expect:
+    must_flag:
+      - {kind: idiom, grounding: ben-003, by_turn: 1}
+      - {rule: HEAT-MED-01, gap: false, note: "needs dehydration >= moderate in the state; the doctor said 'you look dry'"}
+    state: {patient: {heat_exposure: true}}
+
+- id: heat-03-furosemide-outdoor
+  title: Outdoor cleaner with ankle swelling started on furosemide (heat counselling, info)
+  patient_lang: ml
+  turns:
+    - {role: doctor, text: "What work do you do? Any allergies?"}
+    - {role: patient, text: "അലർജി ഇല്ല. റോഡിൽ ക്ലീനിങ് ജോലിയാണ്, രാവിലെ മുതൽ വൈകുന്നേരം വരെ വെയിലത്ത്."}
+    - {role: doctor, text: "For the ankle swelling, start furosemide 20 mg every morning."}
+  expect:
+    must_not_hold: [furosemide]
+    must_flag: [{rule: HEAT-MED-02}]
+    must_not_flag: [{severity: critical}]
+
+- id: heat-04-ramadan-metformin
+  title: Fasting in Ramadan; metformin three times daily 'with meals' (no Ramadan timing rule)
+  patient_lang: ur
+  turns:
+    - {role: doctor, text: "Any allergies? Are you fasting?"}
+    - {role: patient, text: "کوئی الرجی نہیں۔ جی ہاں، روزے سے ہوں، سحری کے بعد سے کچھ نہیں کھایا۔"}
+    - {role: doctor, text: "Your sugar is high. Take metformin 500 mg three times a day with meals."}
+    - {role: patient, text: "ڈاکٹر صاحب، روزے میں تو دن میں کھانا نہیں ہوتا۔"}
+  expect:
+    must_not_hold: [metformin]
+    must_flag:
+      - {kind_any: [ask, observation, missed], keywords: [fast, ramadan, iftar, suhoor, sehri, hypoglyc], gap: true, note: "No rule adapts dosing to Ramadan fasting (schedule doses at suhoor/iftar, hypoglycaemia risk). The agent may catch the contradiction the patient raises."}
+
+- id: heat-05-pasma-trap
+  title: Filipino worker with 'pasma' (hand tremor after washing in cold water) - idiom card, no critical alert
+  patient_lang: tl
+  turns:
+    - {role: doctor, text: "What brings you in?"}
+    - {role: patient, text: "Doc, nanginginig po yung kamay ko, pasma daw sabi ng nanay ko, kasi naghugas ako ng malamig na tubig pagkatapos ng trabaho."}
+    - {role: doctor, text: "Any allergies? Any other symptoms?"}
+    - {role: patient, text: "Wala po allergy. Minsan namamanhid din yung daliri pero nawawala naman."}
+    - {role: doctor, text: "We will check your blood sugar. Rest your hands and come back if it gets worse."}
+  expect:
+    must_not_hold: ["*"]
+    must_flag: [{kind: idiom, grounding: tgl-001, by_turn: 1}]
+    must_not_flag: [{severity: critical}]

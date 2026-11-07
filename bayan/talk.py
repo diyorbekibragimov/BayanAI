@@ -32,10 +32,25 @@ LANG_NAMES = {
     "sw": "Swahili", "ko": "Korean",
     **{code: v["en"] for code, v in MORE.items()},
 }
-# Voices on the worker: Indic Parler-TTS (ne hi ur bn ml ta te), MMS-TTS (tl Filipino, sw Swahili, ar Arabic for the
-# doctor) and Supertonic (ko). Chunks carry their own sample rate (Parler 44.1 kHz, MMS 16 kHz).
-# The doctor hears the patient too: English and Arabic doctor voices (Supertonic on the worker's CPU).
-WORKER_TTS_LANGS = {"ne", "hi", "ur", "bn", "ml", "ta", "te", "tl", "sw", "ko", "ar", "en", *MORE}
+# Exactly the languages the worker voices (its GET /v1/voices "default" table; voice_worker/app.py _engine_for), each
+# only with a voice of that language: Indic Parler-TTS for the 21 languages on its card (ne hi ur bn ml ta te…),
+# MMS-TTS for tl / sw, Piper for ka, Supertonic 3 for en + ar (the doctor's voices), ko, ja and the European languages.
+# Anything else is never sent: silence, and the text stays on screen. The worker re-checks (HTTP 422, no audio) and also
+# refuses text that is not in the language's script. Chunks carry their own sample rate (Parler 44.1 kHz, MMS 16 kHz).
+_PARLER_LANGS = {"as", "bn", "brx", "doi", "en", "gu", "hi", "kn", "kok", "mai", "ml", "mni", "mr", "ne", "or", "sa",
+                 "sat", "sd", "ta", "te", "ur"}
+_SUPERTONIC_LANGS = {"en", "ko", "ja", "ar", "bg", "cs", "da", "de", "el", "es", "et", "fi", "fr", "hi", "hr", "hu",
+                     "id", "it", "lt", "lv", "nl", "pl", "pt", "ro", "ru", "sk", "sl", "sv", "tr", "uk", "vi"}
+WORKER_TTS_LANGS = _PARLER_LANGS | _SUPERTONIC_LANGS | {"tl", "sw", "ka"}
+
+
+class NoVoice(RuntimeError):
+    """The worker will not voice this text: `reason` "lang" (no voice of that language) or "script" (the text is not
+    written in that language's script, e.g. an untranslated English sentence for a Nepali patient). Show the text."""
+
+    def __init__(self, message: str, reason: str = "lang", lang: str = ""):
+        super().__init__(message)
+        self.reason, self.lang = reason, lang
 
 
 # ------------------------------------------------------------------ clients (lazy)
@@ -72,30 +87,21 @@ def worker():
 
 # ------------------------------------------------------------------ pipeline steps
 def hear(sr: int, audio: np.ndarray, patient_lang: str, doctor_lang: str = "en", role: str = "") -> dict:
-    """Who is speaking + transcript. Fast path: raw PCM to the worker's /v1/hear (~0.3 s round trip
-    instead of ~2.8 s through gradio_client). Falls back to the Gradio API only when the fast API is missing (404/405);
-    a worker that is down or rebooting fails fast instead of hanging in gradio_client."""
+    """Who is speaking + transcript: raw PCM to the worker's /v1/hear (~0.3 s round trip). The worker transcribes
+    with the model of the forced role's language only (doctor: Whisper with language=doctor_lang; patient: the
+    patient language's own model). No Gradio fallback: its /hear takes neither the doctor's language nor the forced
+    role, so it could transcribe with the wrong language. Worker down/rebooting -> the exception (the app says so)."""
     a = np.asarray(audio).reshape(-1)
     if a.dtype != np.int16:
         a = (np.clip(a.astype(np.float32), -1, 1) * 32767).astype(np.int16)
     try:
         r = http().post("/v1/hear", params={"sr": int(sr), "lang": patient_lang, "doctor": doctor_lang, **({"role": role} if role else {})}, content=a.astype("<i2").tobytes(),
                         headers={"Content-Type": "application/octet-stream"})
-        if r.status_code not in (404, 405):
-            r.raise_for_status()
-            return r.json()
-        print(f"[hear fast] HTTP {r.status_code}: no /v1 API on the worker; using the Gradio API", flush=True)
+        r.raise_for_status()
+        return r.json()
     except Exception as e:  # noqa: BLE001
         print(f"[hear fast] {type(e).__name__}: {e}", flush=True)
         raise
-    from gradio_client import handle_file
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-        sf.write(f.name, a, sr)
-        path = f.name
-    try:
-        return worker().predict(handle_file(path), patient_lang, api_name="/hear")
-    finally:
-        os.unlink(path)
 
 
 TRANSLATE_SYSTEM = """You are Bayan, a professional medical interpreter in a clinic in Qatar.
@@ -109,11 +115,21 @@ Return ONLY a JSON object with these keys:
   "english": a literal English rendering of what the speaker said,
   "drugs": every medicine the speaker names: [{"name": "<generic name, lowercase>", "intent": "prescribe" | "stop" | "mention",
            "dose_mg": <number>, "frequency_per_day": <number>, "dose": "<dose as said>"}]
+     name: the GENERIC (INN) name, never a brand and never an ordinary English word that sounds like it. Brands:
+     Augmentin -> co-amoxiclav (amoxicillin-clavulanate), Amoxil -> amoxicillin, Brufen/Advil/Nurofen -> ibuprofen,
+     Panadol/Adol/Tylenol/Calpol/Biogesic -> paracetamol, Voltaren/Cataflam -> diclofenac, Bactrim/Septrin ->
+     co-trimoxazole, Ventolin -> salbutamol, Zithromax -> azithromycin, Rocephin -> ceftriaxone, Flagyl ->
+     metronidazole, Keflex -> cephalexin, Lasix -> furosemide, Glucophage -> metformin, Tramal -> tramadol.
+     An unfamiliar brand: write it as said, lowercase.
      intent "prescribe": the doctor gives, starts, continues or proposes it now ("take paracetamol 1 g", "I'll give you amoxicillin");
      "stop": the doctor withdraws, stops or rules it out ("no amoxicillin", "stop the ibuprofen", "let's not use amoxicillin");
      "mention": anything else (a question about it, a patient naming it, a past medicine, an allergy).
      dose_mg: the dose in mg (1 g -> 1000; a bare number after the drug name, "amoxicillin 500", is mg).
-     frequency_per_day: "three times a day" -> 3, "twice daily" -> 2, "every 8 hours" -> 3.
+     frequency_per_day: "three times a day" -> 3, "twice daily" -> 2, "every 8 hours" -> 3. Clinical abbreviations:
+     OD/QD/nocte/mane -> 1, BD/BID -> 2, TDS/TID -> 3, QDS/QID -> 4, q4h -> 6, q6h -> 4, q8h -> 3, q12h -> 2;
+     "as needed, up to 4 times a day" -> 4. One medicine with a regular dose PLUS an extra or as-needed dose
+     ("100 mg QDS plus 100 mg at night if needed") is ONE item: dose_mg the single dose, frequency_per_day the
+     regular plus the maximum extra doses (4 + 1 = 5), dose as said.
      Leave out dose_mg, frequency_per_day or dose when they were not said; never guess.
   "allergies": allergies or bad reactions to medicines the speaker reports: [{"substance": "<lowercase drug or class>", "reaction": "<as said>"}],
   "tests": tests or investigations the doctor orders or reports today, as short English names: ["ECG", "troponin blood test"]
@@ -175,6 +191,11 @@ def translate(text: str, role: str, src: str, tgt: str, context: list[str] | Non
     data["translation"] = str(data.get("translation") or "")
     data["english"] = str(data.get("english") or "")
     data["drugs"] = _clean_drugs(data["drugs"])
+    try:   # brands / mangled names -> generics the rules know ("augmented" for "Augmentin 625")
+        from bayan.brain.vocab import repair_drug_items
+        repair_drug_items(data["drugs"], [text, data["english"]])
+    except Exception as e:  # noqa: BLE001 - the talk loop must never break on the safety net
+        print(f"[translate] drug-name repair failed: {type(e).__name__}: {e}", flush=True)
     data["allergies"] = [a for a in data["allergies"] if isinstance(a, dict) and str(a.get("substance") or "").strip()]
     return data
 
@@ -198,49 +219,47 @@ def split_sentences(text: str, max_chars: int = 160) -> list[str]:
 
 
 def _stream_worker_tts(text: str, lang: str, description: str = ""):
-    """Stream patient-language speech from the worker: ~0.5 s chunks, generated continuously
-    across sentences, with a start buffer sized so playback never overtakes generation.
-    Fast path: NDJSON stream from /v1/speak_stream; falls back to the Gradio API if it fails before any audio."""
-    import base64
-    started = False
-    try:
-        with http().stream("POST", "/v1/speak_stream", json={"text": text, "lang": lang, "description": description}) as r:
-            if r.status_code in (404, 405):
-                raise LookupError(f"no /v1 API on the worker (HTTP {r.status_code})")
-            r.raise_for_status()
-            for line in r.iter_lines():
-                if not line:
-                    continue
-                out = json.loads(line)
-                if out.get("done") or not out.get("pcm"):
-                    continue
-                started = True
-                yield out["sr"], np.frombuffer(base64.b64decode(out["pcm"]), dtype="<i2").astype(np.float32) / 32767.0
-        return
-    except Exception as e:  # noqa: BLE001
-        if started or not isinstance(e, LookupError):
-            raise  # mid-stream, or the worker is down/rebooting: fail fast (text-only), never hang in gradio_client
-        print(f"[speak fast] {type(e).__name__}: {e}; falling back to Gradio API", flush=True)
-    job = worker().submit(text, lang, description, api_name="/speak_stream")
-    for out in job:
-        if not isinstance(out, dict) or out.get("done") or not out.get("pcm"):
-            continue
-        pcm = np.frombuffer(base64.b64decode(out["pcm"]), dtype="<i2").astype(np.float32) / 32767.0
-        yield out["sr"], pcm
+    """Stream speech in `lang` from the worker's /v1/speak_stream (NDJSON, ~0.5 s chunks). One engine per request,
+    always a voice of `lang`. HTTP 422 (no voice for `lang`, or the text is not in its script) -> NoVoice before any
+    audio. No fallback to any other API or voice: on any failure the caller shows the text and stays silent."""
+    with http().stream("POST", "/v1/speak_stream", json={"text": text, "lang": lang, "description": description}) as r:
+        if r.status_code == 422:
+            r.read()
+            try:
+                err = r.json()
+            except ValueError:
+                err = {"error": r.text[:200]}
+            print(f"[speak] no voice: lang={lang} {err.get('error')} | {text[:60]!r}", flush=True)
+            raise NoVoice(str(err.get("error") or f"no voice for {lang}"), str(err.get("reason") or "lang"), lang)
+        r.raise_for_status()
+        for line in r.iter_lines():
+            if not line:
+                continue
+            out = json.loads(line)
+            if out.get("done") or not out.get("pcm"):
+                continue
+            yield out["sr"], np.frombuffer(base64.b64decode(out["pcm"]), dtype="<i2").astype(np.float32) / 32767.0
 
 
 def speak_chunks(text: str, lang: str, description: str = ""):
-    """Yield (sample_rate, float32 array) chunks; yields nothing if no voice for this language yet."""
-    if lang in WORKER_TTS_LANGS:
+    """Yield (sample_rate, float32 array) chunks in `lang`'s own voice; nothing when `lang` has no voice.
+    Raises NoVoice (no audio was produced) when the worker refuses the text, e.g. it is not in `lang`'s script."""
+    if text and text.strip() and lang in WORKER_TTS_LANGS:
         yield from _stream_worker_tts(text, lang, description)
 
 
 def speak(text: str, lang: str, description: str = ""):
-    """Return (sample_rate, float32 mono array) or None if no voice for this language yet."""
-    if not text.strip():
+    """Return (sample_rate, float32 mono array), or None when `lang` has no voice. Same voice and checks as
+    speak_chunks (one fast-API stream, collected); NoVoice when the text is not in `lang`'s script."""
+    if not text.strip() or lang not in WORKER_TTS_LANGS:
         return None
-    if lang in WORKER_TTS_LANGS:
-        wav_path, _stats = worker().predict(text, lang, description, api_name="/speak")
-        audio, sr = sf.read(wav_path, dtype="float32")
-        return sr, audio
-    return None
+    try:
+        chunks = list(speak_chunks(text, lang, description))
+    except NoVoice as e:
+        if e.reason == "lang":
+            return None
+        raise
+    if not chunks:
+        return None
+    sr = chunks[0][0]
+    return sr, np.concatenate([c for r, c in chunks if r == sr])

@@ -1,0 +1,10 @@
+study,group,metric,value,unit,n,source,year,confidence
+Flores 2003 Pediatrics,all interpreters,errors per encounter,31,errors,"13 encounters, 396 errors",https://doi.org/10.1542/peds.111.1.6,2003,high
+Flores 2003 Pediatrics,all interpreters,errors with potential clinical consequence,63,%,396 errors,https://doi.org/10.1542/peds.111.1.6,2003,high
+Flores 2003 Pediatrics,ad hoc interpreters,errors with potential clinical consequence,77,%,,https://doi.org/10.1542/peds.111.1.6,2003,high
+Flores 2003 Pediatrics,hospital interpreters,errors with potential clinical consequence,53,%,,https://doi.org/10.1542/peds.111.1.6,2003,high
+Flores 2003 Pediatrics,all interpreters,omissions share of errors,52,%,,https://doi.org/10.1542/peds.111.1.6,2003,high
+Flores 2012 Ann Emerg Med,professional,errors of potential consequence,12,%,"57 ED encounters, 1,884 errors",https://doi.org/10.1016/j.annemergmed.2012.01.025,2012,high
+Flores 2012 Ann Emerg Med,ad hoc,errors of potential consequence,22,%,,https://doi.org/10.1016/j.annemergmed.2012.01.025,2012,high
+Flores 2012 Ann Emerg Med,no interpreter,errors of potential consequence,20,%,,https://doi.org/10.1016/j.annemergmed.2012.01.025,2012,high
+Flores 2012 Ann Emerg Med,"professional, >=100 h training",errors of potential consequence,2,%,,https://doi.org/10.1016/j.annemergmed.2012.01.025,2012,high

@@ -13,7 +13,7 @@ LANG_NAMES = {
     "tr": "Turkish", "vi": "Vietnamese", "ru": "Russian", "uk": "Ukrainian", "de": "German", "it": "Italian",
     "nl": "Dutch", "pl": "Polish", "ro": "Romanian", "el": "Greek", "cs": "Czech", "sk": "Slovak",
     "hu": "Hungarian", "bg": "Bulgarian", "hr": "Croatian", "sl": "Slovenian", "sv": "Swedish", "da": "Danish",
-    "fi": "Finnish", "et": "Estonian", "lv": "Latvian", "lt": "Lithuanian",
+    "fi": "Finnish", "et": "Estonian", "lv": "Latvian", "lt": "Lithuanian", "ka": "Georgian",
 }
 
 EN_LABELS = {

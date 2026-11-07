@@ -53,13 +53,16 @@ STRINGS = {
         "err_translate": "Could not translate that. Please say it again.",
         "err_process": "Bayan could not process that. Please tap and say it again.",
         "err_voice_off": "Voice is offline. Showing text only.",
+        "voice_unavailable": "Voice unavailable for that sentence. Showing the text only.",
+        "cap_novoice": "Voice unavailable · text only",
+        "err_lang": "Choose the patient’s language first.",
         "err_plan": "Could not write the plan. Please write it here.",
         "err_ask": "Could not translate that question.", "err_demo": "The demo hit a problem. Please try again.",
         "lang_en": "English", "lang_ar": "Arabic", "lang_ne": "Nepali", "lang_hi": "Hindi", "lang_ur": "Urdu",
         "lang_bn": "Bengali", "lang_ml": "Malayalam", "lang_tl": "Filipino", "chip_tl": "Tagalog",
         "lang_ta": "Tamil", "lang_sw": "Swahili", "lang_ko": "Korean",
         "report_pdf": "Download report (PDF)", "send_anyway": "Send anyway",
-        "more": "More…", "more_sub": "More languages", "more_title": "More languages", "more_search": "Search languages",
+        "more": "More…", "more_count": "+{n} languages", "more_search": "Search",
         "more_close": "Close", "more_none": "No language matches.",
         "home_aria": "Go to home", "home_q": "End this consultation and start over?", "home_yes": "Start over", "home_no": "Keep going",
         "spk_aria": "Who is speaking", "spk_doctor": "Doctor", "spk_patient": "Patient",
@@ -98,13 +101,16 @@ STRINGS = {
         "err_translate": "تعذّرت الترجمة. يُرجى إعادة الجملة.",
         "err_process": "تعذّر على بيان معالجة ذلك. اضغط وأعد الجملة.",
         "err_voice_off": "الصوت غير متاح. يُعرض النص فقط.",
+        "voice_unavailable": "الصوت غير متاح لهذه الجملة. يُعرض النص فقط.",
+        "cap_novoice": "الصوت غير متاح · نص فقط",
+        "err_lang": "اختر لغة المريض أولًا.",
         "err_plan": "تعذّرت كتابة الخطة. يُرجى كتابتها هنا.",
         "err_ask": "تعذّرت ترجمة السؤال.", "err_demo": "واجه العرض التوضيحي مشكلة. يُرجى المحاولة مرة أخرى.",
         "lang_en": "الإنجليزية", "lang_ar": "العربية", "lang_ne": "النيبالية", "lang_hi": "الهندية", "lang_ur": "الأردية",
         "lang_bn": "البنغالية", "lang_ml": "المالايالامية", "lang_tl": "الفلبينية", "chip_tl": "التاغالوغية",
         "lang_ta": "التاميلية", "lang_sw": "السواحيلية", "lang_ko": "الكورية",
         "report_pdf": "تنزيل التقرير (PDF)", "send_anyway": "أرسل رغم ذلك",
-        "more": "المزيد…", "more_sub": "لغات أخرى", "more_title": "لغات أخرى", "more_search": "ابحث عن لغة",
+        "more": "المزيد…", "more_count": "+{n} لغة", "more_search": "بحث",
         "more_close": "إغلاق", "more_none": "لا توجد لغة مطابقة.",
         "home_aria": "العودة إلى الصفحة الرئيسية", "home_q": "هل تريد إنهاء هذه الاستشارة والبدء من جديد؟",
         "home_yes": "البدء من جديد", "home_no": "متابعة",
@@ -147,10 +153,16 @@ CHIPS = [
     ("bn", "বাংলা", "Bengali", "bn", 20, ""),
     ("hi", "हिन्दी", "Hindi", "hi", 20, ""),
     ("ur", "اردو", "Urdu", "ur", 22, 'dir="rtl"'),
-    ("tl", "Filipino", "Tagalog", "tl", 19, ""),
-    ("ta", "தமிழ்", "Tamil", "ta", 19, ""),
-    ("sw", "Kiswahili", "Swahili", "sw", 18, ""),
-]  # + "More…" (bayan/langs.MORE: 28 languages, incl. Korean) as the ninth chip
+]  # 2 x 3 grid: these five + "More…" (SHEET below) as the sixth chip
+
+# The "More…" sheet: Filipino, Tamil and Swahili first (large groups in Qatar, with their own GPU/MMS voices and
+# consent lines in consult), then bayan/langs.MORE (Supertonic languages, incl. Korean). Display names only here.
+SHEET = {
+    "tl": {"en": "Filipino", "ar": "الفلبينية", "native": "Tagalog"},
+    "ta": {"en": "Tamil", "ar": "التاميلية", "native": "தமிழ்"},
+    "sw": {"en": "Swahili", "ar": "السواحيلية", "native": "Kiswahili"},
+    **MORE,
+}
 
 
 def _pearl(prefix: str) -> str:
@@ -168,9 +180,9 @@ def _chip(code, native, name, lang_attr, size, extra=""):
 
 STAGE_HTML = fill(
     _STAGE, glow=_glow("s"), wordmark=WORDMARK, pearl=_pearl("s"),
-    chips="\n        ".join(_chip(*c) for c in CHIPS) + "\n        " + read("templates/more_chip.html"),
+    chips="\n        ".join(_chip(*c) for c in CHIPS) + "\n        " + fill(read("templates/more_chip.html"), more_count=len(SHEET)),
     **{f"svg_{k}": SVG[k] for k in ("note", "close", "book", "again", "slower")},
 )
 
 HEAD = fill(_HEAD, css=CSS, js=JS.replace("__STRINGS__", json.dumps(STRINGS, ensure_ascii=False))
-            .replace("__LANGS_MORE__", json.dumps(MORE, ensure_ascii=False)))
+            .replace("__LANGS_MORE__", json.dumps(SHEET, ensure_ascii=False)))

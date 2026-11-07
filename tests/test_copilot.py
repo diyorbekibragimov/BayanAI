@@ -807,3 +807,86 @@ def test_med_details_keep_intent_logic():
     assert props["food"]["enum"] == ["before_food", "with_food", "after_food", "empty_stomach"]
     assert props["times"]["items"]["enum"] == ["on_waking", "morning", "midday", "evening", "bedtime"]
     assert "times" in extract.SYSTEM and "on_waking" in extract.SYSTEM
+
+
+# ------------------------------------------------------------------ simulation-suite regressions (fix1)
+def test_gate_repairs_a_mangled_brand_and_holds():
+    # alg-01: the translator's drug name was "augmented" for "Augmentin 625"
+    c = _with_allergy()
+    t = c.add_turn("doctor", "en", "Okay. I'll give you Augmentin 625, one tablet three times a day for five days.")
+    held = copilot.prescription_gate(c, [{"name": "augmented", "dose_mg": 625, "frequency_per_day": 3,
+                                          "intent": "prescribe"}], t.text, t.id)
+    assert [(h["rule_id"], h["key"]) for h in held] == [("ALG-PEN-01", "ALG-PEN-01|co-amoxiclav")]
+    assert {m["drug"] for m in c.state["prescribed_meds"]} == {"co-amoxiclav"}
+
+
+def test_gate_parses_qds_and_sums_scheduled_plus_prn():
+    c = _consult()
+    t = c.add_turn("doctor", "en", "For the kidney stone pain, tramadol 100 mg QDS, plus another 100 mg at night if "
+                                   "the pain wakes you.")
+    # the model under-counted QDS as once a day; the dose as said carries the abbreviation
+    held = copilot.prescription_gate(c, [
+        {"name": "tramadol", "intent": "prescribe", "dose_mg": 100, "frequency_per_day": 1, "dose": "100 mg QDS"},
+        {"name": "tramadol", "intent": "prescribe", "dose_mg": 100, "frequency_per_day": 1, "dose": "100 mg at night"}],
+        t.text, t.id)
+    assert any(h["rule_id"] == "DOSE-TRAM-01" and h["severity"] == "critical" for h in held)
+    assert c.state["prescribed_meds"][0]["daily_dose_mg"] == 500
+
+
+def test_brain_route_defaults_and_override(monkeypatch):
+    # unset: the caller's own provider / fallback (extraction stays on Groq -> Cerebras); translation untouched
+    monkeypatch.setattr(llm, "BRAIN_MODEL", "")
+    monkeypatch.setattr(llm, "BRAIN_PROVIDER", "")
+    assert llm.brain_route("groq", "cerebras") == {"provider": "groq", "fallback": "cerebras"}
+    assert llm.brain_route() == {}
+    monkeypatch.setitem(llm.MODEL_PRICES, "example/brain-model", {"deepinfra": (0.09, 0.18)})
+    monkeypatch.setattr(llm, "BRAIN_MODEL", "example/brain-model")
+    monkeypatch.setattr(llm, "BRAIN_PROVIDER", "deepinfra")
+    assert llm.brain_route("groq", "cerebras") == {"model": "example/brain-model", "provider": "deepinfra",
+                                                   "fallback": "deepinfra"}
+    # priced with the brain model's own provider prices; gpt-oss keeps its table
+    assert llm.price("example/brain-model", "deepinfra") == (0.09, 0.18)
+    assert abs(llm.cost_usd("deepinfra", 1_000_000, 1_000_000, "example/brain-model") - 0.27) < 1e-9
+    assert llm.cost_usd("cerebras", 1000, 100) == llm.cost_usd("cerebras", 1000, 100, "openai/gpt-oss-120b")
+    # reasoning_effort only for gpt-oss
+    assert llm.reasoning_body("example/brain-model", "medium") == {}
+    assert llm.reasoning_body("openai/gpt-oss-120b", "low") == {"reasoning_effort": "low"}
+
+
+def test_chat_json_sends_the_brain_model_and_prices_it(monkeypatch):
+    sent = []
+
+    class _Usage:
+        prompt_tokens, completion_tokens = 1_000_000, 0
+
+    class _Resp:
+        usage = _Usage()
+        choices = [type("C", (), {"message": type("M", (), {"content": '{"ok": true}'})()})()]
+
+    class _Client:
+        def __init__(self, prov):
+            self.prov, self.chat, self.completions = prov, self, self
+
+        def create(self, **kw):
+            sent.append((self.prov, kw.get("model"), (kw.get("response_format") or {}).get("type"),
+                         "extra_body" in kw))
+            return _Resp()
+
+    llm.set_backend(None)
+    monkeypatch.setattr(llm, "_client", lambda prov: _Client(prov))
+    before = llm.USAGE["cost_usd"]
+    monkeypatch.setitem(llm.MODEL_PRICES, "example/brain-model", {"deepinfra": (0.09, 0.18)})
+    out = llm.chat_json("s", "u", schema={"type": "object"}, model="example/brain-model",
+                        provider="deepinfra", fallback="deepinfra")
+    assert out == {"ok": True}
+    assert sent == [("deepinfra", "example/brain-model", "json_schema", False)]
+    assert abs(llm.USAGE["cost_usd"] - before - 0.09) < 1e-9
+    # a pair listed without structured output goes straight to json_object
+    sent.clear()
+    llm.chat_json("s", "u", schema={"type": "object"}, model="openai/gpt-oss-120b", provider="deepinfra",
+                  fallback="deepinfra")
+    assert sent[0][2] == "json_object"
+    # the default call (live translation) is unchanged: gpt-oss with reasoning_effort
+    sent.clear()
+    llm.chat_json("s", "u", schema={"type": "object"}, provider="cerebras")
+    assert sent[0] == ("cerebras", llm.LLM_MODEL, "json_schema", True)

@@ -1,0 +1,93 @@
+{
+  "assumptions": {
+    "consults_per_day": 40,
+    "days_per_month": 30,
+    "clinic_hours_per_day": 12,
+    "usd_qar": 3.64,
+    "llm_token_model_per_consultation": {
+      "talk_loop_translation": {
+        "calls": 24,
+        "in_per_call": 700,
+        "out_per_call": 150
+      },
+      "fact_extraction": {
+        "calls": 8,
+        "in_per_call": 1800,
+        "out_per_call": 350
+      },
+      "copilot_agent": {
+        "calls": 3,
+        "in_per_call": 3500,
+        "out_per_call": 450
+      },
+      "wrap_up_note_careplan": {
+        "calls": 3,
+        "in_per_call": 3500,
+        "out_per_call": 1500
+      }
+    },
+    "tokens_in_total": 52200,
+    "tokens_out_total": 12250,
+    "l4_space_usd_h": 0.8,
+    "cpu_upgrade_space_usd_h": 0.03,
+    "clinics_per_l4_shared": 4,
+    "amortisation_months": 36,
+    "support_pct_capex_per_year": 0.15,
+    "pue": 1.5,
+    "electricity_qar_per_kwh": 0.13,
+    "interpreter_minutes_per_consultation": 15,
+    "inhouse_interpreter_qar_month": 6250,
+    "inhouse_fte_for_6_languages": 12.6
+  },
+  "formulas": {
+    "llm_cost": "sum_jobs(calls*in*price_in + calls*out*price_out)/1e6",
+    "online_clinic_month": "L4_h*clinic_h*30/clinics_per_L4 + llm_cost*1200 + cpu_h*720/clinics_per_L4",
+    "self_hosted_month": "capex/36 + kW*PUE*720*QAR_kWh/3.64 + capex*0.15/12",
+    "human_per_consult": "price_per_min * 15",
+    "per_consult": "clinic_month / consults_per_month"
+  },
+  "llm_cost_per_consultation_usd": {
+    "gpt-oss-120b, current routing (Cerebras + Groq extraction)": 0.0246,
+    "gpt-oss-120b cerebras (all jobs)": 0.0275,
+    "gpt-oss-120b novita (all jobs)": 0.0057,
+    "gpt-oss-120b deepinfra (all jobs)": 0.004
+  },
+  "online": {
+    "gpu_dedicated_12h_month": 288.00000000000006,
+    "gpu_247_month": 576.0000000000001,
+    "app_space_month": 21.6,
+    "clinic_month_dedicated": 339.1,
+    "clinic_month_shared": 106.9
+  },
+  "self_hosted": [
+    {
+      "option": "S1 edge box: 2x L4 24GB (voice + gpt-oss-20b)",
+      "capex_usd": 14600,
+      "capex_qar": 53144,
+      "amortisation_usd_month": 405.6,
+      "power_usd_month": 19.3,
+      "support_usd_month": 182.5,
+      "total_usd_month": 607.3,
+      "note": "L4 ~$2,661-2,833 (SabrePC; GPUpoet avg); server chassis/CPU/RAM/NVMe $9,000 assumed"
+    },
+    {
+      "option": "S2 sovereign: 1x H100 80GB (gpt-oss-120b) + 1x L40S 48GB (voice)",
+      "capex_usd": 48000,
+      "capex_qar": 174720,
+      "amortisation_usd_month": 1333.3,
+      "power_usd_month": 46.3,
+      "support_usd_month": 600.0,
+      "total_usd_month": 1979.6,
+      "note": "H100 PCIe $25-38k (Fluence; GPUpoet); L40S $7.6-11.9k (nasscom); server $12,000 assumed"
+    }
+  ],
+  "human": {
+    "Phone or video interpreter, CyraCom/Propio published rates $0.75-0.81/min (used $0.76)": 11.4,
+    "Phone interpreter, LanguageLine public contract $0.99-1.10/min (mid $1.05)": 15.75,
+    "Video interpreter, LanguageLine contract $1.95/min": 29.25,
+    "Phone interpreter, LanguageLine pay-as-you-go $3.95/min": 59.25,
+    "Video interpreter, LanguageLine pay-as-you-go $4.95/min": 74.25
+  },
+  "inhouse_interpreters_month_usd": 21635,
+  "sources": "see docs/pitch/research.md Sources"
+}

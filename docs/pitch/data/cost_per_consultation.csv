@@ -1,0 +1,17 @@
+category,option,usd_per_consultation,qar_per_consultation,basis
+LLM only,"gpt-oss-120b, current routing (Cerebras + Groq extraction)",0.0246,0.089,token model x router prices
+LLM only,gpt-oss-120b cerebras (all jobs),0.0275,0.1,token model x router prices
+LLM only,gpt-oss-120b novita (all jobs),0.0057,0.021,token model x router prices
+LLM only,gpt-oss-120b deepinfra (all jobs),0.004,0.015,token model x router prices
+Bayan online (HF),Dedicated L4 Space 12 h/day + LLM + app Space,0.2826,1.029,"1 clinic, 1,200 consults/month"
+Bayan online (HF),L4 shared by 4 clinics + LLM + app Space,0.0891,0.324,sharing ratio unverified
+Bayan self-hosted,"S1 edge box: 2x L4 24GB (voice + gpt-oss-20b), 1 clinic",0.5061,1.842,"1,200 consults/month"
+Bayan self-hosted,"S1 edge box: 2x L4 24GB (voice + gpt-oss-20b), 4 clinics",0.1265,0.461,"4,800 consults/month; capacity unverified"
+Bayan self-hosted,"S2 sovereign: 1x H100 80GB (gpt-oss-120b) + 1x L40S 48GB (voice), 1 clinic",1.6497,6.005,"1,200 consults/month"
+Bayan self-hosted,"S2 sovereign: 1x H100 80GB (gpt-oss-120b) + 1x L40S 48GB (voice), 10 clinics / 1 hospital",0.165,0.6,"12,000 consults/month; capacity unverified"
+Human interpreter,"Phone or video interpreter, CyraCom/Propio published rates $0.75-0.81/min (used $0.76)",11.4,41.496,15 interpreter-minutes per consultation
+Human interpreter,"Phone interpreter, LanguageLine public contract $0.99-1.10/min (mid $1.05)",15.75,57.33,15 interpreter-minutes per consultation
+Human interpreter,"Video interpreter, LanguageLine contract $1.95/min",29.25,106.47,15 interpreter-minutes per consultation
+Human interpreter,"Phone interpreter, LanguageLine pay-as-you-go $3.95/min",59.25,215.67,15 interpreter-minutes per consultation
+Human interpreter,"Video interpreter, LanguageLine pay-as-you-go $4.95/min",74.25,270.27,15 interpreter-minutes per consultation
+Human interpreter,"In-house staff, 6 languages x 12 h x 7 days (12.6 FTE @ QAR 6,250)",18.0288,65.625,"coverage cost spread over 1,200 consults/month"

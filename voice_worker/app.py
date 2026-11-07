@@ -13,6 +13,11 @@ API (call from the main Space with gradio_client + HF_TOKEN; this Space is priva
   /speak_stream_opts(text, lang, description, opts_json), /tts_probe(opts_json) -> latency experiments
   /benchmark()                             -> Nepali TTS -> ASR round-trip timings
   /langs()                                 -> ASR language codes
+Fast HTTP API (Bearer token): POST /v1/hear, POST /v1/speak_stream (NDJSON), GET /v1/voices, GET /v1/ping.
+
+Voice rule: a language is spoken only by an engine on that language's allow-list (PARLER_LANGS, supertonic.LANGS,
+MMS tl/sw, Piper ka) and only when the text is in the language's script; otherwise HTTP 422 / gr.Error and no
+audio. Never another language's voice.
 """
 
 import base64
@@ -81,6 +86,10 @@ _PREFETCH = {
     VOX_ID: None,
     "google/flan-t5-large": _TOK_FILES,  # tokenizer only (Parler's description encoder)
     "Supertone/supertonic-3": ["onnx/*", "voice_styles/*"],  # CPU voice for Korean (and A/B for Arabic)
+    # Georgian ASR: Whisper is unusable for Georgian (FLEURS dev, 20 speakers: WER 110%, CER 83%); MMS-1B-all with
+    # its Georgian adapter: WER 27%, CER 4.8%.
+    "facebook/mms-1b-all": ["config.json", "preprocessor_config.json", "special_tokens_map.json", "tokenizer_config.json",
+                            "vocab.json", "model.safetensors", "adapter.kat.safetensors"],
 }
 
 
@@ -144,6 +153,28 @@ _pool.shutdown(wait=False)
 t = time.time()
 asr = AutoModel.from_pretrained(CONFORMER_ID, trust_remote_code=True, token=HF_TOKEN)
 _log(f"IndicConformer loaded in {time.time() - t:.1f}s")
+# Patient languages transcribed with MMS-1B-all + a per-language adapter (ISO 639-3 code).
+MMS_ASR_LANGS = {"ka": "kat"}
+mms_asr = mms_proc = None
+try:
+    from transformers import AutoProcessor, Wav2Vec2ForCTC  # noqa: E402
+    _wait_fetch("facebook/mms-1b-all")
+    t = time.time()
+    mms_proc = AutoProcessor.from_pretrained("facebook/mms-1b-all", target_lang="kat")
+    mms_asr = Wav2Vec2ForCTC.from_pretrained(
+        "facebook/mms-1b-all", target_lang="kat", ignore_mismatched_sizes=True,
+        torch_dtype=torch.float16 if DEVICE.startswith("cuda") else torch.float32).to(DEVICE).eval()
+    _log(f"MMS-1B-all ASR (kat) loaded in {time.time() - t:.1f}s")
+except Exception as _e:  # noqa: BLE001 - boot anyway; Georgian falls back to Whisper
+    MMS_ASR_LANGS = {}
+    _log(f"MMS ASR failed: {type(_e).__name__}: {_e}")
+
+
+@torch.inference_mode()
+def _mms_text(wav16: torch.Tensor) -> str:
+    inp = mms_proc(wav16.squeeze(0).numpy(), sampling_rate=ASR_SR, return_tensors="pt")
+    ids = mms_asr(inp.input_values.to(DEVICE, mms_asr.dtype)).logits.argmax(-1)[0]
+    return mms_proc.decode(ids).strip()
 # Voices Indic Parler-TTS lacks: Arabic (doctor side), Filipino/Tagalog and Swahili (patient side).
 # Meta MMS-TTS (VITS, ~36M params each, CC-BY-NC-4.0): fast and cheap; plain but clear voice.
 from transformers import VitsModel  # noqa: E402
@@ -164,6 +195,28 @@ ST = None
 # Vietnamese...). Arabic moved from MMS to Supertonic: drug names survive the ASR round trip better and its licence
 # (OpenRAIL-M) allows commercial use, unlike MMS (CC-BY-NC). engine= still forces any engine for A/B.
 ST_NOT_DEFAULT = {"hi"}
+
+# Piper (rhasspy/piper-voices, ONNX VITS ~63 MB, CPU ~0.1 s per sentence) for languages none of the above speak:
+# Georgian ("natia"). piper-tts pins the CPU-only onnxruntime wheel, which would replace onnxruntime-gpu (needed by
+# IndicConformer), so it is installed here without dependencies and runs on onnxruntime-gpu's CPU provider.
+PIPER_VOICES = {"ka": "ka/ka_GE/natia/medium/ka_GE-natia-medium"}
+PIPER = {}
+try:
+    import subprocess, sys  # noqa: E401, E402
+    subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-deps", "piper-tts==1.8.0", "pathvalidate==3.2.3"],
+                   check=True, timeout=180)
+    from huggingface_hub import hf_hub_download  # noqa: E402
+    from piper import PiperVoice  # noqa: E402
+    from piper.config import SynthesisConfig  # noqa: E402
+    t = time.time()
+    for _code, _stem in PIPER_VOICES.items():
+        _onnx = hf_hub_download("rhasspy/piper-voices", _stem + ".onnx", token=HF_TOKEN)
+        hf_hub_download("rhasspy/piper-voices", _stem + ".onnx.json", token=HF_TOKEN)
+        PIPER[_code] = PiperVoice.load(_onnx)
+    _log(f"Piper loaded ({', '.join(PIPER)}) in {time.time() - t:.1f}s")
+except Exception as _e:  # noqa: BLE001 - boot anyway; Georgian falls back to text
+    _log(f"Piper failed: {type(_e).__name__}: {_e}")
+PIPER_RATE = float(os.environ.get("PIPER_LENGTH_SCALE", "1.1"))  # >1 = slower: calm, clear
 ST_SPEED = float(os.environ.get("ST_SPEED", "0.9"))  # languages that use it by default; any of supertonic.LANGS on request (engine=)
 try:
     from supertonic import LANGS as ST_LANGS, REPO as ST_REPO, Supertonic  # noqa: E402
@@ -187,15 +240,49 @@ def _whisper_lang_id(code: str):
     tid = _W_TOK.convert_tokens_to_ids(f"<|{code}|>")
     return None if tid in (None, _W_UNK) else tid
 
-# Named speakers from the Indic Parler-TTS card; calm and slow suits patients.
+# Indic Parler-TTS speakers are trained per language: a speaker from another language (or an unnamed "A female
+# speaker", which samples any of the 69 voices) drifts the accent towards that speaker's language. So every language
+# with named speakers on the model card uses its own recommended speaker (female where the card has one).
+# Card table: https://huggingface.co/ai4bharat/indic-parler-tts#🎯-using-a-specific-speaker (no Urdu, Konkani,
+# Maithili, Santali or Sindhi speakers are named there: those keep the generic description).
+PARLER_SPEAKERS = {  # every named speaker per language (card), recommended first
+    "as": ["Sita", "Amit", "Poonam", "Rakesh"], "bn": ["Aditi", "Arjun", "Tapan", "Rashmi", "Arnav", "Riya"],
+    "brx": ["Maya", "Bikram", "Kalpana"], "doi": ["Karan"],
+    "en": ["Mary", "Thoma", "Swapna", "Dinesh", "Meera", "Jatin", "Aakash", "Sneha", "Kabir", "Tisha", "Chingkhei",
+           "Thoiba", "Priya", "Tarun", "Gauri", "Nisha", "Raghav", "Kavya", "Ravi", "Vikas", "Riya"],
+    "gu": ["Neha", "Yash"], "hi": ["Divya", "Rohit", "Aman", "Rani"], "kn": ["Anu", "Suresh", "Chetan", "Vidya"],
+    "ml": ["Anjali", "Harish", "Anju"], "mni": ["Laishram", "Ranjit"],
+    "mr": ["Sunita", "Sanjay", "Nikhil", "Radha", "Varun", "Isha"], "ne": ["Amrita"], "or": ["Debjani", "Manas"],
+    "sa": ["Aryan"], "ta": ["Jaya", "Kavitha"], "te": ["Lalitha", "Prakash", "Kiran"],
+}
+_ALL_SPEAKERS = sorted({n for ns in PARLER_SPEAKERS.values() for n in ns}
+                       | {"Bhanu", "Champa", "Divjot", "Gurpreet"}, key=len, reverse=True)  # + Chhattisgarhi, Punjabi
+_SPEAKER_RE = re.compile(r"\b(" + "|".join(_ALL_SPEAKERS) + r")\b")
+_UNNAMED_RE = re.compile(r"^\s*(?:a|the)\s+(?:(?:young|old|middle-aged)\s+)?(?:female|male|woman|man)?\s*(?:speaker|voice)\b",
+                         re.I)
+# Calm and slow suits patients.
 _CLEAR = "The recording is of very high quality, with the speaker's voice sounding clear and very close up."
 DEFAULT_DESCRIPTIONS = {
-    "ne": f"Amrita speaks at a slow, calm pace with a clear voice. {_CLEAR}",
-    "hi": f"Divya speaks at a slow, calm pace with a warm, clear voice. {_CLEAR}",
-    "ta": f"Jaya speaks at a slow, calm pace with a clear voice. {_CLEAR}",
-    "en": f"A female speaker delivers calm, clear speech at a moderate speed and pitch. {_CLEAR}",
+    lang: f"{names[0]} speaks at a slow, calm pace with a clear voice. {_CLEAR}" for lang, names in PARLER_SPEAKERS.items()
 }
+DEFAULT_DESCRIPTIONS["hi"] = f"Divya speaks at a slow, calm pace with a warm, clear voice. {_CLEAR}"
+DEFAULT_DESCRIPTIONS["en"] = f"Mary delivers calm, clear speech at a moderate speed and pitch. {_CLEAR}"
 GENERIC_DESCRIPTION = f"A female speaker delivers calm, clear speech at a slow pace and moderate pitch. {_CLEAR}"
+
+
+def _describe(lang: str, description: str = "") -> str:
+    """The Parler voice description for `lang`, always with a speaker of that language when the card names one.
+    A caller's description keeps its style words; an unnamed speaker ("A female speaker…") becomes the language's
+    speaker, and another language's speaker (e.g. "Divya" for Nepali) is replaced."""
+    if not description:
+        return DEFAULT_DESCRIPTIONS.get(lang, GENERIC_DESCRIPTION)
+    own = PARLER_SPEAKERS.get(lang, [])
+    default = own[0] if own else "A female speaker"
+    description = _SPEAKER_RE.sub(lambda m: m.group(1) if m.group(1) in own else default, description)
+    if own and not _SPEAKER_RE.search(description):
+        description = _UNNAMED_RE.sub(default, description, count=1) if _UNNAMED_RE.match(description) \
+            else f"{default}'s voice. {description}"
+    return description
 
 
 _EAGER_FORWARD = tts.forward
@@ -246,7 +333,10 @@ def _degenerate(text: str) -> bool:
     if not text:
         return False
     import zlib  # noqa: PLC0415
-    b = text.encode("utf-8")
+    # One byte per character (low byte of the code point), NOT UTF-8: in Georgian, Devanagari, Bengali, Tamil,
+    # Korean… two of every three UTF-8 bytes are the same script prefix, which pushed long, correct sentences over
+    # 2.4 (real Georgian FLEURS sentences scored 2.2-2.44 and were dropped as "unclear"). Real loops still score >3.
+    b = bytes(ord(c) & 0xFF for c in text)
     ratio = len(b) / max(1, len(zlib.compress(b)))
     return ratio > 2.4 or bool(_REPEAT_RE.search(text))
 
@@ -260,10 +350,23 @@ def _whisper_text(feats, lang: str, audio_seconds: float) -> str:
     return w_proc.batch_decode(out, skip_special_tokens=True)[0].strip()
 
 
+def _asr_engine(patient_lang: str):
+    """The ONE engine that transcribes this patient language (its own model / language mask), or None."""
+    if patient_lang in MMS_ASR_LANGS:
+        return "mms-1b-all"
+    if patient_lang in asr.language_masks:
+        return "indic-conformer-600m"
+    if patient_lang and _whisper_lang_id(patient_lang) is not None:
+        return "whisper-large-v3-turbo"
+    return None
+
+
 @torch.inference_mode()
 def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str, doctor_lang: str = "", role_override: str = "") -> dict:
     """Decide doctor vs patient for one utterance, then transcribe it with the right model."""
     t_all = time.time()
+    if not _asr_engine(patient_lang):
+        raise ValueError(f"no speech recognition for {patient_lang!r}")
     wav16 = _to_mono16k(wav, sr)
     feats = w_proc(wav16.squeeze(0).numpy(), sampling_rate=ASR_SR, return_tensors="pt").input_features
     feats = feats.to(DEVICE, W_DTYPE)
@@ -311,6 +414,11 @@ def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str, doctor_lang: str =
                     lang, text = other, alt
                 else:
                     text, unclear = "", True
+    elif patient_lang in MMS_ASR_LANGS:
+        lang, engine = patient_lang, "mms-1b-all"
+        text = _mms_text(wav16)
+        if _degenerate(text):
+            text, unclear = "", True
     elif patient_lang in asr.language_masks:
         lang, engine = patient_lang, "indic-conformer-600m"
         text = asr(wav16, patient_lang, "ctc")
@@ -328,6 +436,9 @@ def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str, doctor_lang: str =
         "lang": lang,
         "text": text,
         "unclear": unclear,
+        # Whisper's language token does not force the output language (Tagalog audio forced to "en" comes back as
+        # Tagalog text labelled "en"): the same script/word check as the voices, as a hint for the app.
+        "text_problem": script_problem(text, lang) if text else None,
         "role_forced": role_forced,
         "detected_role": detected_role,
         "engine": engine,
@@ -355,6 +466,8 @@ def hear(audio_path: str, patient_lang: str = "ne") -> dict:
     if not audio_path:
         raise gr.Error("No audio received.")
     wav, sr = _load_and_delete(audio_path)
+    if not _asr_engine(patient_lang):
+        raise gr.Error(f"no speech recognition for {patient_lang or '(no language)'}")
     return _hear_wave(wav, sr, patient_lang)
 
 
@@ -367,7 +480,7 @@ def transcribe(audio_path: str, lang: str = "ne", decoding: str = "ctc") -> dict
 
 @torch.inference_mode()
 def _speak_array(text: str, lang: str = "ne", description: str = ""):
-    description = description or DEFAULT_DESCRIPTIONS.get(lang, GENERIC_DESCRIPTION)
+    description = _describe(lang, description)
     fits = len(tts_tok(text).input_ids) <= PROMPT_MAX and len(desc_tok(description).input_ids) <= DESC_MAX
     use_compiled = TTS_COMPILED and fits
     tts.forward = _COMPILED_FORWARD if use_compiled else _EAGER_FORWARD
@@ -560,7 +673,7 @@ def _est_seconds(seg: str, lang: str, o: dict) -> float:
 
 def _stream_group(segs, lang, description, o, st):
     """Generate one batch of segments; yield ("audio", seg_idx, chunk, seg_end) once safe to play."""
-    description = description or DEFAULT_DESCRIPTIONS.get(lang, GENERIC_DESCRIPTION)
+    description = _describe(lang, description)
     B = len(segs)
     d = desc_tok([description] * B, return_tensors="pt", padding=True).to(DEVICE)
     p = tts_tok(list(segs), return_tensors="pt", padding=True).to(DEVICE)
@@ -651,16 +764,16 @@ def _speak_stream(text: str, lang: str, description: str, opts: dict):
                 audio = np.concatenate([audio, gap])
                 st["play_end"] += len(gap) / TTS_SR
                 generated += len(gap) / TTS_SR
-            yield _payload(audio, **meta)
+            yield _payload(audio, engine="indic-parler-tts", **meta)
     total = time.time() - t0
-    yield {"done": True, "first_audio_seconds": round(first_at or total, 3), "total_seconds": round(total, 3),
+    yield {"done": True, "engine": "indic-parler-tts", "first_audio_seconds": round(first_at or total, 3), "total_seconds": round(total, 3),
            "audio_seconds": round(generated, 3), "rtf": round(total / max(generated, 1e-6), 3), "chunks": n,
            "segments": segs, "groups": st["groups"]}
 
 
 def _legacy_stream(text: str, lang: str, description: str):
     """Previous implementation (one sentence at a time, batch 1); used only as a fallback."""
-    description = description or DEFAULT_DESCRIPTIONS.get(lang, GENERIC_DESCRIPTION)
+    description = _describe(lang, description)
     t0, n, generated = time.time(), 0, 0.0
     for sentence in _split_sentences(text):
         d, p = _tokenize_tts(sentence, description, padded=False)
@@ -674,11 +787,12 @@ def _legacy_stream(text: str, lang: str, description: str):
                 break
             generated += len(chunk) / TTS_SR
             n += 1
-            yield _payload(np.asarray(chunk, dtype=np.float32), i=n, t=round(time.time() - t0, 3))
+            yield _payload(np.asarray(chunk, dtype=np.float32), i=n, t=round(time.time() - t0, 3),
+                           engine="indic-parler-tts")
         th.join()
     total = time.time() - t0
     yield {"done": True, "total_seconds": round(total, 3), "audio_seconds": round(generated, 3),
-           "rtf": round(total / max(generated, 1e-6), 3), "chunks": n, "fallback": True}
+           "rtf": round(total / max(generated, 1e-6), 3), "chunks": n, "fallback": True, "engine": "indic-parler-tts"}
 
 
 @torch.inference_mode()
@@ -709,16 +823,197 @@ def _mms_stream(text: str, lang: str):
            "audio_seconds": round(total, 3), "chunks": n, "engine": "mms-tts"}
 
 
-def _engine_for(lang: str, engine: str = "") -> str:
-    if engine == "supertonic" and ST is not None and lang in ST_LANGS:
+# ---------------------------------------------------------------- which voice may speak which language
+# Rule: a language is voiced only by an engine that officially speaks it. No voice -> an error and silence (the app
+# shows the text); never another language's voice. Each engine has an explicit allow-list:
+#   Indic Parler-TTS: the 21 languages on its model card ("officially supported").
+PARLER_LANGS = {"as", "bn", "brx", "doi", "en", "gu", "hi", "kn", "kok", "mai", "ml", "mni", "mr", "ne", "or", "sa",
+                "sat", "sd", "ta", "te", "ur"}
+MMS_DEFAULT = {"tl", "sw"}  # MMS-TTS voices by default; its Arabic voice only when engine="mms" is asked for
+ENGINES = ("parler", "supertonic", "mms", "piper")
+
+
+def _can(engine: str, lang: str) -> bool:
+    return {"parler": lang in PARLER_LANGS, "supertonic": ST is not None and lang in ST_LANGS,
+            "mms": lang in MMS, "piper": lang in PIPER}.get(engine, False)
+
+
+def _engine_for(lang: str, engine: str = ""):
+    """The engine that voices `lang`, or None (-> HTTP 422 / gr.Error, no audio). A requested `engine` that cannot
+    speak `lang` is None too: never silently swapped for another engine."""
+    engine = (engine or "").strip().lower()
+    if engine:
+        return engine if _can(engine, lang) else None
+    if lang in PIPER:
+        return "piper"
+    if lang in MMS_DEFAULT:
+        return "mms" if lang in MMS else None
+    if _can("supertonic", lang) and lang not in ST_NOT_DEFAULT:
         return "supertonic"
-    if engine == "mms" and lang in MMS:
-        return "mms"
-    if engine == "parler":
+    if lang in PARLER_LANGS:  # incl. English if Supertonic failed to load: Parler's English voice, still English
         return "parler"
-    if ST is not None and lang in ST_LANGS and lang not in ST_NOT_DEFAULT:
-        return "supertonic"
-    return "mms" if lang in MMS else "parler"
+    return None
+
+
+def voices() -> dict:
+    """Default engine per voiced language (what the app may ask for), plus every engine's allow-list."""
+    langs = PARLER_LANGS | set(ST_LANGS) | MMS_DEFAULT | set(PIPER)
+    default = {c: e for c in sorted(langs) if (e := _engine_for(c))}
+    return {"default": default,
+            "engines": {e: sorted(c for c in langs | set(MMS) if _can(e, c)) for e in ENGINES}}
+
+
+# Text/language guard: a translation that came back in another script (English text for a Nepali patient, Hindi
+# text for a Bengali patient, Arabic for Urdu…) is never spoken. Unicode ranges only; cheap.
+_SCRIPT_RANGES = {
+    "latin": ((0x41, 0x5A), (0x61, 0x7A), (0xC0, 0x24F), (0x1E00, 0x1EFF), (0x2C60, 0x2C7F), (0xA720, 0xA7FF),
+              (0xFF21, 0xFF3A), (0xFF41, 0xFF5A)),
+    "devanagari": ((0x900, 0x97F), (0xA8E0, 0xA8FF)), "bengali": ((0x980, 0x9FF),), "gurmukhi": ((0xA00, 0xA7F),),
+    "gujarati": ((0xA80, 0xAFF),), "odia": ((0xB00, 0xB7F),), "tamil": ((0xB80, 0xBFF),),
+    "telugu": ((0xC00, 0xC7F),), "kannada": ((0xC80, 0xCFF),), "malayalam": ((0xD00, 0xD7F),),
+    "arabic": ((0x600, 0x6FF), (0x750, 0x77F), (0x8A0, 0x8FF), (0xFB50, 0xFDFF), (0xFE70, 0xFEFF)),
+    "cyrillic": ((0x400, 0x52F), (0x1C80, 0x1C8F)), "greek": ((0x370, 0x3FF), (0x1F00, 0x1FFF)),
+    "georgian": ((0x10A0, 0x10FF), (0x1C90, 0x1CBF), (0x2D00, 0x2D2F)),
+    "hangul": ((0x1100, 0x11FF), (0x3130, 0x318F), (0xA960, 0xA97F), (0xAC00, 0xD7FF)),
+    "kana": ((0x3040, 0x30FF), (0x31F0, 0x31FF), (0xFF66, 0xFF9F)),
+    "han": ((0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xF900, 0xFAFF)),
+    "olchiki": ((0x1C50, 0x1C7F),), "meetei": ((0xABC0, 0xABFF),),
+}
+_LATIN_LANGS = {"en", "tl", "sw", "es", "fr", "pt", "id", "tr", "vi", "de", "it", "nl", "pl", "ro", "cs", "sk", "hu",
+                "hr", "sl", "sv", "da", "fi", "et", "lv", "lt"}
+LANG_SCRIPTS = {
+    **{c: {"latin"} for c in _LATIN_LANGS},
+    **{c: {"devanagari"} for c in ("ne", "hi", "mr", "sa", "kok", "mai", "doi", "brx")},
+    "bn": {"bengali"}, "as": {"bengali"}, "mni": {"bengali", "meetei"}, "sat": {"olchiki", "devanagari"},
+    "ar": {"arabic"}, "ur": {"arabic"}, "sd": {"arabic", "devanagari"},
+    "gu": {"gujarati"}, "kn": {"kannada"}, "or": {"odia"}, "ta": {"tamil"}, "te": {"telugu"}, "ml": {"malayalam"},
+    "pa": {"gurmukhi"}, "ko": {"hangul", "han"}, "ja": {"kana", "han"}, "ka": {"georgian"},
+    "ru": {"cyrillic"}, "uk": {"cyrillic"}, "bg": {"cyrillic"}, "el": {"greek"},
+}
+_URDU_ONLY = set("ٹڈڑںےۓھہ")             # letters Arabic never uses
+_URDU_OR_PERSIAN = _URDU_ONLY | set("یکگپچژ")  # Urdu text always has some of these (Arabic uses ي ك instead)
+
+
+def _script_of(ch: str):
+    import unicodedata  # noqa: PLC0415
+    cat = unicodedata.category(ch)
+    if not (cat[0] in "LM" or (cat == "Nd" and ord(ch) > 0x7F)):
+        return None  # spaces, punctuation, ASCII digits, symbols: neutral
+    o = ord(ch)
+    for name, ranges in _SCRIPT_RANGES.items():
+        if any(a <= o <= b for a, b in ranges):
+            return name
+    return "other"
+
+
+# English words that no other Latin-script patient language uses as an ordinary word (so "for" (Danish), "do"
+# (Portuguese), "doctor" (Spanish), "pain" (French), "may" (Tagalog), "is"/"in" (Dutch) are left out).
+_EN_WORDS = {"the", "you", "your", "and", "have", "has", "take", "with", "this", "that", "please", "what", "does",
+             "any", "there", "should", "would", "about", "after", "before", "times", "how", "when", "they", "been"}
+# For English itself: a sentence of 6+ words without a single one of these is not English.
+_EN_COMMON = _EN_WORDS | {"a", "i", "is", "in", "of", "to", "it", "my", "me", "for", "on", "at", "was", "be", "are",
+                          "not", "no", "yes", "do", "he", "she", "we", "his", "her", "day", "days", "since", "pain",
+                          "or", "if", "can", "will", "an", "so", "but", "from", "by", "as", "did", "am"}
+# Everyday function words of the Latin-script patient languages whose MT output may be Taglish/mixed: any of them
+# means the sentence is (also) in that language, so English loanwords alone don't silence it.
+_MARKERS = {"tl": {"ang", "ng", "sa", "na", "po", "mga", "ito", "ay", "ka", "ko", "mo", "nang", "kayo", "ninyo", "siya",
+                   "hindi", "opo", "araw", "gamot", "inyong", "niyo", "natin", "lang", "din", "rin"},
+            "sw": {"na", "ya", "wa", "kwa", "ni", "za", "la", "hii", "je", "mara", "siku", "dawa", "una", "kila", "hapana",
+                   "ndiyo", "sana", "yako", "wako", "baada", "kabla"}}
+_UNITS = {"mg", "mcg", "ml", "kg", "iu", "mmol", "mmhg", "cm", "mm", "units", "unit", "tab", "tabs", "bd", "tds", "od"}
+_JOINERS = re.compile(r"(?<=[^\W\d_])[-'’](?=[^\W\d_])")  # "co-amoxiclav", "don't": one word
+
+
+def _script_runs(text: str) -> list:
+    """Words as runs of consecutive characters in one script: [(script, run_text)]. Neutral characters (spaces,
+    punctuation, ASCII digits) end a run. Latin dose units ("500 mg") and single Latin letters are ignored: every
+    language writes them in Latin."""
+    runs, cur, buf = [], None, []
+    for ch in _JOINERS.sub("", text) + " ":
+        s = _script_of(ch)
+        if s != cur and buf:
+            runs.append((cur, "".join(buf)))
+            buf = []
+        cur = s
+        if s is not None:
+            buf.append(ch)
+    return [(s, w) for s, w in runs if not (s == "latin" and (len(w) < 2 or w.lower() in _UNITS))]
+
+
+def script_problem(text: str, lang: str):
+    """None when `text` is plausibly written in `lang`'s script, else a short reason. Works on words (script runs),
+    not characters, so drug names in Latin inside a Nepali sentence ("Co-amoxiclav 625 mg, दिनमा ३ पटक") pass, while
+    a sentence in the wrong script fails: > 40% of the words must be in the language's script (>= 50% for languages
+    written in Latin, since every language borrows Latin drug names but not the reverse)."""
+    want = LANG_SCRIPTS.get(lang)
+    if want is None:
+        return None  # no script on record: routing already restricts to voiced languages
+    runs = _script_runs(text)
+    if not runs:
+        return None  # digits/punctuation/units only: the voice reads them in its own language
+    own = sum(1 for s, _ in runs if s in want)
+    if own / len(runs) < (0.5 if want == {"latin"} else 0.4):
+        seen = {}
+        for s, _ in runs:
+            seen[s] = seen.get(s, 0) + 1
+        return f"text is not in {lang} script (word scripts: {seen})"
+    if want == {"latin"}:  # same script; an untranslated English sentence for a Filipino/Swahili/... voice, or vice versa
+        words = [w.lower() for s, w in runs if s == "latin"]
+        hits = sum(w in _EN_WORDS for w in words)
+        if (lang != "en" and hits >= 3 and hits >= 0.25 * len(words)
+                and not any(w in _MARKERS.get(lang, ()) for w in words)):
+            return f"text looks like English, not {lang}"
+        if lang == "en" and len(words) >= 6 and not any(w in _EN_COMMON for w in words):
+            return "text does not look like English"
+    if lang in ("ar", "ur"):  # same script; tell them apart by the letters only one of them uses
+        arabic = [c for c in text if _script_of(c) == "arabic"]
+        if lang == "ar" and sum(c in _URDU_ONLY for c in arabic) >= 2:
+            return "text looks like Urdu, not Arabic"
+        if lang == "ur" and len(arabic) >= 15 and not any(c in _URDU_OR_PERSIAN for c in arabic):
+            return "text looks like Arabic, not Urdu"
+    return None
+
+
+class NoVoice(Exception):
+    def __init__(self, message: str, reason: str):
+        super().__init__(message)
+        self.reason = reason  # "lang" (no voice for this language / engine) or "script" (text in another script)
+
+
+def _check_voice(text: str, lang: str, engine: str = "") -> str:
+    """The engine to use, or NoVoice. Run before ANY audio is produced."""
+    eng = _engine_for(lang, engine)
+    if eng is None:
+        msg = f"no voice for {lang or '(no language)'}" + (f" with engine {engine}" if engine else "")
+        raise NoVoice(msg, "lang")
+    problem = script_problem(text, lang)
+    if problem:
+        raise NoVoice(problem, "script")
+    return eng
+
+
+def _piper_wave(text: str, lang: str) -> np.ndarray:
+    v = PIPER[lang]
+    chunks = list(v.synthesize(text, syn_config=SynthesisConfig(length_scale=PIPER_RATE)))
+    return np.concatenate([c.audio_float_array for c in chunks]).astype(np.float32) if chunks else np.zeros(1, np.float32)
+
+
+def _piper_stream(text: str, lang: str):
+    sr = PIPER[lang].config.sample_rate
+    t0, n, total, first = time.time(), 0, 0.0, None
+    sents = _split_sentences(text) or [text]
+    for k, sent in enumerate(sents):
+        audio = _trim(_piper_wave(sent, lang), sr)
+        if k < len(sents) - 1:
+            audio = np.concatenate([audio, np.zeros(int(_pause_after(sent) * sr), dtype=np.float32)])
+        first = first if first is not None else time.time() - t0
+        n += 1
+        total += len(audio) / sr
+        pcm = (np.clip(audio, -1, 1) * 32767).astype("<i2").tobytes()
+        yield {"sr": sr, "pcm": base64.b64encode(pcm).decode("ascii"), "audio_seconds": round(len(audio) / sr, 3),
+               "i": n, "first": n == 1, "engine": "piper"}
+    yield {"done": True, "first_audio_seconds": round(first or 0, 3), "total_seconds": round(time.time() - t0, 3),
+           "audio_seconds": round(total, 3), "chunks": n, "engine": "piper"}
 
 
 def _st_stream(text: str, lang: str):
@@ -738,11 +1033,22 @@ def _st_stream(text: str, lang: str):
            "audio_seconds": round(total, 3), "chunks": n, "engine": "supertonic-3"}
 
 
-def speak_stream(text: str, lang: str = "ne", description: str = "", engine: str = ""):
-    """Yield {"sr", "pcm" (base64 int16 LE mono), ...} chunks; the last item has "done": true."""
+def _voice_or_gr_error(text: str, lang: str, engine: str = "") -> str:
     if not text or not text.strip():
         raise gr.Error("No text received.")
-    eng = _engine_for(lang, engine)
+    try:
+        return _check_voice(text, lang, engine)
+    except NoVoice as e:
+        raise gr.Error(str(e)) from None
+
+
+def speak_stream(text: str, lang: str = "ne", description: str = "", engine: str = ""):
+    """Yield {"sr", "pcm" (base64 int16 LE mono), ...} chunks; the last item has "done": true.
+    A language without a voice of its own, or text in another script, raises before any audio (gr.Error)."""
+    eng = _voice_or_gr_error(text, lang, engine)
+    if eng == "piper":
+        yield from _piper_stream(text, lang)
+        return
     if eng == "supertonic":
         yield from _st_stream(text, lang)
         return
@@ -757,14 +1063,14 @@ def speak_stream(text: str, lang: str = "ne", description: str = "", engine: str
     except Exception as e:  # noqa: BLE001 - keep the demo talking
         if started:
             raise
-        print(f"batched stream failed, falling back: {type(e).__name__}: {e}", flush=True)
+        # Same engine, same language, same speaker description: only the batching differs.
+        print(f"batched stream failed, falling back to unbatched Parler ({lang}): {type(e).__name__}: {e}", flush=True)
         yield from _legacy_stream(text, lang, description)
 
 
 def speak_stream_opts(text: str, lang: str = "ne", description: str = "", opts_json: str = "{}"):
-    """Same as /speak_stream with tunable STREAM_OPTS (JSON), for latency experiments."""
-    if not text or not text.strip():
-        raise gr.Error("No text received.")
+    """Same as /speak_stream with tunable STREAM_OPTS (JSON), for latency experiments (Parler only)."""
+    _voice_or_gr_error(text, lang, "parler")
     yield from _speak_stream(text, lang, description, json.loads(opts_json or "{}"))
 
 
@@ -791,12 +1097,14 @@ def tts_probe(opts_json: str = "{}") -> dict:
 
 
 def speak(text: str, lang: str = "ne", description: str = ""):
-    if not text or not text.strip():
-        raise gr.Error("No text received.")
-    if _engine_for(lang) == "supertonic":
+    eng = _voice_or_gr_error(text, lang)
+    if eng == "piper":
+        audio = np.concatenate([_piper_wave(s_, lang) for s_ in (_split_sentences(text) or [text])])
+        return (PIPER[lang].config.sample_rate, audio), {"engine": "piper"}
+    if eng == "supertonic":
         audio = np.concatenate([ST.synth(s_, lang, speed=ST_SPEED) for s_ in (_split_sentences(text) or [text])])
         return (ST.sr, audio), {"engine": "supertonic-3"}
-    if lang in MMS:
+    if eng == "mms":
         audio = np.concatenate([_mms_wave(s_, lang) for s_ in (_split_sentences(text) or [text])])
         return (MMS[lang][1].config.sampling_rate, audio), {"engine": "mms-tts"}
     audio, stats = _speak_array(text, lang, description)
@@ -911,11 +1219,16 @@ fast = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 
 @fast.post("/v1/hear")
-async def v1_hear(request: Request, sr: int = 48000, lang: str = "ne", doctor: str = "", role: str = ""):
-    """Body: raw mono int16 little-endian PCM at `sr` Hz. Returns the same dict as /hear."""
+async def v1_hear(request: Request, sr: int = 48000, lang: str = "", doctor: str = "", role: str = ""):
+    """Body: raw mono int16 little-endian PCM at `sr` Hz. Returns the same dict as /hear.
+    `lang` (the patient's language) is required: no default language is ever guessed."""
     body = await request.body()
     if not body:
         return JSONResponse({"error": "empty audio"}, status_code=400)
+    if not _asr_engine(lang):
+        return JSONResponse({"error": f"no speech recognition for {lang or '(no language)'}"}, status_code=422)
+    if doctor and doctor not in DOCTOR_LANGS:
+        return JSONResponse({"error": f"doctor language must be one of {DOCTOR_LANGS}"}, status_code=422)
     pcm = np.frombuffer(body, dtype="<i2").astype(np.float32) / 32768.0
     wav = torch.from_numpy(pcm).unsqueeze(0)
 
@@ -929,15 +1242,22 @@ async def v1_hear(request: Request, sr: int = 48000, lang: str = "ne", doctor: s
 
 @fast.post("/v1/speak_stream")
 async def v1_speak_stream(request: Request):
-    """Body: {"text", "lang", "description"}. Streams NDJSON: the same chunk dicts as /speak_stream."""
+    """Body: {"text", "lang", "description", "engine"?}. Streams NDJSON: the same chunk dicts as /speak_stream.
+    HTTP 422 {"error", "reason": "lang" | "script"} and no audio when `lang` has no voice of its own (or the requested
+    engine cannot speak it), or when the text is not written in `lang`'s script."""
     req = await request.json()
-    text, lang, desc = (req.get("text") or "").strip(), req.get("lang") or "ne", req.get("description") or ""
+    text, lang, desc = (req.get("text") or "").strip(), (req.get("lang") or "").strip(), req.get("description") or ""
     engine = req.get("engine") or ""
     if not text:
         return JSONResponse({"error": "empty text"}, status_code=400)
+    try:
+        eng = _check_voice(text, lang, engine)
+    except NoVoice as e:
+        print(f"[speak] refused lang={lang!r} engine={engine!r}: {e} | {text[:60]!r}", flush=True)
+        return JSONResponse({"error": str(e), "reason": e.reason, "lang": lang}, status_code=422)
 
     def gen():
-        if _engine_for(lang, engine) == "supertonic":  # CPU: no need to wait for the GPU
+        if eng in ("supertonic", "piper"):  # CPU: no need to wait for the GPU
             for item in speak_stream(text, lang, desc, engine):
                 yield json.dumps(item) + "\n"
             return
@@ -951,6 +1271,12 @@ async def v1_speak_stream(request: Request):
 @fast.get("/v1/ping")
 def v1_ping():
     return {"ok": True}
+
+
+@fast.get("/v1/voices")
+def v1_voices():
+    """Which engine voices which language (the app's WORKER_TTS_LANGS must match "default")."""
+    return voices()
 
 
 app = gr.mount_gradio_app(fast, demo, path="/")

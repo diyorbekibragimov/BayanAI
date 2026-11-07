@@ -1,0 +1,14 @@
+study,language,metric,value,unit,source,year,confidence
+Taira 2021 JGIM,Spanish,meaning retained,94,%,https://doi.org/10.1007/s11606-021-06666-z,2021,high
+Taira 2021 JGIM,Tagalog,meaning retained,90,%,https://doi.org/10.1007/s11606-021-06666-z,2021,high
+Taira 2021 JGIM,Korean,meaning retained,82.5,%,https://doi.org/10.1007/s11606-021-06666-z,2021,high
+Taira 2021 JGIM,Chinese,meaning retained,81.7,%,https://doi.org/10.1007/s11606-021-06666-z,2021,high
+Taira 2021 JGIM,Farsi,meaning retained,67.5,%,https://doi.org/10.1007/s11606-021-06666-z,2021,high
+Taira 2021 JGIM,Armenian,meaning retained,55,%,https://doi.org/10.1007/s11606-021-06666-z,2021,high
+Khoong 2019 JAMA IM,Spanish,sentences accurate,92,%,https://doi.org/10.1001/jamainternmed.2018.7653,2019,high
+Khoong 2019 JAMA IM,Chinese,sentences accurate,81,%,https://doi.org/10.1001/jamainternmed.2018.7653,2019,high
+Khoong 2019 JAMA IM,Spanish,sentences potentially harmful,2,%,https://doi.org/10.1001/jamainternmed.2018.7653,2019,high
+Khoong 2019 JAMA IM,Chinese,sentences potentially harmful,8,%,https://doi.org/10.1001/jamainternmed.2018.7653,2019,high
+Brewster 2024 Pediatrics,Haitian Creole (ChatGPT-4),clinically significant errors,33.3,%,https://doi.org/10.1542/peds.2023-065573,2024,high
+Brewster 2024 Pediatrics,Haitian Creole (Google Translate),clinically significant errors,23.3,%,https://doi.org/10.1542/peds.2023-065573,2024,high
+Brewster 2024 Pediatrics,Haitian Creole (professional),clinically significant errors,8.3,%,https://doi.org/10.1542/peds.2023-065573,2024,high

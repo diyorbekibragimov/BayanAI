@@ -1,0 +1,7 @@
+study,metric,value,unit,source,year,confidence,note
+Bates 1997 JAMA,attributable cost per ADE,2595,USD (1993-95),https://pubmed.ncbi.nlm.nih.gov/9002493/,1997,high,~2x in 2026 dollars (approx CPI)
+Bates 1997 JAMA,attributable cost per preventable ADE,4685,USD (1993-95),https://pubmed.ncbi.nlm.nih.gov/9002493/,1997,high,
+Bates 1997 JAMA,extra length of stay per preventable ADE,4.6,days,https://pubmed.ncbi.nlm.nih.gov/9002493/,1997,high,
+Classen 1997 JAMA,increased risk of death with an ADE,1.88,x,https://pubmed.ncbi.nlm.nih.gov/9002492/,1997,high,
+Classen 1997 JAMA,extra cost per ADE (regression),2262,USD (1990-93),https://pubmed.ncbi.nlm.nih.gov/9002492/,1997,high,
+Lindholm 2012 JGIM,extra length of stay without interpreter at admission/both,0.75-1.47,days,https://doi.org/10.1007/s11606-012-2041-5,2012,high,"3,071 LEP admissions"

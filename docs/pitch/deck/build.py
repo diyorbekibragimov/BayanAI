@@ -1,0 +1,738 @@
+"""Build the Bayan pitch deck: docs/pitch/deck/index.html (self-contained HTML, 1920x1080 slides).
+
+Charts are inline SVG generated from docs/pitch/data/*.csv and reports/sim/gptoss120b-full/summary.md numbers.
+No network calls except Google Fonts at view time.
+
+    python docs/pitch/deck/build.py            # writes index.html
+    python docs/pitch/deck/build.py --export   # also writes preview/*.png and ../Bayan-pitch.pdf (needs playwright)
+"""
+
+from __future__ import annotations
+
+import csv
+import html
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DATA = HERE.parent / "data"
+OUT = HERE / "index.html"
+
+# Theme tokens (bayan/web/static/css/duet.css, plan_page.css)
+BG, INK, MUTED, RULE = "#FBFCFC", "#173430", "#5B6B69", "#E3EAE9"
+DOC, PT, DEEP, HELD = "#1F6FB2", "#0E8A6F", "#0B6E59", "#C2410C"
+GREY_DARK, GREY_LIGHT = "#83948F", "#A3B3B0"   # de-emphasis series (validated: contrast >= 3:1 / direct-labelled)
+FONT = "'Instrument Sans','Noto Sans',system-ui,sans-serif"
+
+
+def rows(name: str) -> list[dict]:
+    with open(DATA / name, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def esc(s: str) -> str:
+    return html.escape(s, quote=True)
+
+
+def bar(x: float, y: float, w: float, h: float, fill: str, r: float = 4) -> str:
+    """Bar anchored square at the baseline (left), 4px rounded data end (right)."""
+    w = max(w, 4.0)
+    r = min(r, w / 2, h / 2)
+    return (f'<path d="M{x:.1f},{y:.1f} H{x + w - r:.1f} Q{x + w:.1f},{y:.1f} {x + w:.1f},{y + r:.1f} '
+            f'V{y + h - r:.1f} Q{x + w:.1f},{y + h:.1f} {x + w - r:.1f},{y + h:.1f} H{x:.1f} Z" fill="{fill}"/>')
+
+
+def text(x, y, s, size=26, fill=INK, weight=400, anchor="start", extra="") -> str:
+    return (f'<text x="{x:.1f}" y="{y:.1f}" font-size="{size}" font-weight="{weight}" fill="{fill}" '
+            f'text-anchor="{anchor}" font-family="{FONT}" {extra}>{esc(s)}</text>')
+
+
+# ------------------------------------------------------------------ chart 1: harm (Divi 2007)
+def chart_harm() -> str:
+    data = rows("lep_adverse_events.csv")
+    names = {
+        "adverse events causing physical harm": "Adverse events that caused physical harm",
+        "harmful events: moderate temporary harm to death": "Harm ranging from moderate to death",
+        "adverse events caused by communication errors": "Adverse events caused by a communication error",
+    }
+    W, scale, bh, gap, group = 1500, 15.0, 34, 4, 168   # 1% = 15 px -> 60% = 900 px
+    out = []
+    for i, d in enumerate(data):
+        y0 = i * group
+        lep, eng = float(d["lep_patients_pct"]), float(d["english_speakers_pct"])
+        out.append(text(0, y0 + 28, names[d["metric"]], 30, INK, 500))
+        yb = y0 + 48
+        out.append(bar(0, yb, lep * scale, bh, HELD))
+        out.append(bar(0, yb + bh + gap, eng * scale, bh, GREY_DARK))
+        vx1, vx2 = lep * scale + 16, eng * scale + 16
+        out.append(text(vx1, yb + 26, f"{lep:.0f}%", 28, INK, 600))
+        out.append(text(vx2, yb + bh + gap + 26, f"{eng:.0f}%", 28, INK, 600))
+        if i == 0:
+            out.append(text(vx1 + 70, yb + 26, "patients with limited English", 26, MUTED))
+            out.append(text(vx2 + 70, yb + bh + gap + 26, "English speakers", 26, MUTED))
+    H = len(data) * group
+    return (f'<svg class="chart" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" '
+            f'aria-label="Share of adverse events, patients with limited English versus English speakers">'
+            + "".join(out) + "</svg>")
+
+
+# ------------------------------------------------------------------ chart 2: deployment tiers, cost per consultation (log scale)
+TIER_ROW, TIER_HEAD = 120, 68
+
+
+def tier_ranges() -> list[tuple[float, float, str]]:
+    d = {r["option"]: float(r["usd_per_consultation"]) for r in rows("cost_per_consultation.csv")}
+    return [
+        (d["L4 shared by 4 clinics + LLM + app Space"], d["Dedicated L4 Space 12 h/day + LLM + app Space"], PT),
+        (d["S1 edge box: 2x L4 24GB (voice + gpt-oss-20b), 4 clinics"],
+         d["S1 edge box: 2x L4 24GB (voice + gpt-oss-20b), 1 clinic"], PT),
+        (d["S2 sovereign: 1x H100 80GB (gpt-oss-120b) + 1x L40S 48GB (voice), 10 clinics / 1 hospital"],
+         d["S2 sovereign: 1x H100 80GB (gpt-oss-120b) + 1x L40S 48GB (voice), 1 clinic"], PT),
+        (d["Phone or video interpreter, CyraCom/Propio published rates $0.75-0.81/min (used $0.76)"],
+         d["Phone interpreter, LanguageLine public contract $0.99-1.10/min (mid $1.05)"], GREY_LIGHT),
+    ]
+
+
+def money(v: float) -> str:
+    """Two decimals, half-even on the decimal string, so 0.165 prints as $0.16 as in research.md §6.3."""
+    from decimal import Decimal, ROUND_HALF_EVEN
+    return "$" + format(Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN), ",")
+
+
+def chart_tiers() -> str:
+    """Range capsules on one shared log axis ($0.03 to $30), drawn over the table's last column."""
+    import math
+    W, x0, x1 = 600, 70, 520
+    lo_l, hi_l = math.log10(0.03), math.log10(30)
+    X = lambda v: x0 + (math.log10(v) - lo_l) / (hi_l - lo_l) * (x1 - x0)
+    tiers = tier_ranges()
+    H = TIER_HEAD + len(tiers) * TIER_ROW
+    out = []
+    for v, lab in ((0.1, "$0.10"), (1, "$1"), (10, "$10")):
+        out.append(f'<line x1="{X(v):.1f}" y1="{TIER_HEAD - 8}" x2="{X(v):.1f}" y2="{H}" stroke="{RULE}" stroke-width="1.5"/>')
+        out.append(text(X(v), TIER_HEAD - 18, lab, 19, MUTED, 400, "middle"))
+    for i, (lo, hi, col) in enumerate(tiers):
+        cy = TIER_HEAD + i * TIER_ROW + 40
+        a, b = X(lo), X(hi)
+        out.append(f'<rect x="{a - 8:.1f}" y="{cy - 8}" width="{b - a + 16:.1f}" height="16" rx="8" fill="{col}"/>')
+        out.append(text(a - 18, cy + 8, money(lo), 24, INK, 600, "end"))
+        out.append(text(b + 18, cy + 8, money(hi), 24, INK, 600, "start"))
+    return (f'<svg class="tierchart" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" '
+            f'aria-label="US dollars per consultation by deployment, log scale">' + "".join(out) + "</svg>")
+
+
+# ------------------------------------------------------------------ chart 3: latency (simulation medians)
+def chart_latency() -> str:
+    # reports/sim/gptoss120b-full/summary.md: translate+gate per turn 0.9, rule cards 0.9, agent cards 5.7, wrap-up 6.3
+    pick = [
+        ("Translation and prescription gate, per turn", 0.9),
+        ("Rule alert on the doctor's screen", 0.9),
+        ("Copilot agent card", 5.7),
+        ("Care plan and note, after End", 6.3),
+    ]
+    W, scale, bh, row = 1100, 130.0, 22, 70
+    out = []
+    for i, (label, v) in enumerate(pick):
+        y0 = i * row
+        out.append(text(0, y0 + 24, label, 25, INK))
+        out.append(bar(0, y0 + 36, v * scale, bh, PT))
+        out.append(text(v * scale + 14, y0 + 36 + 19, f"{v:.1f} s", 25, INK, 600))
+    H = len(pick) * row
+    return (f'<svg class="chart" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" '
+            f'aria-label="Median seconds from the turn to the result">' + "".join(out) + "</svg>")
+
+
+# ------------------------------------------------------------------ slides
+# ------------------------------------------------------------------ architecture diagram (Transformer figure style)
+A_GREY, A_BLUE, A_GREEN, A_VERM = "#EEF2F1", "#DCEBF8", "#D8F0E8", "#FCE5DA"
+A_BOX, A_BOX_LINE = "#F4F7F7", "#C9D4D2"
+
+
+def _ablock(cx: float, cy: float, title: str, sub: str, fill: str, stroke: str = INK, w: float = 340, h: float = 68) -> str:
+    x, y = cx - w / 2, cy - h / 2
+    sw = "2.4" if stroke == HELD else "1.6"
+    return (f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="{h:.0f}" rx="12" fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>'
+            + text(cx, cy - 3, title, 22, INK, 600, "middle")
+            + (text(cx, cy + 21, sub, 17, MUTED, 400, "middle") if sub else ""))
+
+
+def _arrow(points: list[tuple[float, float]], color: str = INK, width: float = 2) -> str:
+    pts = " ".join(f"{x:.0f},{y:.0f}" for x, y in points)
+    mk = "ahv" if color == HELD else "ah"
+    return f'<polyline points="{pts}" fill="none" stroke="{color}" stroke-width="{width}" marker-end="url(#{mk})"/>'
+
+
+def chart_arch() -> str:
+    W, H = 1664, 770
+    R = [612, 508, 404, 300, 196]          # block centres, bottom to top
+    bh = 68
+    out = ['<defs>'
+           f'<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{INK}"/></marker>'
+           f'<marker id="ahv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{HELD}"/></marker>'
+           '</defs>']
+
+    def container(x0, x1, top, label_x, big, small_lines):
+        s = f'<rect x="{x0}" y="{top}" width="{x1 - x0}" height="{660 - top}" rx="22" fill="{A_BOX}" stroke="{A_BOX_LINE}" stroke-width="1.6"/>'
+        s += text(label_x, 552, big, 30, INK, 600, "middle")
+        for k, line in enumerate(small_lines):
+            s += text(label_x, 578 + 20 * k, line, 16, MUTED, 400, "middle")
+        return s
+
+    # talk loop (every turn, foreground)
+    tx = 300
+    out.append(container(100, 500, 128, 50, "N×", ["each", "turn"]))
+    talk = [("Speaker check", "VoxLingua107", A_GREY, INK),
+            ("Speech-to-text", "Whisper, IndicConformer, MMS", A_GREY, INK),
+            ("Translate + extract", "gpt-oss-120b", A_GREY, INK),
+            ("Prescription gate", "83 rules, no LLM", A_VERM, HELD),
+            ("Text-to-speech", "Parler, MMS, Supertonic, Piper", A_GREY, INK)]
+    for i, (t, sub, fill, stroke) in enumerate(talk):
+        out.append(_ablock(tx, R[i], t, sub, fill, stroke))
+        if i < len(talk) - 1:
+            out.append(_arrow([(tx, R[i] - bh / 2), (tx, R[i + 1] + bh / 2 + 2)]))
+    out.append(_arrow([(tx, R[4] - bh / 2), (tx, 96)]))
+    out.append(text(tx, 80, "Spoken translation", 24, INK, 600, "middle"))
+    # inputs
+    for cx, label, fill in ((200, "Doctor speech", A_BLUE), (400, "Patient speech", A_GREEN)):
+        out.append(f'<rect x="{cx - 88}" y="702" width="176" height="48" rx="12" fill="{fill}" stroke="{INK}" stroke-width="1.6"/>')
+        out.append(text(cx, 733, label, 19, INK, 600, "middle"))
+        out.append(_arrow([(cx, 702), (cx, R[0] + bh / 2 + 2)]))
+    # hold branch
+    out.append(_arrow([(470, R[3]), (522, R[3])], HELD, 2.4))
+    out.append(text(530, R[3] + 7, "Held, not spoken", 19, HELD, 600))
+
+    # think loop (every turn, background)
+    bx = 890
+    out.append(container(690, 1090, 232, 640, "N×", ["each turn", "background"]))
+    think = [("Idiom lexicon", "59 entries", A_BLUE), ("Fact extraction", "gpt-oss-120b", A_BLUE),
+             ("Safety rules", "83 rules", A_BLUE), ("Copilot agent", "smolagents", A_BLUE)]
+    for i, (t, sub, fill) in enumerate(think):
+        out.append(_ablock(bx, R[i], t, sub, fill))
+        if i < len(think) - 1:
+            out.append(_arrow([(bx, R[i] - bh / 2), (bx, R[i + 1] + bh / 2 + 2)]))
+    out.append(_arrow([(bx, R[3] - bh / 2), (bx, 210)]))
+    out.append(text(bx, 194, "Doctor's cards", 24, INK, 600, "middle"))
+    out.append(_arrow([(470, R[2]), (580, R[2]), (580, 698), (bx, 698), (bx, R[0] + bh / 2 + 2)], INK, 1.6))
+    out.append(text(735, 689, "text of each turn", 16, MUTED, 400, "middle"))
+
+    # wrap-up (once, at the end)
+    wx = 1430
+    out.append(container(1230, 1630, 232, 1195, "1×", ["at End"]))
+    wrap = [("Wrap-up agent", "smolagents", A_GREEN), ("Rule re-check", "83 rules", A_GREEN),
+            ("PDFs", "patient's script", A_GREEN), ("QR code", "phone page", A_GREEN)]
+    for i, (t, sub, fill) in enumerate(wrap):
+        out.append(_ablock(wx, R[i], t, sub, fill))
+        if i < len(wrap) - 1:
+            out.append(_arrow([(wx, R[i] - bh / 2), (wx, R[i + 1] + bh / 2 + 2)]))
+    out.append(_arrow([(wx, R[3] - bh / 2), (wx, 210)]))
+    out.append(text(wx, 194, "Care plan, PDF, QR", 24, INK, 600, "middle"))
+    out.append(_arrow([(1090, 446), (1160, 446), (1160, 698), (wx, 698), (wx, R[0] + bh / 2 + 2)], INK, 1.6))
+    out.append(text(1295, 689, "full record", 16, MUTED, 400, "middle"))
+
+    return (f'<svg class="arch" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" '
+            'aria-label="Bayan architecture: each turn passes speaker check, speech-to-text, translation, the prescription '
+            'gate and text-to-speech; a background copilot turns each turn into cards for the doctor; at the end a wrap-up '
+            'agent produces the care plan, PDFs and QR code.">' + "".join(out) + "</svg>")
+
+
+# ------------------------------------------------------------------ Hugging Face stack slide
+HF_LOGO = "../assets/brand/huggingface_logo-noborder.svg"
+
+
+def _hfbox(org: str, name: str) -> str:
+    return (f'<div class="hfbox"><img src="{HF_LOGO}" alt=""><p><span>{esc(org)}</span><b>{esc(name)}</b></p></div>')
+
+
+def hf_stack() -> str:
+    voice = [("openai", "whisper-large-v3-turbo"), ("ai4bharat", "indic-conformer-600m-multilingual"),
+             ("facebook", "mms-1b-all"), ("speechbrain", "lang-id-voxlingua107-ecapa"),
+             ("ai4bharat", "indic-parler-tts"), ("facebook", "mms-tts-tgl, mms-tts-swh"),
+             ("Supertone", "supertonic-3"), ("rhasspy", "piper-voices")]
+    app = [("gradio-app", "gradio"), ("huggingface", "smolagents")]
+    return f'''<div class="hfstack">
+    <div class="hfcol">
+      <div class="spacecard"><span class="tag">CPU upgrade</span><span class="emoji">🩺</span><p class="st">Bayan AI</p><p class="sid">dullgrey/team-qh-129-bayan-app</p></div>
+      <div class="hfgrid one">{"".join(_hfbox(o, n) for o, n in app)}</div>
+    </div>
+    <div class="hfcol wide">
+      <div class="spacecard"><span class="tag">NVIDIA L4</span><span class="emoji">🎙️</span><p class="st">Bayan Voice Worker</p><p class="sid">dullgrey/team-qh-129-bayan-voice</p></div>
+      <div class="hfgrid two">{"".join(_hfbox(o, n) for o, n in voice)}</div>
+    </div>
+    <div class="hfcol">
+      <div class="spacecard prov"><span class="tag">Cerebras, Groq</span><img class="plogo" src="{HF_LOGO}" alt=""><p class="st">Inference Providers</p><p class="sid">router.huggingface.co</p></div>
+      <div class="hfgrid one">{_hfbox("openai", "gpt-oss-120b")}</div>
+    </div>
+  </div>'''
+
+
+def brand() -> str:
+    return ('<div class="brand"><span class="pearl sm"></span><b lang="ar">بيان</b><span>Bayan</span></div>')
+
+
+def foot(n: int, note: str = "") -> str:
+    """Page number only. `note` keeps each slide's sources next to the slide in this file; the deck shows no
+    footnotes (sources live in docs/pitch/script.md and research.md). Numbers are filled in by position."""
+    return '<span class="pg">{PG}</span>'
+
+
+def slides() -> list[str]:
+    S = []
+    total = 14
+
+    # 1 Title
+    S.append(f'''
+<section class="slide s-title" data-title="Title">
+  {brand()}
+  <div class="title">
+    <h1>Bayan AI</h1>
+    <p class="ar" lang="ar">بيان</p>
+    <p class="tag">Interprets between doctors and patients in Qatar, and catches what gets lost.</p>
+    <p class="meta"><span>Team QH-129</span><span>Qai × Hugging Face Hackathon O1</span><span>Doha, 5–7 Nov 2026</span></p>
+  </div>
+  <div class="orb big r"><span class="ring r1"></span><span class="ring r2"></span><span class="pearl"></span></div>
+</section>''')
+
+    # 2 Anurag
+    S.append(f'''
+<section class="slide s-anurag" data-title="Anurag">
+  {brand()}
+  <h2>Meet Anurag</h2>
+  <p class="lede">29, a Nepali construction worker in Doha</p>
+  <ol class="three">
+    <li><p class="k">Anurag says</p><p class="q">“My chest is burning. It’s just <i>gyastrik</i>.”</p>
+      <p class="g"><span lang="ne">ग्यास्ट्रिक</span> (gyastrik) is Nepali for “gastric”</p></li>
+    <li><p class="k">The doctor hears</p><p class="q">A stomach problem, like reflux</p></li>
+    <li class="alarm"><p class="k">It could be</p><p class="q">His heart</p></li>
+  </ol>
+  {foot(2, "Illustrative persona. In Nepal only 23.8% of STEMI patients thought their pain was cardiac (Prajapati, JNHRC 2022); gyastrik is entry npi-005 in data/idiom_lexicon.json.")}
+</section>''')
+
+    # 2 Qatar
+    S.append(f'''
+<section class="slide" data-title="Qatar">
+  {brand()}
+  <h2>Language barriers in Qatar</h2>
+  <div class="figs">
+    <div><p class="v">65%</p><p class="l">of HMC ambulance staff face language barriers at work</p></div>
+    <div><p class="v">71%</p><p class="l">are comfortable letting family members interpret</p></div>
+    <div><p class="v">9</p><p class="l">languages with face-to-face interpreters at Sidra. Nepali, Malayalam, Bengali and Tagalog are not among them.</p></div>
+  </div>
+  {foot(2, "Farhat et al., Qatar Medical Journal 2025, survey of HMC Ambulance Service staff (n = 312): 24% very often, 41% occasionally. Sidra Medicine, Medical interpreters (2026): 9 languages in person, 66 by phone or video. About 94% of Qatar's workforce is non-Qatari (Labour Force Survey 2024, via GLMM).")}
+</section>''')
+
+    # 3 Harm
+    S.append(f'''
+<section class="slide" data-title="Harm">
+  {brand()}
+  <h2>Adverse events and language</h2>
+  <div class="chartwrap harm">{chart_harm()}</div>
+  {foot(3, "Divi et al., Int J Quality in Health Care 2007: adverse events reported at six US Joint Commission hospitals, patients with limited English vs English speakers (voluntary reports, pilot study). Ad hoc interpreters: 77% of errors potentially consequential vs 53% for hospital interpreters (Flores, Pediatrics 2003).")}
+</section>''')
+
+    # 4 Demo
+    S.append(f'''
+<section class="slide s-demo" data-title="Demo">
+  <div class="screen video">
+    <video id="demo" src="../assets/demo.webm" muted playsinline preload="auto" poster="../assets/screens/06-live-patient-notes.png"></video>
+    <img class="poster" src="../assets/screens/06-live-patient-notes.png" alt="Bayan live consultation: the patient's Nepali, the English for the doctor, the idiom note and the Notes panel">
+  </div>
+  <div class="cap">
+    <p class="t">Doctor and patient take turns tapping the pearl. Bayan translates, speaks, and checks.</p>
+    <p class="s">Recorded on the live Space: scripted Nepali consultation, live translation and voices. Played at 1.5× speed.</p>
+  </div>
+  <span class="pg">{{PG}}</span>
+</section>''')
+
+    # 5 Held (hero)
+    S.append(f'''
+<section class="slide s-held" data-title="Held">
+  <img class="bleed" src="../assets/screens/07-held-penicillin-amoxicillin.png" alt="Sentence held: the patient reported a penicillin allergy; amoxicillin is a penicillin">
+  <p class="heldcap">Held before the patient hears it. Rule ALG-PEN-01, checked in about 3 ms, with no language model in the path. “Speak it anyway” is logged.</p>
+</section>''')
+
+    # 6 Take-home
+    S.append(f'''
+<section class="slide s-out" data-title="Take-home">
+  {brand()}
+  <h2>Care plan and doctor’s note</h2>
+  <div class="outs">
+    <figure class="phone"><div class="img"><img src="../assets/screens/11-plan-phone.png" alt="Care plan page on a phone, in Nepali with English beneath"></div>
+      <figcaption>Phone page, via QR code</figcaption></figure>
+    <figure class="page"><div class="img"><img src="../assets/screens/13-care-plan-pdf.png" alt="Patient care sheet PDF in Tamil"></div>
+      <figcaption>Patient sheet in Tamil: penicillins under “Do not take”</figcaption></figure>
+    <figure class="page doc"><div class="img"><img src="../assets/screens/14-doctor-report-pdf.png" alt="Doctor's consultation note PDF"></div>
+      <figcaption>Doctor’s note: the held amoxicillin, on the record</figcaption></figure>
+  </div>
+  {foot(6, "Phone page: current build, Nepali demo plan, rendered locally. PDFs: simulation scenario alg-09, Tamil patient (reports/sim/gptoss120b-full). The care plan is re-checked against the rules before rendering.")}
+</section>''')
+
+    # 7 Architecture / agentic loop
+    S.append(f'''
+<section class="slide s-arch" data-title="Architecture">
+  {brand()}
+  <h2>Architecture</h2>
+  <div class="archwrap">{chart_arch()}</div>
+  {foot(8, "bayan/brain/copilot.py, rules.py, wrapup.py; voice_worker/app.py.")}
+</section>''')
+
+    # 8 Hugging Face mapping
+    S.append(f'''
+<section class="slide s-hf" data-title="Hugging Face">
+  {brand()}
+  <h2 class="hfh"><img src="../assets/brand/huggingface_logo-noborder.svg" alt="Hugging Face">Hugging Face stack</h2>
+  {hf_stack()}
+  {foot(9, "Space READMEs (emoji, colorFrom green, colorTo indigo, suggested_hardware); voice_worker/app.py model ids.")}
+</section>''')
+
+    # 9 Proof
+    S.append(f'''
+<section class="slide s-proof" data-title="Proof">
+  {brand()}
+  <h2>Simulation results</h2>
+  <p class="lede">38 scripted consultations in 14 languages, run through the real engine as text</p>
+  <div class="figs three">
+    <div><p class="v">99%</p><p class="l">of 727 checks passed</p></div>
+    <div><p class="v">0 of 44</p><p class="l">false-alarm traps tripped</p></div>
+    <div><p class="v">100%</p><p class="l">of 477 PDF checks: native script, no missing glyphs, no held drug on the patient sheet</p></div>
+  </div>
+  <div class="lat">
+    <p class="ct">Median seconds from the turn to the result</p>
+    {chart_latency()}
+  </div>
+  {foot(9, "scripts/simulate.py, run gptoss120b-full (reports/sim/gptoss120b-full/summary.md): text turns through the real engine, no audio; gpt-oss-120b on Cerebras, extraction on Groq. Clinical checks 91 of 97 (94%). Missed: 3 of 16 expected holds (Augmentin by brand name, an allergy told only as an idiom, tramadol daily total). First audio from the voice Space: about 1–3 s.")}
+</section>''')
+
+    # 10 Buyers
+    S.append(f'''
+<section class="slide s-buy" data-title="Buyers">
+  {brand()}
+  <h2>First customers in Qatar</h2>
+  <div class="figs">
+    <div><p class="v">1.46 M</p><p class="l">visits to the four QRCS workers' health centres in 2025</p></div>
+    <div><p class="v">1.56 M</p><p class="l">HMC emergency visits in 2025, adult and paediatric</p></div>
+    <div><p class="v">5.17 M</p><p class="l">visits to PHCC's 31 health centres in 2024</p></div>
+  </div>
+  <p class="price">Pricing to test: QAR 2–3 per consultation. A phone interpreter costs about QAR 40–60 per visit.</p>
+  {foot(10, "Qatar Tribune 2026 (QRCS, with MOPH); Gulf Times, 15 May 2026 (HMC); The Peninsula 2024–25 (PHCC). Pricing is a hypothesis, not validated (docs/pitch/research.md §6.4). Employer-paid health insurance (Law 22 of 2021) also moves workers into private clinics.")}
+</section>''')
+
+    # 11 Deployment and cost
+    S.append(f'''
+<section class="slide s-deploy" data-title="Deployment">
+  {brand()}
+  <h2>Deployment and cost</h2>
+  <p class="lede">All models are open-weight, so the system can also run on a hospital’s own servers.</p>
+  <div class="tiers">
+    <div class="th">Where it runs</div><div class="th">Up-front hardware</div><div class="th">Per clinic-month</div><div class="th">Per consultation, log scale</div>
+    <div class="tn"><b>Online on Hugging Face</b><span>Voice on one NVIDIA L4 Space ($0.80/h), app on CPU ($0.03/h), gpt-oss-120b per token on Cerebras</span></div>
+    <div class="tc">None</div><div class="tc">$107 if 4 clinics share<br>$339 alone</div><div class="tg"></div>
+    <div class="tn"><b>Clinic box</b><span>2× NVIDIA L4, about $2,800 each: all voice models plus <i class="nw">gpt-oss-20b</i>, on site</span></div>
+    <div class="tc">$14.6k<small>QAR 53k</small></div><div class="tc">$607 alone<br>$152 each if 4 share</div><div class="tg"></div>
+    <div class="tn"><b>Hospital, in-country</b><span>1× H100 80 GB, about $27.5k, runs gpt-oss-120b (MXFP4, one GPU); 1× L40S, about $8.5k, for voice</span></div>
+    <div class="tc">$48k<small>QAR 175k</small></div><div class="tc">$1,980 per server<br>$198 per clinic across 10</div><div class="tg"></div>
+    <div class="tn human"><b>Phone interpreter</b><span>CyraCom or Propio $0.76/min, LanguageLine $1.05/min; 15 minutes a visit</span></div>
+    <div class="tc human">None</div><div class="tc human">$13,680–18,900</div><div class="tg"></div>
+    {chart_tiers()}
+  </div>
+  {foot(11, "Cost model, docs/pitch/research.md §6 and data/cost_model.json: 1,200 consultations per clinic-month; online GPU awake 12 h a day; LLM $0.025 per consultation from the token model (measured median in simulation: $0.011). Self-hosted: street GPU prices plus a $9–12k server, 36-month amortisation, support at 15% of capex a year, Qatar business electricity QAR 0.13/kWh with PUE 1.5. Ranges: shared to single-clinic use; interpreter, CyraCom/Propio to LanguageLine contract. L4 sharing across clinics not yet load-tested; offline not yet demonstrated end to end.")}
+</section>''')
+
+    # 11 Competition
+    S.append(f'''
+<section class="slide s-comp" data-title="Competition">
+  {brand()}
+  <h2>Comparison</h2>
+  <table class="cmp">
+    <thead><tr><th></th><th>Nepali, Malayalam, Bengali in the room</th><th>Checks allergy, dose, missed workup</th><th>Holds a sentence before the patient hears it</th><th>Can run in-country</th><th>Cost per visit</th></tr></thead>
+    <tbody>
+      <tr class="us"><th>Bayan</th><td>Yes, 37 languages</td><td>Yes, 83 cited rules</td><td>Yes</td><td>Yes, open weights</td><td>$0.09–0.28</td></tr>
+      <tr><th>Phone and video interpreters</th><td>Yes, remote</td><td>Human judgement</td><td>No</td><td>No</td><td>$11–74</td></tr>
+      <tr><th>Google, Microsoft Translate</th><td>Text; speech unverified</td><td>No</td><td>No</td><td>No</td><td>Free</td></tr>
+      <tr><th>AI medical interpreters</th><td>Claimed 40–150+</td><td>Translation checks only</td><td>No</td><td>Some (Mabel)</td><td>Not public</td></tr>
+      <tr><th>Ambient AI scribes</th><td>No, English notes</td><td>No, documentation</td><td>No</td><td>No</td><td>$150–600 per doctor-month</td></tr>
+    </tbody>
+  </table>
+  {foot(12, "Vendor pages and press, 2025–26 (docs/pitch/research.md §5): LanguageLine, CyraCom/Propio, Google, Microsoft, Opalite Health, No Barrier, Mabel, Abridge, Dragon Copilot. Opalite's Guardian checks translation fidelity, not clinical content. Interpreter cost per 15-minute visit; scribe prices are third-party estimates. We found no product that gates interpreted speech on clinical content.")}
+</section>''')
+
+    # 12 Close
+    S.append(f'''
+<section class="slide s-close" data-title="Close">
+  {brand()}
+  <div class="orb big l"><span class="ring r1"></span><span class="ring r2"></span><span class="pearl"></span></div>
+  <div class="close">
+    <h2>Next steps</h2>
+    <ul class="ask">
+      <li>A pilot at one QRCS workers' health centre</li>
+      <li>Clinicians to review our 83 rules and 59 idioms</li>
+      <li>Native speakers to validate each language</li>
+    </ul>
+    <p class="team">Team QH-129<br><span>huggingface.co/spaces/dullgrey/team-qh-129-bayan-app</span></p>
+  </div>
+  {foot(13, "Limits we state up front: machine translation is not certified interpreting; Bayan covers the visits that today get a roommate or no one, not consent or bad news. Rules and idioms are cited but not yet clinician-reviewed; accuracy varies by language.")}
+</section>''')
+    assert len(S) == total
+    return [sl.replace("{PG}", str(k + 1)) for k, sl in enumerate(S)]
+
+
+CSS = r"""
+:root{--bg:#FBFCFC;--ink:#173430;--muted:#5B6B69;--rule:#E3EAE9;--doc:#1F6FB2;--pt:#0E8A6F;--deep:#0B6E59;--held:#C2410C}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#FBFCFC;overflow:hidden}
+body{font-family:'Instrument Sans','Noto Sans',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+#deck{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;background:var(--bg);overflow:hidden;display:none}
+.slide.on{display:block}
+p,h2,ul,ol,figure{margin:0;padding:0}
+[lang=ne]{font-family:'Noto Sans Devanagari','Instrument Sans',sans-serif}
+[lang=ar]{font-family:'Reem Kufi',sans-serif}
+
+.pearl{display:block;border-radius:50%;background:radial-gradient(circle at 34% 28%,#FFFFFF 0%,#F2FBF8 20%,#BFEBDF 48%,#C9EDE6 68%,#D9E9FA 100%);
+  box-shadow:0 8px 18px -10px rgba(14,138,111,.45),inset 0 4px 8px rgba(255,255,255,.95)}
+.pearl.sm{width:30px;height:30px}
+.brand{position:absolute;left:128px;top:58px;display:flex;align-items:center;gap:14px}
+.brand b{font-size:34px;font-weight:500;line-height:1;transform:translateY(-3px)}
+.brand>span:last-child{font-size:24px;color:var(--muted)}
+.fn{position:absolute;left:128px;bottom:40px;width:1520px;font-size:17px;line-height:1.45;color:var(--muted)}
+.pg{position:absolute;right:128px;bottom:40px;font-size:17px;color:var(--muted);font-variant-numeric:tabular-nums}
+h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-height:1.08;font-weight:600;letter-spacing:-.015em}
+
+/* big pearl with rings, as on the app's start screen */
+.orb{position:absolute;width:560px;height:560px}
+.orb .pearl{position:absolute;inset:0;box-shadow:0 70px 120px -60px rgba(31,111,178,.40),0 30px 60px -40px rgba(14,138,111,.35),inset 0 22px 44px rgba(255,255,255,.95)}
+.orb .pearl{overflow:hidden}
+.orb .pearl::before{content:"";position:absolute;inset:-25%;background:conic-gradient(from 90deg,rgba(255,255,255,0) 0deg,rgba(189,235,230,.75) 70deg,rgba(255,255,255,0) 140deg,rgba(207,227,255,.75) 210deg,rgba(255,255,255,0) 280deg,rgba(228,222,250,.7) 330deg,rgba(255,255,255,0) 360deg);filter:blur(40px)}
+.orb .pearl::after{content:"";position:absolute;left:16%;top:11%;width:44%;height:30%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0))}
+.orb .ring{position:absolute;border-radius:50%;border:2px solid rgba(14,138,111,.22)}
+.orb .r1{inset:-46px}.orb .r2{inset:-120px;border-color:rgba(14,138,111,.10)}
+.orb.r{left:1196px;top:250px}
+.orb.l{left:190px;top:250px}
+
+/* 1 title */
+.title{position:absolute;left:128px;top:290px;width:960px}
+.title h1{margin:0;font-size:150px;line-height:1;font-weight:600;letter-spacing:-.03em}
+.title .ar{margin-top:18px;font-size:92px;line-height:1.3;font-weight:500}
+.title .tag{margin-top:34px;font-size:40px;line-height:1.3;font-weight:500;width:900px}
+.title .meta{margin-top:48px;display:flex;gap:56px;font-size:24px;color:var(--muted)}
+
+/* 2 anurag */
+.s-anurag .lede{position:absolute;left:128px;top:262px;font-size:34px;color:var(--muted)}
+.three{position:absolute;left:128px;top:470px;width:1664px;list-style:none;display:grid;grid-template-columns:620px 560px 380px;column-gap:52px}
+.three li{border-top:1px solid var(--rule);padding-top:30px}
+.three .k{font-size:26px;color:var(--muted)}
+.three .q{margin-top:18px;font-size:58px;line-height:1.15;font-weight:600;letter-spacing:-.01em}
+.three .g{margin-top:24px;font-size:26px;line-height:1.4;color:var(--muted)}
+.three .g [lang=ne]{color:var(--ink);font-weight:500;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:#6B4FA8;text-decoration-thickness:2px;text-underline-offset:8px}
+.three .alarm .q{color:var(--held)}
+.three .alarm{border-top-color:var(--held)}
+
+/* 2 and 9: figures */
+.figs{position:absolute;left:128px;top:420px;display:grid;grid-template-columns:repeat(3,456px);column-gap:96px}
+.figs .v{font-size:150px;line-height:1;font-weight:600;letter-spacing:-.03em}
+.figs .l{margin-top:26px;font-size:30px;line-height:1.4;color:var(--muted)}
+.s-proof .figs{top:356px}
+.s-proof .figs .v{font-size:112px}
+.s-proof .figs .l{margin-top:18px;font-size:27px}
+
+/* 3 harm */
+.chartwrap.harm{position:absolute;left:128px;top:350px}
+
+/* 4 demo */
+.screen{position:absolute;overflow:hidden;background:var(--bg);border-radius:22px;box-shadow:0 0 0 1px var(--rule),0 50px 90px -60px rgba(23,52,48,.45)}
+.screen.video{left:240px;top:60px;width:1440px;height:810px}
+.screen video,.screen img{display:block;width:100%;height:100%;object-fit:cover}
+.screen .poster{display:none}
+body.still .screen video{display:none}
+body.still .screen .poster{display:block}
+.s-demo .cap{position:absolute;left:240px;top:912px;width:1440px}
+.s-demo .cap .t{font-size:32px;line-height:1.3;font-weight:500}
+.s-demo .cap .s{margin-top:10px;font-size:20px;color:var(--muted)}
+
+/* 5 held */
+.bleed{position:absolute;inset:0;width:1920px;height:1080px}
+.heldcap{position:absolute;left:772px;top:868px;width:900px;font-size:24px;line-height:1.45;color:var(--muted)}
+
+/* 6 outputs */
+.outs{position:absolute;left:128px;top:300px;display:flex;align-items:flex-start;gap:58px}
+.outs figure .img{overflow:hidden;background:#fff;box-shadow:0 0 0 1px var(--rule),0 40px 70px -50px rgba(23,52,48,.45)}
+.outs img{display:block;width:100%}
+.outs .phone .img{width:300px;height:570px;border-radius:32px}
+.outs .page .img{width:600px;height:570px;border-radius:6px}
+.outs .page img{width:760px;margin-left:-46px;margin-top:-22px}
+.outs .page.doc img{width:680px;margin-left:-44px;margin-top:-18px}
+.outs figcaption{margin-top:20px;font-size:23px;line-height:1.4;color:var(--muted);max-width:600px}
+.outs .phone figcaption{max-width:300px}
+
+/* 7 architecture */
+.archwrap{position:absolute;left:128px;top:262px}
+.archwrap svg{display:block}
+
+/* 8 hugging face */
+h2.hfh{display:flex;align-items:center;gap:22px}
+h2.hfh img{width:76px;height:auto}
+.hfstack{position:absolute;left:128px;top:300px;width:1664px;display:grid;grid-template-columns:400px 816px 400px;column-gap:16px;align-items:start}
+.spacecard{position:relative;height:168px;border-radius:18px;padding:22px 24px;color:#fff;
+  background:linear-gradient(135deg,#16A34A 0%,#4F46E5 100%);box-shadow:0 24px 40px -30px rgba(23,52,48,.6)}
+.spacecard .emoji{display:block;font-size:40px;line-height:1;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
+.spacecard .st{margin-top:18px;font-size:32px;font-weight:600;line-height:1.1}
+.spacecard .sid{margin-top:6px;font-size:17px;opacity:.85}
+.spacecard .tag{position:absolute;right:20px;top:20px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.2);font-size:16px;font-weight:500}
+.spacecard.prov{background:#FFFFFF;color:var(--ink);box-shadow:0 0 0 1px var(--rule),0 24px 40px -30px rgba(23,52,48,.4)}
+.spacecard.prov .tag{background:#F1F5F4;color:var(--muted)}
+.spacecard.prov .sid{color:var(--muted);opacity:1}
+.spacecard .plogo{display:block;width:44px;height:40px}
+.hfgrid{display:grid;gap:16px;margin-top:16px}
+.hfgrid.one{grid-template-columns:400px}
+.hfgrid.two{grid-template-columns:400px 400px}
+.hfbox{height:92px;display:flex;align-items:center;gap:14px;padding:0 18px;border-radius:14px;background:#FFFFFF;box-shadow:0 0 0 1px var(--rule)}
+.hfbox img{width:30px;height:28px;flex:none}
+.hfbox p{min-width:0}
+.hfbox span{display:block;font-size:16px;color:var(--muted);line-height:1.2}
+.hfbox b{display:block;font-size:18.5px;font-weight:600;line-height:1.25;white-space:nowrap}
+
+/* 9 proof */
+.lat{position:absolute;left:128px;top:648px}
+.lat .ct{font-size:26px;font-weight:600;margin-bottom:20px}
+
+/* 10 buyers */
+.s-buy .figs{top:400px}
+.s-buy .figs .v{font-size:132px}
+.price{position:absolute;left:128px;top:790px;width:1500px;font-size:34px;line-height:1.35;font-weight:500}
+
+/* 11 deployment */
+.lede{position:absolute;left:128px;top:262px;font-size:32px;color:var(--muted)}
+.tiers{position:absolute;left:128px;top:336px;width:1664px;display:grid;grid-template-columns:540px 200px 300px 600px;column-gap:8px;grid-auto-rows:120px;grid-template-rows:68px}
+.tiers .th{font-size:19px;color:var(--muted);align-self:start}
+.tiers .tn,.tiers .tc,.tiers .tg{border-top:1px solid var(--rule);padding-top:22px}
+.tiers .tn b{display:block;font-size:27px;font-weight:600;line-height:1.2}
+.tiers .tn span{display:block;margin-top:6px;font-size:19px;line-height:1.38;color:var(--muted);width:520px}
+.tiers .tc{font-size:23px;line-height:1.38}
+.tiers .tc small{display:block;font-size:19px;color:var(--muted)}
+.tiers .human b,.tiers .tc.human{color:var(--muted)}
+.tierchart{position:absolute;left:1064px;top:0}
+.nw{white-space:nowrap;font-style:normal}
+
+/* 11 competition */
+table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:collapse}
+.cmp th,.cmp td{text-align:left;vertical-align:top;font-weight:400;padding:20px 24px 20px 0;border-top:1px solid var(--rule);font-size:24px;line-height:1.35}
+.cmp thead th{border-top:none;font-size:20px;color:var(--muted);padding-bottom:16px;line-height:1.35}
+.cmp tbody th{font-weight:500;width:330px}
+.cmp tbody td{color:var(--muted)}
+.cmp tr.us th,.cmp tr.us td{color:var(--ink);font-weight:600}
+.cmp col{width:auto}
+
+/* 12 close */
+.close{position:absolute;left:1000px;top:330px;width:800px}
+.close h2{position:static;width:auto;font-size:84px;line-height:1.1}
+.close .ask{margin-top:40px}
+.close .sub{margin-top:22px;font-size:32px;line-height:1.35;color:var(--muted)}
+.close .ch{margin-top:56px;font-size:28px;font-weight:600}
+.close .ask{list-style:none;margin-top:18px}
+.close .ask li{font-size:34px;line-height:1.4;margin-bottom:14px}
+.close .team{margin-top:52px;font-size:24px;font-weight:600}
+.close .team span{font-weight:400;color:var(--muted)}
+
+@page{size:1920px 1080px;margin:0}
+@media print{
+  html,body{width:1920px;height:auto;overflow:visible;background:var(--bg)}
+  #deck{position:static;transform:none!important;width:1920px;height:auto}
+  .slide{display:block!important;position:relative;break-after:page;page-break-after:always}
+  .slide:last-child{break-after:auto;page-break-after:auto}
+  .screen video{display:none}
+  .screen .poster{display:block}
+}
+"""
+
+JS = r"""
+(function(){
+  const deck=document.getElementById('deck');
+  const slides=[...deck.querySelectorAll('.slide')];
+  const vid=document.getElementById('demo');
+  const params=new URLSearchParams(location.search);
+  if(params.has('still')) document.body.classList.add('still');
+  let i=Math.max(0,Math.min(slides.length-1,(parseInt(location.hash.slice(1))||1)-1));
+  function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);
+    deck.style.transform=`translate(${(innerWidth-1920*s)/2}px,${(innerHeight-1080*s)/2}px) scale(${s})`;}
+  function video(on){ if(!vid||document.body.classList.contains('still')) return;
+    if(on){ try{vid.currentTime=22;}catch(e){} vid.playbackRate=1.5; vid.play().catch(()=>{}); } else vid.pause(); }
+  function go(n){ i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((el,k)=>el.classList.toggle('on',k===i));
+    history.replaceState(null,'','#'+(i+1)); video(slides[i].classList.contains('s-demo')); }
+  window.go=go;
+  addEventListener('resize',fit);
+  addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();go(i+1);}
+    else if(['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)){e.preventDefault();go(i-1);}
+    else if(e.key==='Home') go(0); else if(e.key==='End') go(slides.length-1);
+    else if(e.key==='f'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+    else if(e.key==='r' && slides[i].classList.contains('s-demo')) video(true);
+    else if(e.key==='p' && vid){vid.paused?vid.play():vid.pause();}
+  });
+  addEventListener('click',e=>{ if(e.target.closest('video')) return; go(e.clientX<innerWidth/3?i-1:i+1); });
+  fit(); go(i);
+})();
+"""
+
+
+def build() -> None:
+    body = "\n".join(slides())
+    page = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bayan pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Noto+Sans+Devanagari:wght@500;600&family=Reem+Kufi:wght@500&display=swap">
+<style>{CSS}</style>
+</head>
+<body>
+<main id="deck">
+{body}
+</main>
+<script>{JS}</script>
+</body>
+</html>
+"""
+    OUT.write_text(page, encoding="utf-8")
+    print(f"wrote {OUT}")
+
+
+def export() -> None:
+    """PNG previews (one per slide, still poster for the video) and the PDF, with new-headless Chromium."""
+    import asyncio
+    from playwright.async_api import async_playwright
+
+    prev = HERE / "preview"
+    prev.mkdir(exist_ok=True)
+    url = OUT.as_uri()
+
+    async def run():
+        async with async_playwright() as p:
+            b = await p.chromium.launch(channel="chromium")
+            pg = await b.new_page(viewport={"width": 1920, "height": 1080}, device_scale_factor=1)
+            await pg.goto(url + "?still#1")
+            await pg.evaluate("document.fonts.ready")
+            await pg.wait_for_load_state("networkidle")
+            n = await pg.evaluate("document.querySelectorAll('.slide').length")
+            for k in range(n):
+                await pg.evaluate(f"go({k})")
+                await pg.wait_for_timeout(250)
+                await pg.screenshot(path=str(prev / f"slide-{k + 1:02d}.png"))
+            pdf = await b.new_page()
+            await pdf.goto(url + "?still")
+            await pdf.evaluate("document.fonts.ready")
+            await pdf.wait_for_load_state("networkidle")
+            await pdf.emulate_media(media="print")
+            await pdf.pdf(path=str(HERE.parent / "Bayan-pitch.pdf"), width="1920px", height="1080px",
+                          print_background=True, margin={"top": "0", "right": "0", "bottom": "0", "left": "0"})
+            await b.close()
+        print(f"wrote {n} previews to {prev} and {HERE.parent / 'Bayan-pitch.pdf'}")
+
+    asyncio.run(run())
+
+
+if __name__ == "__main__":
+    build()
+    if "--export" in sys.argv:
+        export()

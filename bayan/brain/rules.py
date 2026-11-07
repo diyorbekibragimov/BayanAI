@@ -15,12 +15,12 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .merge import normalise_med
+from .merge import combine_same_drug, normalise_med
 from .state import fmt_t
-from .vocab import LEXICON_PATH, RULES_PATH, classes_of, normalise_drug
+from .vocab import LEXICON_PATH, RULES_PATH, classes_of, literal_gloss, normalise_drug
 
 _MISSING = object()
-GLOBAL_ROOTS = {"patient", "vitals", "disposition", "elapsed_min_since"}
+GLOBAL_ROOTS = {"patient", "vitals", "disposition", "elapsed_min_since", "questions_asked"}
 COLLECTIONS = {"allergies", "current_meds", "prescribed_meds", "all_meds", "symptoms", "investigations",
                "interventions", "assessments", "idiom_hits"}
 MED_COLLS = {"prescribed_meds", "current_meds", "all_meds"}
@@ -420,9 +420,8 @@ class RuleEngine:
             intent = str(c.get("intent") or "prescribe").lower()
             if intent != "prescribe":
                 continue
-            m = normalise_med(c)
-            if m["drug"]:
-                cands.append(m)
+            cands.append(c)
+        cands = [m for m in (normalise_med(c) for c in combine_same_drug(cands)) if m["drug"]]
         if not cands:
             return []
         names = {m["drug"] for m in cands}
@@ -568,6 +567,8 @@ class RuleEngine:
         if alias == "idiom" and field in ("romanized", "literal_en", "native"):
             entry = self.idiom(item.get("id")) or {}
             v = entry.get(field) or item.get("matched")
+            if field == "literal_en" and entry.get(field):
+                v = literal_gloss(entry[field])      # "'gastric' (English loanword)" -> "gastric"
             return str(v) if v else _FIELD_DEFAULTS.get(field, "not recorded")
         v = item.get(field)
         if field == "dose_raw" and _is_absent(v):

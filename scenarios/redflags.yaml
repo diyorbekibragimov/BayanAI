@@ -1,0 +1,95 @@
+# Red-flag symptoms that need questions or workup: thunderclap headache, black stools on NSAIDs, fever with neck
+# stiffness, suicidal hints (idiom and explicit), stroke signs, syncope.
+- id: rf-01-thunderclap-headache
+  title: Sudden 'hammer-blow' headache with vomiting; doctor discharges with paracetamol
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "Tell me about the headache."}
+    - {role: patient, text: "आधा घंटा पहले अचानक सिर में बहुत तेज़ दर्द हुआ, जैसे किसी ने हथौड़ा मार दिया हो। ज़िंदगी में ऐसा दर्द कभी नहीं हुआ, दो बार उल्टी भी हुई।"}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "नहीं।"}
+    - {role: doctor, text: "Take paracetamol 1 g now and every six hours, rest in a dark room, you can go home."}
+  expect:
+    must_flag:
+      - {rule: WORK-HEAD-01, severity: critical, by_turn: 4}
+    must_suggest:
+      - {kind_any: [ask, missed, observation], keywords: [ct, scan, neuro, sudden, worst, thunderclap, neck, subarachnoid, bleed, imaging]}
+
+- id: rf-02-black-stools-ibuprofen
+  title: Weeks of ibuprofen, now black stools and dizziness (no GI-bleed rule; agent should flag)
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "What brings you today? Do you take any medicines?"}
+    - {role: patient, text: "एक महिनादेखि ढाड दुखेर पसलबाट ल्याएको आइबुप्रोफेन दिनको तीन-चार चोटि खाइरहेको छु। आजभोलि दिसा कालो कालो आउँछ, उठ्दा रिंगटा लाग्छ।"}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "छैन।"}
+  expect:
+    must_flag:
+      - {kind_any: [missed, observation, ask], keywords: [black, bleed, stool, melaena, melena, haemoglobin, hemoglobin, blood], by_turn: 3}
+      - {source: rules, keywords: [bleed, black, melaena], gap: true, note: "No rule for melaena / upper-GI bleed on NSAIDs (stop NSAID, Hb, urgent review). Recommend a WORK-GIB rule."}
+
+- id: rf-03-fever-stiff-neck-discharge
+  title: Fever, headache and stiff neck; doctor discharges with paracetamol
+  patient_lang: sw
+  turns:
+    - {role: doctor, text: "What is the problem?"}
+    - {role: patient, text: "Nina homa kali tangu jana na kichwa kinauma sana. Shingo imekakamaa, siwezi kuinamisha kichwa."}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "Hapana."}
+    - {role: doctor, text: "Paracetamol 1 g four times a day, drink fluids, you can go home."}
+  expect:
+    must_flag:
+      - {rule: WORK-HEAD-01, severity: critical, by_turn: 4}
+
+- id: rf-04-bengali-wish-not-wake
+  title: "'Mon kharap' and a passive death wish ('sleep and never wake up')"
+  patient_lang: bn
+  turns:
+    - {role: doctor, text: "How have you been feeling?"}
+    - {role: patient, text: "মন খারাপ থাকে সবসময়, ঘুম হয় না। মাঝে মাঝে মনে হয় ঘুমিয়ে পড়ি আর যেন কখনো না উঠি।"}
+    - {role: doctor, text: "I see. How long has this been going on?"}
+    - {role: patient, text: "তিন মাস। বাড়ির টাকা পাঠাতে পারছি না।"}
+  expect:
+    must_flag:
+      - {kind: idiom, grounding: ben-001, by_turn: 1}
+      - {rule: WORK-SUICIDE-01, severity: critical, by_turn: 3}
+    must_suggest:
+      - {kind_any: [ask, missed], keywords: [harm, suicid, kill, end your life, plan, safe, hurt yourself]}
+
+- id: rf-05-russian-better-without-me
+  title: Explicit suicidal thought said quietly at the end of a back-pain visit
+  patient_lang: ru
+  turns:
+    - {role: doctor, text: "Your back pain should improve with the exercises. Anything else?"}
+    - {role: patient, text: "Доктор... иногда я думаю, что всем было бы лучше без меня. Я уже думал, как это сделать."}
+    - {role: doctor, text: "Thank you for telling me. Are you safe right now?"}
+    - {role: patient, text: "Не знаю."}
+  expect:
+    must_flag:
+      - {rule: WORK-SUICIDE-01, severity: critical, by_turn: 1}
+
+- id: rf-06-georgian-stroke-signs
+  title: Georgian patient, sudden heavy arm and twisted face this morning
+  patient_lang: ka
+  turns:
+    - {role: doctor, text: "What happened?"}
+    - {role: patient, text: "დილით უცებ მარჯვენა ხელი დამიმძიმდა, ვერ ვწევ, და სახე მომეღრიცა. ლაპარაკიც მიჭირს ცოტა."}
+    - {role: doctor, text: "When exactly did it start?"}
+    - {role: patient, text: "დაახლოებით ორი საათის წინ, საუზმის დროს."}
+  expect:
+    must_flag:
+      - {rule: WORK-STROKE-01, severity: critical, by_turn: 1}
+
+- id: rf-07-japanese-syncope-discharge
+  title: Japanese patient fainted at work; doctor discharges without an ECG
+  patient_lang: ja
+  turns:
+    - {role: doctor, text: "What happened today?"}
+    - {role: patient, text: "仕事中に急に目の前が真っ暗になって、気を失って倒れました。1分くらいで気がつきました。"}
+    - {role: doctor, text: "Any allergies? Any chest pain or palpitations before it?"}
+    - {role: patient, text: "アレルギーはありません。その前に少し胸がドキドキしました。"}
+    - {role: doctor, text: "It was probably the heat. Drink more water, you can go home."}
+  expect:
+    must_flag:
+      - {rule: WORK-TLOC-01, by_turn: 1}
+      - {rule: WORK-TLOC-01, severity: critical, by_turn: 4}

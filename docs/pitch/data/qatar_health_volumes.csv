@@ -1,0 +1,11 @@
+provider,metric,value,period,source,source_year,confidence
+HMC,adult emergency department visits,974268,2025,https://www.gulf-times.com/article/725532/qatar/hmc-reports-major-healthcare-advances-in-2025,2026,medium
+HMC,paediatric emergency centre visits,583864,2025,https://www.gulf-times.com/article/725532/qatar/hmc-reports-major-healthcare-advances-in-2025,2026,medium
+HMC,outpatient visits,3000000,2025 (>3M),https://www.gulf-times.com/article/725532/qatar/hmc-reports-major-healthcare-advances-in-2025,2026,medium
+HMC,ambulance transports,210676,2025,https://www.gulf-times.com/article/725532/qatar/hmc-reports-major-healthcare-advances-in-2025,2026,medium
+PHCC,health centres,31,2024,https://thepeninsulaqatar.com/article/14/08/2024/phcc-logs-219-million-patients-in-six-months,2024,high
+PHCC,patient visits,5170000,2024 (>5.17M),https://thepeninsulaqatar.com/article/31/08/2025/qatar-strengthens-healthcare-system-with-prevention-at-core,2025,medium
+QRCS workers' health centres (4),patient visits,1460696,2025,https://www.qatar-tribune.com/article/247543/nation/qrcs-medical-affairs-division-getsaccreditation-canada-diamond-tag,2026,medium
+QRCS workers' health centres (4),patients served,823362,H1 2026,https://www.qatar-tribune.com/article/247543/nation/qrcs-medical-affairs-division-getsaccreditation-canada-diamond-tag,2026,medium
+Sidra Medicine,languages on 24/7 phone/video line,66,current,https://www.sidra.org/patients-visitors/your-visit/during-your-visit-2/medical-interpreters/,2026,high
+Sidra Medicine,face-to-face interpreter languages (no Nepali/Malayalam/Bengali/Tagalog),9,current,https://www.sidra.org/patients-visitors/your-visit/during-your-visit-2/medical-interpreters/,2026,high

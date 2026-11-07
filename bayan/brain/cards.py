@@ -49,6 +49,7 @@ GROUP_TITLES = {
 }
 FAMILY_TITLES = {
     "drug_allergy": "Allergy conflict",
+    "allergy_history": "Allergy history not taken",
     "dose_ceiling": "Dose ceiling",
     "dose": "Dose ceiling",
     "drug_drug": "Drug interaction",

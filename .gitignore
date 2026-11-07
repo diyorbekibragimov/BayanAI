@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+
+# simulation run artefacts (regenerate with scripts/simulate.py)
+reports/sim/*/pdf/
+reports/sim/*/png/
+reports/sim/*/out/
+reports/sim/*/raw.jsonl

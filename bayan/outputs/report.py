@@ -26,10 +26,10 @@ from . import LANG_NAMES, RTL_LANGS, labels
 FONT_DIR = Path(__file__).resolve().parents[2] / "assets" / "fonts"
 SCRIPT_FONTS = {"deva": "NotoSansDevanagari", "beng": "NotoSansBengali", "mlym": "NotoSansMalayalam",
                 "taml": "NotoSansTamil", "telu": "NotoSansTelugu", "arab": "NotoNaskhArabic",
-                "hang": "NotoSansKR", "jpan": "NotoSansJP"}
+                "hang": "NotoSansKR", "jpan": "NotoSansJP", "geor": "NotoSansGeorgian"}
 LANG_FONT = {"ne": "deva", "hi": "deva", "mr": "deva", "bn": "beng", "as": "beng", "ml": "mlym", "ta": "taml",
-             "te": "telu", "ar": "arab", "ur": "arab", "fa": "arab", "ps": "arab", "ko": "hang", "ja": "jpan"}
-FALLBACKS = ["sans", "deva", "beng", "mlym", "taml", "telu", "arab", "hang", "jpan"]
+             "te": "telu", "ar": "arab", "ur": "arab", "fa": "arab", "ps": "arab", "ko": "hang", "ja": "jpan", "ka": "geor"}
+FALLBACKS = ["sans", "deva", "beng", "mlym", "taml", "telu", "arab", "hang", "jpan", "geor"]
 # Symbols the Noto text fonts lack, written out instead of printing a box.
 _SUBST = {"✓": "Yes", "✔": "Yes", "✗": "No", "✘": "No"}
 

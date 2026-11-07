@@ -59,7 +59,7 @@ def drain(sess, voice_on: bool = True):
             return
         sess.busy = True
     try:
-        while consult.SESS.get(sess.sid) is sess and sess.screen in ("consent", "live"):
+        while consult.alive(sess) and sess.screen in ("consent", "live"):
             sp = consult.pop_pending(sess)
             if sp is None:
                 break
@@ -70,13 +70,20 @@ def drain(sess, voice_on: bool = True):
                     yield consult.render(sess), gr.skip()
                 else:
                     yield consult.render(sess), (ev[1] if ev[1] is not None else gr.skip())
-            if consult.SESS.get(sess.sid) is not sess or sess.screen not in ("consent", "live"):
+            if not consult.alive(sess) or sess.screen not in ("consent", "live"):
                 break
     finally:
         with sess.lock:
             sess.busy = False
             sess.processing = False
     yield consult.render(sess), gr.skip()
+
+
+def _queue_consent(sess) -> None:
+    """The consent line, spoken only if it really is in the patient's language (an English fallback is shown only)."""
+    sp = Speech(sess.consent_native, sess.lang, "patient", False, consult.CONSENT_EN, kind="consent")
+    if not consult.queue_speech(sess, sp, source=consult.CONSENT_EN):
+        consult.notify(sess, "voice_unavailable")
 
 
 def _wait_idle(sess, timeout: float = 5.0) -> bool:
@@ -129,7 +136,11 @@ def on_act(payload, _wid, sid, request: gr.Request):
         return consult.render(consult.SESS.get(sess.sid, sess))
 
     if act == "start" and sess.screen == "start":
-        sess.lang = p.get("lang") if p.get("lang") in consult.LANGS else "ne"
+        if p.get("lang") not in consult.LANGS:  # never guess the patient's language (no silent Nepali default)
+            sess.error = "err_lang"
+            yield R(), skip
+            return
+        sess.lang = p["lang"]
         if p.get("doc") in ("en", "ar"):
             sess.doc_lang = p["doc"]
         sess.screen, sess.started_at, sess.error, sess.demo = "consent", time.time(), "", False
@@ -143,16 +154,21 @@ def on_act(payload, _wid, sid, request: gr.Request):
                 print(f"[consent] {e}", flush=True)
                 sess.consent_native = consult.CONSENT_EN
             yield R(), skip
-        sess.pending.append(Speech(sess.consent_native, sess.lang, "patient", False, kind="consent"))
+        if not consult.alive(sess) or sess.screen != "consent":
+            return
+        _queue_consent(sess)
         yield from drain(sess)
     elif act == "settle_skip":  # a tap or key during the 3 s pause after Bayan spoke: move on now
         sess.settle_cancel = True
         yield skip, skip
     elif act == "audio":
         sess.audio_ack = p.get("n")  # the page unlocks the pearl only once it sees this id (never on unrelated renders)
-        ok = sess.screen == "live" and not sess.demo and not sess.held and not sess.confirm and _wait_idle(sess)
+        ok = (sess.screen == "live" and not sess.demo and not sess.held and not sess.confirm and not sess.hearing
+              and _wait_idle(sess))
         pcm = decode_pcm(p) if ok else None
         if not ok:
+            if sess.screen == "live" and not sess.demo and not sess.held and not sess.confirm:
+                consult.notify(sess, consult.NOT_CAUGHT)  # dropped (still speaking / another turn running): say again
             yield R(), skip
             return
         if pcm is None or pcm.size < int(0.4 * SR):
@@ -160,7 +176,7 @@ def on_act(payload, _wid, sid, request: gr.Request):
             yield R(), skip
             return
         print(f"[audio] sid={sess.sid[:6]} {pcm.size / SR:.1f}s", flush=True)
-        sess.processing, sess.error = True, ""
+        sess.processing, sess.error, sess.hearing = True, "", True
         yield R(), skip
         try:
             for _ in consult.process_audio(sess, SR, pcm, p.get("speaker", "")):
@@ -168,6 +184,11 @@ def on_act(payload, _wid, sid, request: gr.Request):
         except Exception as e:  # noqa: BLE001
             print(f"[audio] {type(e).__name__}: {e}", flush=True)
             sess.error = "err_process"
+        finally:
+            sess.hearing = False
+        if not consult.alive(sess):  # Home / No pressed while this turn was heard: its reply goes nowhere
+            yield R(), skip
+            return
         sess.processing = bool(sess.pending)
         yield R(), skip
         yield from drain(sess)
@@ -185,12 +206,12 @@ def on_act(payload, _wid, sid, request: gr.Request):
         if p.get("id") in ("en", "ar"):
             sess.doc_lang = p["id"]
         yield R(), skip
-    elif act == "home":  # the wordmark: drop the visit, keep the doctor's language
+    elif act == "home":  # the wordmark: drop the visit, keep the doctor's language (set on the fresh one only, so
+        fresh = consult.reset(sess)  # nothing still running for the old visit ever sees a different listener language)
         if p.get("lang") in ("en", "ar"):
-            sess.doc_lang = p["lang"]
-        consult.reset(sess)
+            fresh.doc_lang = p["lang"]
         yield R(), ""
-    elif act == "consent_yes" and sess.screen == "consent":
+    elif act == "consent_yes" and sess.screen == "consent" and not sess.demo:  # the demo answers for itself
         sess.screen, sess.live, sess.tint, sess.error = "live", "idle", "n", ""
         sess.pending.clear()
         consult.record_consent(sess)
@@ -198,7 +219,7 @@ def on_act(payload, _wid, sid, request: gr.Request):
         yield R(), skip
     elif act in ("consent_no", "new"):
         consult.reset(sess)
-        yield R(), skip
+        yield R(), ""
     elif act == "end" and sess.screen in ("consent", "live"):
         sess.stop_mic += 1
         for _ in consult.end_visit(sess, _base_url(request)):
@@ -239,10 +260,10 @@ def run_demo(sess):
     s = sess
 
     def alive():
-        return consult.SESS.get(s.sid) is s
+        return consult.alive(s)
 
-    def R():
-        return consult.render(s)
+    def R():  # a dropped demo never repaints the page (the real visit that replaced it owns the stage)
+        return consult.render(s) if alive() else gr.skip()
 
     def say(sp):
         for ev in consult.speak_clip(s, sp, voice):
@@ -251,8 +272,8 @@ def run_demo(sess):
             else:
                 yield R(), (ev[1] if ev[1] is not None else gr.skip())
 
-    def speak_pending():
-        while alive() and s.screen == "live":
+    def speak_pending(screen="live"):
+        while alive() and s.screen == screen:
             sp = consult.pop_pending(s)
             if sp is None:
                 break
@@ -267,7 +288,10 @@ def run_demo(sess):
     s.consent_native = consult.consent_text("ne")
     yield R(), gr.skip()
     time.sleep(1.0)
-    yield from say(Speech(s.consent_native, "ne", "patient", False, consult.CONSENT_EN, kind="consent"))
+    if not alive():
+        return
+    _queue_consent(s)
+    yield from speak_pending("consent")
     time.sleep(1.2)
     if not alive() or s.screen != "consent":
         return
@@ -280,8 +304,10 @@ def run_demo(sess):
             if not alive() or s.screen != "live":
                 return
             if role in ("doctor", "patient"):
-                for _ in consult.process_text(s, role, text, "en" if role == "doctor" else "ne"):
+                for _ in consult.process_text(s, role, text, "en" if role == "doctor" else s.lang):
                     yield R(), gr.skip()
+                if not alive():
+                    return
                 yield from pause(2.2 if role == "doctor" else 3.2)
                 if s.live == "held":
                     continue
@@ -326,10 +352,9 @@ def _warm_up():
             print(f"[warm] {name} failed: {type(e).__name__}: {e}", flush=True)
 
     def run():
-        # Keep the LLM connection warm (a cold call costs ~3 s). Ping the GPU worker only while the app is in use
-        # (a session touched in the last 15 min), so the keep-warm never keeps the GPU awake on its own.
+        # Keep the GPU worker warm only while the app is in use (a session touched in the last 15 min). No LLM
+        # keep-alive: it cost a paid request every 50 s around the clock for ~2 s saved on the first call after idle.
         while True:
-            ping("llm", lambda: brain_llm.chat_text("Reply with ok.", "ok", max_tokens=8))
             recent = any(time.time() - getattr(x, "touched", 0) < 900 for x in list(consult.SESS.values()))
             if recent:
                 ping("worker", lambda: talk.http().get("/v1/ping", timeout=60))

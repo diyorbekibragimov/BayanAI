@@ -1,0 +1,151 @@
+# Dose ceilings: paracetamol > 4 g/day (frequency phrasing, combination brands), mg/kg in small patients (native
+# digits), NSAID maxima, tramadol, levothyroxine mg/mcg unit error, metformin, amlodipine.
+- id: dose-01-para-every-4h
+  title: Paracetamol 1 g every 4 hours (6 g/day) after allergies asked; corrected to 4 g/day
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "छैन डाक्टर साब, कुनै औषधिले केही गर्दैन।"}
+    - {role: doctor, text: "For the body ache and fever, take paracetamol 1 g every 4 hours."}
+    - {action: held_else}
+    - {role: doctor, text: "Sorry, paracetamol 1 g four times a day, not more than 4 grams in a day."}
+  expect:
+    must_hold: [{drug: paracetamol, rule: DOSE-PARA-01, turn: 2}]
+    must_not_flag: [{rule: ALG-ASK-01}]
+    must_flag: [{rule: DOSE-PARA-01, severity: critical, by_turn: 2}]
+    state: {prescribed_has: [paracetamol]}
+    care_plan: {meds_has: [paracetamol]}
+
+- id: dose-02-two-paracetamol-brands
+  title: Adol 1 g QDS plus Panadol Extra 2 tablets TDS (two paracetamol products, 7 g/day)
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "Are you allergic to any medicine?"}
+    - {role: patient, text: "नहीं डॉक्टर साहब, कोई एलर्जी नहीं।"}
+    - {role: doctor, text: "Take Adol 500, two tablets four times a day for the fever."}
+    - {role: patient, text: "ठीक है। और सर दर्द के लिए?"}
+    - {role: doctor, text: "For the headache also take Panadol Extra, two tablets three times a day."}
+  expect:
+    must_hold:
+      - {drug: paracetamol, turn: 4, gap: true, note: "No rule sums paracetamol across products/brands (Adol + Panadol Extra = 7 g/day). Both normalise to paracetamol and the second replaces the first in prescribed_meds, so the daily total is never computed."}
+    must_flag:
+      - {kind_any: [observation, missed], keywords: [paracetamol, panadol, adol, duplicate, both, total, 4 g, 4g], note: "copilot agent should notice the duplicate paracetamol"}
+
+- id: dose-03-ibuprofen-800-qid
+  title: Ibuprofen 800 mg four times a day (3.2 g/day) - caution, not a hold
+  patient_lang: bn
+  turns:
+    - {role: doctor, text: "Any drug allergies?"}
+    - {role: patient, text: "না, কোনো ওষুধে সমস্যা হয়নি কখনো।"}
+    - {role: doctor, text: "For the back sprain, ibuprofen 800 mg four times a day after meals for five days."}
+  expect:
+    must_not_hold: [ibuprofen]
+    must_flag: [{rule: DOSE-IBU-01, severity: caution, by_turn: 2}]
+    must_not_flag: [{rule: DOSE-IBU-02}]
+    state: {prescribed_has: [ibuprofen]}
+
+- id: dose-04-brufen-600-q4h
+  title: Brufen 600 every 4 hours (3.6 g/day) - must hold
+  patient_lang: ml
+  turns:
+    - {role: doctor, text: "Any allergy to medicines?"}
+    - {role: patient, text: "ഇല്ല ഡോക്ടർ, ഒന്നുമില്ല."}
+    - {role: doctor, text: "Brufen 600 every 4 hours for the toothache until you see the dentist."}
+    - {action: held_else}
+    - {role: doctor, text: "Make that Brufen 400 three times a day after food."}
+  expect:
+    must_hold: [{drug: ibuprofen, rule_any: [DOSE-IBU-02, DOSE-IBU-01], turn: 2}]
+    must_flag: [{rule: DOSE-IBU-02, severity: critical, by_turn: 2}]
+    care_plan: {meds_has: [ibuprofen]}
+
+- id: dose-05-diclofenac-75-tds
+  title: Diclofenac 75 mg three times a day (225 mg/day) - escalates to critical
+  patient_lang: tl
+  turns:
+    - {role: doctor, text: "Do you have allergies to any medicine?"}
+    - {role: patient, text: "Wala po doc."}
+    - {role: doctor, text: "For your shoulder, diclofenac 75 mg three times a day for one week."}
+    - {action: held_else}
+    - {role: doctor, text: "Diclofenac 50 mg three times a day after meals instead."}
+  expect:
+    must_hold: [{drug: diclofenac, rule: DOSE-DICLO-01, turn: 2}]
+    must_not_hold: [{drug: diclofenac, turn: 4}]
+    must_flag: [{rule: DOSE-DICLO-01, severity: critical}]
+
+- id: dose-06-levothyroxine-mg-mcg
+  title: Levothyroxine '100 mg' (meant micrograms) then corrected to 100 micrograms
+  patient_lang: ru
+  turns:
+    - {role: doctor, text: "You are here for your thyroid tablets. Any allergies?"}
+    - {role: patient, text: "Нет, аллергии нет. Таблетки для щитовидки закончились неделю назад."}
+    - {role: doctor, text: "I'll renew your levothyroxine, 100 mg once every morning before breakfast."}
+    - {action: held_else}
+    - {role: doctor, text: "Sorry, levothyroxine 100 micrograms once every morning before breakfast."}
+  expect:
+    must_hold: [{drug: levothyroxine, rule: DOSE-LEVO-01, turn: 2}]
+    must_not_flag: [{rule: ALG-ASK-01}]
+    care_plan: {meds_has: [levothyroxine]}
+    pdf: {patient_not_contains: ["100 mg"]}
+
+- id: dose-07-child-16kg-mother
+  title: Mother speaks for a 16 kg child; paracetamol 500 mg four times a day (125 mg/kg/day)
+  patient_lang: sw
+  turns:
+    - {role: doctor, text: "How old is your son and how much does he weigh?"}
+    - {role: patient, text: "Ana miaka minne, daktari. Tulimpima wiki iliyopita, ana kilo kumi na sita."}
+    - {role: doctor, text: "Is he allergic to any medicine?"}
+    - {role: patient, text: "Hapana, hana mzio."}
+    - {role: doctor, text: "Give him paracetamol 500 mg four times a day for the fever."}
+    - {action: held_else}
+    - {role: doctor, text: "Paracetamol syrup 240 mg every six hours, not more than four doses a day."}
+  expect:
+    must_hold: [{drug: paracetamol, rule: DOSE-PARA-03, turn: 4}]
+    must_flag: [{rule: DOSE-PARA-03, severity: critical}]
+    state: {patient: {weight_kg: 16}}
+
+- id: dose-08-prn-up-to-8-tabs
+  title: Paracetamol 500 mg two tablets when needed, max 8 tablets a day (4 g) - must NOT flag
+  patient_lang: id
+  turns:
+    - {role: doctor, text: "Do you have any allergies to medicine?"}
+    - {role: patient, text: "Tidak ada, Dok."}
+    - {role: doctor, text: "Paracetamol 500 mg, two tablets when needed for pain, at least 4 hours apart, no more than 8 tablets in a day."}
+  expect:
+    must_not_hold: ["*"]
+    must_not_flag: [{rule: DOSE-PARA-01}, {severity: critical}]
+    state: {prescribed_has: [paracetamol]}
+    care_plan: {meds_has: [paracetamol]}
+
+- id: dose-09-tramadol-qds-plus-prn
+  title: Tramadol 100 mg QDS plus 100 mg at night if needed (500 mg/day)
+  patient_lang: tr
+  turns:
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "Hayır doktor bey, alerjim yok."}
+    - {role: doctor, text: "For the kidney stone pain, tramadol 100 mg QDS, plus another 100 mg at night if the pain wakes you."}
+    - {action: held_else}
+    - {role: doctor, text: "Tramadol 50 to 100 mg every six hours as needed, maximum 400 mg in 24 hours."}
+  expect:
+    must_hold: [{drug: tramadol, rule: DOSE-TRAM-01, turn: 2, note: "500 mg/day only if the extractor counts the PRN dose in the frequency"}]
+
+- id: dose-10-metformin-3g
+  title: Metformin 1000 mg three times a day (3 g/day) - caution
+  patient_lang: tr
+  turns:
+    - {role: doctor, text: "Your sugar is high. Any allergies?"}
+    - {role: patient, text: "Yok doktor. Şeker ilacımı bazen unutuyorum."}
+    - {role: doctor, text: "We will increase metformin to 1000 mg three times a day with meals."}
+  expect:
+    must_not_hold: [metformin]
+    must_flag: [{rule: DOSE-MET-01, severity: caution}]
+
+- id: dose-11-amlodipine-bd
+  title: Amlodipine 10 mg twice a day (20 mg/day) - caution
+  patient_lang: fr
+  turns:
+    - {role: doctor, text: "Your blood pressure is 172 over 98. Any allergies to medicines?"}
+    - {role: patient, text: "Non docteur, pas d'allergie. Je prends déjà l'amlodipine 10 mg le matin."}
+    - {role: doctor, text: "Then take amlodipine 10 mg twice a day from now on."}
+  expect:
+    must_not_hold: [amlodipine]
+    must_flag: [{rule: DOSE-AMLO-01, severity: caution}]

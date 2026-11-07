@@ -1,0 +1,115 @@
+# Chest pain hidden behind idioms (gyastrik, kabag, seene mein jalan, gastric), radiation, sweating, the 10-minute
+# ECG timer (WORK-CHEST-01, scenario clock "t" in minutes), discharge without ECG/troponin (WORK-CHEST-02/03 critical)
+# and the ECG-ordered negative controls.
+- id: chest-01-gyastrik-discharge
+  title: "'Gyastrik' chest burning on exertion; doctor calls it gastritis and discharges without an ECG"
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "What is the problem?"}
+    - {role: patient, text: "मेरो छाती ग्यास्ट्रिकले जस्तो पोलेको छ, काम गर्दा झन् बढ्छ, आराम गरेपछि अलि कम हुन्छ।"}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "छैन।"}
+    - {role: doctor, text: "It's just gastritis. Take omeprazole 20 mg once daily before breakfast, you can go home."}
+  expect:
+    must_flag:
+      - {kind: idiom, grounding: npi-005, by_turn: 1}
+      - {rule: WORK-CHEST-04, by_turn: 1}
+      - {rule_any: [WORK-CHEST-02, WORK-CHEST-03], severity: critical, by_turn: 4}
+    must_suggest: [{keywords: [arm, jaw, sweat, spread, breath, exert, walk, work], by_turn: 1}]
+    pdf: {doctor_contains: [ECG]}
+
+- id: chest-02-kabag-ecg-ordered
+  title: "'Kabag' in the chest when lifting; ECG + troponin ordered at once (timer must not fire)"
+  patient_lang: tl
+  turns:
+    - {role: doctor, text: "Ano pong nararamdaman? I mean, what do you feel?", t: 0.5}
+    - {role: patient, text: "Doc, parang may kabag po sa dibdib ko, lalo na pag nagbubuhat ako ng semento.", t: 1.0}
+    - {role: doctor, text: "We'll do an ECG right now and a troponin blood test for the heart.", t: 2.0}
+    - {role: patient, text: "Sige po doc.", t: 2.5}
+    - {action: tick, t: 14}
+    - {role: doctor, text: "Your ECG and troponin are normal. Any allergies?", t: 15}
+    - {role: patient, text: "Wala po.", t: 15.5}
+    - {role: doctor, text: "Take paracetamol 1 g three times a day if needed, and come back if the pain returns. You can go home.", t: 16}
+  expect:
+    must_flag: [{kind: idiom, grounding: tgl-002, by_turn: 1}]
+    must_not_flag:
+      - {rule: WORK-CHEST-01}
+      - {rule: WORK-CHEST-02}
+      - {rule: WORK-CHEST-03}
+    state: {investigations_has: [ecg_12lead]}
+
+- id: chest-03-seene-mein-jalan-arm-sweat
+  title: "'Seene mein jalan' radiating to the left arm with sweating; doctor says acidity and discharges"
+  patient_lang: ur
+  turns:
+    - {role: doctor, text: "What brings you here?"}
+    - {role: patient, text: "ڈاکٹر صاحب، سینے میں جلن ہے، اور بائیں بازو میں بھی درد جاتا ہے، ٹھنڈا پسینہ بھی آتا ہے۔"}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "نہیں جی۔"}
+    - {role: doctor, text: "This is acidity. Take an antacid syrup after meals and you can go home."}
+  expect:
+    must_flag:
+      - {kind: idiom, grounding: hin-005, by_turn: 1}
+      - {rule: WORK-CHEST-05, by_turn: 1}
+      - {rule_any: [WORK-CHEST-02, WORK-CHEST-03], severity: critical, by_turn: 4}
+
+- id: chest-04-timer-10min-no-ecg
+  title: Chest pressure at minute 1, history taking runs on, no ECG by minute 12 (timer rule), then ordered
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "What is the problem?", t: 0.5}
+    - {role: patient, text: "सीने में दबाव सा लगता है डॉक्टर साहब, सुबह से।", t: 1.0}
+    - {role: doctor, text: "Do you smoke? Any diabetes?", t: 3}
+    - {role: patient, text: "बीड़ी पीता हूँ, दिन में दस-बारह। शुगर का पता नहीं।", t: 4}
+    - {role: doctor, text: "How long have you been in Qatar, and what work do you do?", t: 6}
+    - {role: patient, text: "पाँच साल से, ड्राइवर हूँ।", t: 7}
+    - {action: tick, t: 12}
+    - {role: doctor, text: "Let's do an ECG now and a troponin blood test.", t: 13}
+  expect:
+    must_flag:
+      - {rule: WORK-CHEST-01, by_turn: 6}
+    must_not_flag: [{rule: WORK-CHEST-02}]
+    state: {investigations_has: [ecg_12lead]}
+
+- id: chest-05-korean-jaw-sweat-admit
+  title: Korean patient, chest tightness to the jaw with cold sweat; ECG, troponin, admission (no discharge alert)
+  patient_lang: ko
+  turns:
+    - {role: doctor, text: "Where does it hurt?"}
+    - {role: patient, text: "가슴이 꽉 조이듯이 답답하고 턱까지 아파요. 식은땀도 나요."}
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "없어요."}
+    - {role: doctor, text: "We are doing an ECG and a troponin now, and I'm admitting you to the cardiac unit. Aspirin 300 mg chewed now."}
+  expect:
+    must_flag: [{rule: WORK-CHEST-05, by_turn: 1}]
+    must_not_flag: [{rule: WORK-CHEST-02}, {rule: WORK-CHEST-03}]
+    state: {investigations_has: [ecg_12lead]}
+
+- id: chest-06-arabic-doctor-gastric
+  title: Arabic-speaking doctor; Bengali patient 'gastric' chest burning on climbing stairs; discharged with antacid
+  patient_lang: bn
+  doctor_lang: ar
+  turns:
+    - {role: doctor, text: "ما هي شكواك؟"}
+    - {role: patient, text: "বুকে গ্যাস্ট্রিকের মতো জ্বালা করে, সিঁড়ি দিয়ে উঠলে বেশি হয়।"}
+    - {role: doctor, text: "هل عندك حساسية من أي دواء؟"}
+    - {role: patient, text: "না।"}
+    - {role: doctor, text: "هذه حموضة. خذ أوميبرازول ٢٠ ملغ مرة يوميا، ويمكنك الذهاب إلى البيت."}
+  expect:
+    must_flag:
+      - {kind: idiom, grounding: ben-007, by_turn: 1}
+      - {rule_any: [WORK-CHEST-02, WORK-CHEST-03], severity: critical, by_turn: 4}
+
+- id: chest-07-ecg-normal-chest-wall
+  title: Chest wall pain after lifting, ECG and troponin normal, discharged (WORK-CHEST-02/03 must NOT fire)
+  patient_lang: ta
+  turns:
+    - {role: doctor, text: "What happened?"}
+    - {role: patient, text: "நேத்து சிமெண்ட் மூட்டை தூக்கினேன், அப்புறம் நெஞ்சு வலது பக்கம் அழுத்தினா வலிக்குது."}
+    - {role: doctor, text: "We'll do an ECG and a troponin to be safe. Any allergies?"}
+    - {role: patient, text: "இல்லை டாக்டர்."}
+    - {role: doctor, text: "Your ECG and troponin are both normal. It's a muscle strain. Paracetamol 1 g three times a day for three days, you can go home."}
+  expect:
+    must_not_flag: [{rule: WORK-CHEST-02}, {rule: WORK-CHEST-03}, {severity: critical}]
+    must_not_hold: ["*"]
+    state: {investigations_has: [ecg_12lead]}

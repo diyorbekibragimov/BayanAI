@@ -76,6 +76,14 @@ def _norm_drug(name: str) -> str:
         return aliases.get(n, n)
 
 
+def _gloss(literal_en: str) -> str:
+    try:
+        from .vocab import literal_gloss
+        return literal_gloss(literal_en)
+    except Exception:  # noqa: BLE001
+        return str(literal_en or "").split("(")[0].strip()
+
+
 def _classes(drug: str) -> list[str]:
     try:
         from .vocab import classes_of
@@ -326,12 +334,10 @@ def _idiom_alert(consult: Consultation, card: dict) -> str:
     except Exception:  # noqa: BLE001
         entry = None
     word = (entry or {}).get("romanized") or (hit or {}).get("matched") or gid
-    lit = (entry or {}).get("literal_en") or ""
-    m = re.search(r"'([^']+)'", lit)
-    lit = m.group(1) if m else lit.split("(")[0].strip()
+    lit = _gloss((entry or {}).get("literal_en") or "")
     tags = (hit or {}).get("red_flag_tags") or (entry or {}).get("red_flag_tags") or []
     masks = " or ".join(dict.fromkeys(_TAG_TEXT.get(t, t.replace("_", " ")) for t in tags))
-    return f"Patient used '{word}'" + (f" ({lit})" if lit and lit.lower() != str(word).lower() else "") + \
+    return f"Patient used “{word}”" + (f" ({lit})" if lit and lit.lower() != str(word).lower() else "") + \
         (f", which can mask {masks}" if masks else "")
 
 
@@ -495,9 +501,7 @@ def safety_alerts(consult: Consultation) -> list[str]:
             except Exception:  # noqa: BLE001
                 entry = {}
             word = entry.get("romanized") or hit.get("matched") or gid
-            lit = entry.get("literal_en") or ""
-            m = re.search(r"'([^']+)'", lit)
-            lit = m.group(1) if m else lit.split("(")[0].strip()
+            lit = _gloss(entry.get("literal_en") or "")
             sym = next((_human(x.get("code", "")).lower() for x in st.get("symptoms", [])
                         if any(e.get("utt") == hit.get("utt") for e in x.get("evidence", []))), "")
             tags = hit.get("red_flag_tags") or entry.get("red_flag_tags") or []
@@ -789,7 +793,7 @@ def _summarise_chunk(idx: int, lines: list[str]) -> dict:
     first, last = lines[0].split(" ", 1)[0], lines[-1].split(" ", 1)[0]
     try:
         js = llm.chat_json(MAP_SYSTEM, "\n".join(lines), schema=MAP_SCHEMA, max_tokens=MAP_MAX_TOKENS,
-                           reasoning=WRAPUP_REASONING)
+                           reasoning=WRAPUP_REASONING, **llm.brain_route())
         if not isinstance(js.get("facts"), list):
             raise ValueError("no facts list (truncated or invalid JSON)")
         facts = [f for f in js["facts"] if isinstance(f, dict) and str(f.get("text") or "").strip()]
@@ -1125,7 +1129,7 @@ def draft_note_llm(consult: Consultation) -> tuple[dict | None, dict]:
         info["calls"] += 1
         try:
             js = llm.chat_json(NOTE_SYSTEM, json.dumps(pl, ensure_ascii=False), schema=NOTE_SCHEMA, max_tokens=cap,
-                               reasoning=WRAPUP_REASONING)
+                               reasoning=WRAPUP_REASONING, **llm.brain_route())
         except Exception as e:  # noqa: BLE001
             info["warnings"].append(f"Clinic note writer failed ({type(e).__name__})")
             consult.log("error", f"note_llm attempt {i + 1} failed: {e}")
@@ -1356,7 +1360,8 @@ a clinic in Qatar. Patient language: {lang_name}.
    single dose amount for a schedule table ("1 capsule").
 2. "red_flags": each danger sign the clinician said should make the patient call 999 or come back, one per item,
    at most 6, as short plain English ("Your chest pain comes back.") plus a faithful translation.
-3. "advice": the clinician's other instructions (not medicines, not danger signs), at most 4, same format.
+3. "advice": the clinician's other instructions (not medicines, not danger signs), at most 4, same format. A
+   medicine the clinician stopped, withdrew or ruled out ("let's not use amoxicillin") is NOT advice.
 4. "follow_up": {{"en", "native"}}: when and where to come back, only if the clinician said it; else empty strings.
 Plain English for about a 6th-grade reader, imperative, at most 12 words, numerals. Do not use dashes (no em or en
 dashes); use commas, colons or full stops. Use ONLY the clinician's words; never add a danger sign or advice."""
@@ -1370,11 +1375,24 @@ def _skeleton(consult: Consultation, st: dict) -> tuple[dict, list[str]]:
     now = consult.now_min()
     lang = consult.patient_lang
     meds, excluded = [], []
+    # Rules the clinician explicitly overrode ("Speak it anyway"): the doctor decided; keep the drug on the sheet.
+    try:
+        overridden = {rid for c in (consult.cards.all_cards() if consult.cards else [])
+                      if c.get("status") == "overridden" for rid in (c.get("rule_ids") or [])}
+    except Exception:  # noqa: BLE001
+        overridden = set()
     for m in meds_in:
         others = [o for o in meds_in if o is not m]
         fired, note = safety_check(st, m, others, now)
         if note and note not in warnings:
             warnings.append(note)
+        # Only CRITICAL rules keep a drug off the patient's sheet (info/caution, e.g. "no cross-reactivity" or
+        # "allergies not asked", are for the doctor, not grounds to drop a prescribed medicine).
+        kept = [r for r in fired if r.get("severity") == "critical" and r.get("rule_id") in overridden]
+        if kept:
+            warnings.append(f"{m.get('drug')} kept on the patient's sheet: "
+                            f"{', '.join(sorted({r.get('rule_id') for r in kept}))} overridden by the clinician.")
+        fired = [r for r in fired if r.get("severity") == "critical" and r.get("rule_id") not in overridden]
         if fired:
             ids = [r.get("rule_id") or "?" for r in fired]
             msg = "; ".join(f"{r.get('rule_id')} ({r.get('severity')}): {r.get('message') or r.get('message_en') or ''}"
@@ -1440,6 +1458,67 @@ def _fallback_lines(consult: Consultation) -> dict:
     return {"red_flags": red[:6], "advice": adv[:4], "follow_up": fu}
 
 
+def _line_key(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(text or "").lower()).strip()
+
+
+def _drugs_named(text: str, extra: set[str]) -> set[str]:
+    """Generic names of the medicines a line names: known INNs/brands, plus the consultation's own drug names."""
+    found: set[str] = set()
+    try:
+        from .vocab import drugs_in_text
+        found |= {_norm_drug(d) for d in drugs_in_text(text)}
+    except Exception:  # noqa: BLE001
+        pass
+    low = str(text or "").lower()
+    for name in extra:
+        if name and re.search(rf"(?<![a-z]){re.escape(name.lower())}(?![a-z])", low):
+            found.add(_norm_drug(name))
+    return found
+
+
+def dedupe_plan_lines(plan: dict, st: dict) -> list[str]:
+    """Keeps every instruction in ONE section of the sheet (mutates the plan; returns what was dropped).
+    An "advice" line that names a medicine already covered by "medicines" or "avoid" (e.g. the doctor's withdrawal
+    "Let's not use amoxicillin." next to "Penicillin medicines, for example amoxicillin. You are allergic.") is
+    dropped: the medicine sections say it, in the checked template form. Advice and danger-sign lines that repeat a
+    line already on the sheet are dropped too."""
+    dropped: list[str] = []
+    names = {str(x.get("drug") or "") for k in ("prescribed_meds", "stopped_meds") for x in st.get(k, [])}
+    names |= {str(a.get("substance") or "") for a in st.get("allergies", [])}
+    names.discard("")
+    covered = {_norm_drug(m.get("drug") or m.get("name") or "") for m in plan.get("medicines", [])}
+    avoid_classes: set[str] = set()
+    for a in plan.get("avoid", []):
+        sub = str(a.get("substance") or "")
+        covered.add(_norm_drug(sub))
+        avoid_classes |= set(_classes(sub))
+        covered |= _drugs_named(a.get("en") or "", names)
+
+    def _is_covered(drug: str) -> bool:
+        return drug in covered or bool(set(_classes(drug)) & avoid_classes)
+
+    seen = {_line_key(a.get("en")) for a in plan.get("avoid", [])}
+    seen |= {_line_key(m.get(k)) for m in plan.get("medicines", []) for k in ("note_en", "title_en")}
+    fu = _line_key((plan.get("follow_up") or {}).get("en"))
+    for section in ("red_flags", "advice"):
+        keep = []
+        for line in plan.get(section, []):
+            key = _line_key(line.get("en"))
+            if not key or key in seen or key == fu:
+                dropped.append(f"{section}: {line.get('en')} (repeated)")
+                continue
+            if section == "advice":
+                named = _drugs_named(line.get("en") or "", names)
+                if named and all(_is_covered(d) for d in named):
+                    dropped.append(f"advice: {line.get('en')} (medicine already on the sheet)")
+                    continue
+            seen.add(key)
+            keep.append(line)
+        plan[section] = keep
+    return dropped
+
+
 def _pairs(items: Any, limit: int) -> list[dict]:
     out = []
     for it in items or []:
@@ -1503,7 +1582,7 @@ def build_care_plan(consult: Consultation) -> dict:
         payload = {"note": note} if note else {}
         payload.update({"translate": translate, "clinician_said": doctor_said})
         return llm.chat_json(system, json.dumps(payload, ensure_ascii=False, indent=1), schema=CARE_PLAN_SCHEMA,
-                             max_tokens=CARE_PLAN_MAX_TOKENS, reasoning=WRAPUP_REASONING)
+                             max_tokens=CARE_PLAN_MAX_TOKENS, reasoning=WRAPUP_REASONING, **llm.brain_route())
 
     def _translated(reply: dict) -> dict:
         got = {}
@@ -1573,6 +1652,12 @@ def build_care_plan(consult: Consultation) -> dict:
                              "native": dedash(str(fu.get("native") or "").strip())}
         if not plan["red_flags"]:
             plan["red_flags"] = _fallback_lines(consult)["red_flags"]
+    try:
+        dropped = dedupe_plan_lines(plan, st)
+        if dropped:
+            consult.log("tool", "care plan: dropped repeated line(s) → " + "; ".join(dropped)[:300])
+    except Exception as e:  # noqa: BLE001
+        consult.log("error", f"care plan dedupe failed: {e}")
     plan["warnings"] = warnings
     return plan
 
@@ -1608,8 +1693,6 @@ def check_care_plan(consult: Consultation, plan: dict) -> list[str]:
     if missing and plan.get("lang") != "en":
         issues.append(f"{missing} care-plan line(s) have no {plan.get('lang_name', plan.get('lang'))} translation; "
                       "they are shown in English.")
-    if not plan.get("red_flags"):
-        issues.append("No danger signs were stated by the doctor; the plan shows only the 999 number.")
     plan.setdefault("warnings", [])
     for i in issues:
         if i not in plan["warnings"]:
@@ -1808,7 +1891,8 @@ class _Ctx:
 
 
 def _run_agent(tools, task, consult, **kwargs) -> dict:
-    """agentkit.run_agent with the wrap-up model (Cerebras via agentkit, reasoning medium, 6000-token cap)."""
+    """agentkit.run_agent with the wrap-up model (the brain model via agentkit, reasoning medium for gpt-oss,
+    6000-token cap)."""
     from . import agentkit
 
     if not agentkit.available():
@@ -1816,7 +1900,9 @@ def _run_agent(tools, task, consult, **kwargs) -> dict:
     model = agentkit.make_model()
     if isinstance(getattr(model, "kwargs", None), dict):
         model.kwargs["max_tokens"] = WRAPUP_AGENT_MAX_TOKENS
-        model.kwargs["extra_body"] = {**(model.kwargs.get("extra_body") or {}), "reasoning_effort": WRAPUP_REASONING}
+        extra = llm.reasoning_body(agentkit.AGENT_MODEL, WRAPUP_REASONING)   # gpt-oss only
+        if extra:
+            model.kwargs["extra_body"] = {**(model.kwargs.get("extra_body") or {}), **extra}
     return agentkit.run_agent(tools, task, consult, model=model, label="wrap-up agent", **kwargs)
 
 

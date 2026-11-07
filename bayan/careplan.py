@@ -44,8 +44,8 @@ def download_button(pdf_url: str, lang: str) -> str:
     """A big "Download PDF" button: the patient's language first, English beneath."""
     native = DOWNLOAD.get(lang, "")
     d = " dir='rtl'" if lang in RTL_LANGS or lang == "ar" else ""
-    inner = (f"<span lang='{lang}'{d}>{_e(native)}</span><small>Download PDF</small>" if native else "Download PDF")
-    return f"<p><a class='btn' href='{_e(pdf_url)}' download='care_plan.pdf' type='application/pdf'>{inner}</a></p>"
+    inner = (f"<span lang='{lang}'{d}>{_e(native)}</span><small>Download PDF</small>" if native else "<span>Download PDF</span>")
+    return f"<a class='btn' href='{_e(pdf_url)}' download='care_plan.pdf' type='application/pdf'>{inner}</a>"
 PLANS: dict[str, dict] = {}
 FILES: dict[str, dict] = {}   # token -> {"dir": Path, "names": set, "blobs": {name: bytes}, "expires": float}
 _LOCK = threading.Lock()
@@ -252,27 +252,34 @@ def _e(x) -> str:
     return html.escape(str(x or ""))
 
 
+def _latin(text: str) -> str:
+    """Western digits everywhere, as on the PDF (doses must read the same on both)."""
+    import unicodedata
+    return "".join(str(unicodedata.digit(ch)) if ch.isdigit() and not ch.isascii() else ch for ch in str(text or ""))
+
+
 def _plan_html(plan: dict, pdf_url: str | None) -> str:
-    """The structured plan, native script first and English beneath (the patient PDF's content and wording)."""
+    """The structured plan, the patient's script first with the English beneath (the patient PDF's content)."""
     lang = plan.get("lang", "en")
     L, E = labels(lang), labels("en")
     nat = lang != "en"
     d = " dir='rtl'" if lang in RTL_LANGS else " dir='auto'"
+    t = lambda x: _e(_latin(x))  # noqa: E731
 
     def head(key: str, red: bool = False) -> str:
-        cls = " class='red'" if red else ""
-        if nat:
-            return f"<h2{cls} lang='{lang}'{d}>{_e(L[key])}</h2><p class='h2en'>{_e(E[key])}</p>"
-        return f"<h2{cls}>{_e(E[key])}</h2>"
+        cls = "h red" if red else "h"
+        if nat and L[key] != E[key]:
+            return f"<h2 class='{cls}'><span lang='{lang}'{d}>{t(L[key])}</span><small>{t(E[key])}</small></h2>"
+        return f"<h2 class='{cls}'><span>{t(E[key])}</span></h2>"
 
-    def pair(native: str, en: str, strong: bool = False) -> str:
-        tag = "p class='strong'" if strong else "p"
+    def line(native: str, en: str, strong: bool = False) -> str:
+        cls = " class='b'" if strong else ""
         if nat and native:
-            return f"<{tag} lang='{lang}'{d}>{_e(native)}</p>" + (f"<p class='en'>{_e(en)}</p>" if en else "")
-        return f"<{tag}>{_e(en)}</p>" if en else ""
+            return f"<p{cls} lang='{lang}'{d}>{t(native)}</p>" + (f"<p class='en'>{t(en)}</p>" if en else "")
+        return f"<p{cls}>{t(en)}</p>" if en else ""
 
     def items(rows: list[dict]) -> str:
-        return "<ul>" + "".join(f"<li>{pair(r.get('native', ''), r.get('en', ''))}</li>" for r in rows) + "</ul>"
+        return "<ul class='dots'>" + "".join(f"<li>{line(r.get('native', ''), r.get('en', ''))}</li>" for r in rows) + "</ul>"
 
     title = (plan.get("title_native") or L["title"]) if nat else E["title"]
     date = plan.get("date") or datetime.now().strftime("%Y-%m-%d")
@@ -281,48 +288,43 @@ def _plan_html(plan: dict, pdf_url: str | None) -> str:
     except ValueError:
         pass
     meta = " · ".join(x for x in (plan.get("clinic") or "", date) if x)
-    parts = [f"<h1 lang='{lang}'{d}>{_e(title)}</h1>" + (f"<p class='h1en'>{_e(E['title'])}</p>" if nat else ""),
-             f"<p class='muted meta'>{_e(meta)}</p>"]
+    parts = [f"<header class='title'><h1 lang='{lang}'{d}>{t(title)}</h1>"
+             + (f"<p class='sub'>{t(E['title'])}</p>" if nat and title != E["title"] else "")
+             + f"<p class='meta'>{t(meta)}</p></header>"]
+    if pdf_url:
+        parts.append(download_button(pdf_url, lang))
     meds = plan.get("medicines") or []
     if meds:
-        body = ""
-        for m in meds:
-            title_en = m.get("title_en") or m.get("name") or ""
-            body += "<div class='med'>" + pair(m.get("title_native") or "", title_en, strong=True)
-            body += pair(m.get("note_native") or "", m.get("note_en") or "") + "</div>"
-        parts.append(f"<section class='card'>{head('medicines')}{body}</section>")
+        body = "".join("<div class='med'>" + line(m.get("title_native") or "", m.get("title_en") or m.get("name") or "", True)
+                       + line(m.get("note_native") or "", m.get("note_en") or "") + "</div>" for m in meds)
+        parts.append(f"<section>{head('medicines')}{body}</section>")
     regular = [m for m in meds if not m.get("prn") and m.get("slots")]
     if regular and os.environ.get("BAYAN_PDF_SCHEDULE_TABLE", "on").strip().lower() not in ("0", "off", "false", "no"):
-        used = [sl for sl in SLOTS if any(sl in (m.get("slots") or []) for m in regular)]
-
-        def cell(native: str, en: str) -> str:
-            if nat and native:
-                return f"<span lang='{lang}'>{_e(native)}</span><small>{_e(en)}</small>"
-            return _e(en)
-        th = "".join(f"<th>{cell(L[sl], E[sl])}</th>" for sl in used)
+        # one row per time of day: "Breakfast — Paracetamol, 2 tablets" (reads on a phone; no wide grid)
         rows = ""
-        for m in regular:
-            amt = cell(m.get("dose_amount_native") or "", m.get("dose_amount_en") or "")
-            rows += (f"<tr><th scope='row'>{cell(m.get('name_native') or '', m.get('name') or '')}</th>"
-                     + "".join(f"<td>{amt if sl in (m.get('slots') or []) else ''}</td>" for sl in used) + "</tr>")
-        for m in [m for m in meds if m.get("prn")]:
-            en_line = ", ".join(x for x in (m.get("dose_amount_en") or "", E["prn"].lower()) if x)
-            nat_line = ", ".join(x for x in (m.get("dose_amount_native") or m.get("dose_amount_en") or "", L["prn"]) if x)
-            rows += (f"<tr><th scope='row'>{cell(m.get('name_native') or '', m.get('name') or '')}</th>"
-                     f"<td colspan='{len(used)}'>{cell(nat_line, en_line) if nat else _e(en_line[:1].upper() + en_line[1:])}</td></tr>")
-        parts.append(f"<section class='card'>{head('schedule')}<div class='tw'><table{d}><thead><tr>"
-                     f"<th>{cell(L['medicine'], E['medicine'])}</th>{th}</tr></thead><tbody>{rows}</tbody></table></div></section>")
+        for sl in [sl for sl in SLOTS if any(sl in (m.get("slots") or []) for m in regular)]:
+            label = (f"<span lang='{lang}'{d}>{t(L[sl])}</span><small>{t(E[sl])}</small>" if nat and L[sl] != E[sl]
+                     else f"<span>{t(E[sl])}</span>")
+            what = ""
+            for m in regular:
+                if sl in (m.get("slots") or []):
+                    nm = m.get("name_native") if nat and m.get("name_native") else (m.get("name") or "")
+                    amt = m.get("dose_amount_native") if nat and m.get("dose_amount_native") else (m.get("dose_amount_en") or "")
+                    what += (f"<p lang='{lang}'{d}>{t(nm)}" + (f"<span class='amt'>{t(amt)}</span>" if amt else "") + "</p>")
+            rows += f"<tr><th scope='row'>{label}</th><td>{what}</td></tr>"
+        parts.append(f"<section>{head('schedule')}<table class='sched'{d}><tbody>{rows}</tbody></table></section>")
     if plan.get("avoid"):
-        parts.append(f"<section class='card'>{head('avoid', red=True)}{items(plan['avoid'])}</section>")
+        parts.append(f"<section>{head('avoid', red=True)}{items(plan['avoid'])}</section>")
     other = list(plan.get("advice") or [])
     fu = plan.get("follow_up") or {}
     if fu.get("en") or fu.get("native"):
         other.append(fu)
     if other:
-        parts.append(f"<section class='card'>{head('other')}{items(other)}</section>")
-    parts.append(f"<section class='card'>{head('red_flags', red=True)}{items(plan.get('red_flags') or [])}</section>")
-    if pdf_url:
-        parts.append(download_button(pdf_url, lang))
+        parts.append(f"<section>{head('other')}{items(other)}</section>")
+    if plan.get("red_flags"):
+        parts.append(f"<section>{head('red_flags', red=True)}{items(plan['red_flags'])}</section>")
+    else:  # as on the PDF: one plain emergency line, never an empty "Call 999 if" heading
+        parts.append(f"<section>{head('emergency', red=True)}</section>")
     parts.append("<p class='foot'>From your visit today. This page is private and is deleted after 24 hours.</p>")
     return "".join(parts)
 
@@ -341,29 +343,53 @@ def page_html(pid: str) -> tuple[int, str]:
 
 
 def _text_sections(text: str, lang: str) -> str:
+    """Plain plan text -> sections. A line starting with "- " is an item; an indented line right after it is that
+    item's second line (the other language); any other line is a heading."""
     d = " dir='rtl'" if lang in RTL_LANGS or lang == "ar" else " dir='auto'"
-    out = []
-    for block in re.split(r"\n\s*\n", (text or "").strip()):
-        lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
-        if not lines:
+    out, items, heading = [], [], ""
+    red_keys = {lab[k].strip() for lab in (labels(lang), labels("en")) for k in ("avoid", "red_flags", "emergency")}
+
+    def flush():
+        nonlocal items, heading
+        if heading or items:
+            red = any(k and (k in heading or heading in k) for k in red_keys)
+            h = f"<h2 class='h{' red' if red else ''}'><span>{_e(_latin(heading))}</span></h2>" if heading else ""
+            en_cls = " class='en'"
+            lis = "".join("<li>" + "".join(f"<p{en_cls if k else ''}>{_e(_latin(x))}</p>" for k, x in enumerate(it))
+                          + "</li>" for it in items)
+            out.append(f"<section lang='{lang}'{d}>{h}" + (f"<ul class='dots'>{lis}</ul>" if lis else "") + "</section>")
+        items, heading = [], ""
+
+    for raw in (text or "").splitlines():
+        if not raw.strip():
             continue
-        items = "".join(f"<li>{_e(ln[2:].strip())}</li>" for ln in lines if ln.startswith(("- ", "• ", "* ")))
-        paras = "".join(f"<p>{_e(ln)}</p>" for ln in lines if not ln.startswith(("- ", "• ", "* ")))
-        out.append(f"<section lang='{lang}'{d}>{paras}{f'<ul>{items}</ul>' if items else ''}</section>")
+        st = raw.strip()
+        if st.startswith(("- ", "• ", "* ")):
+            items.append([st[2:].strip()])
+        elif raw[:1].isspace() and items:
+            items[-1].append(st)
+        else:
+            flush()
+            heading = st
+    flush()
     return "".join(out)
 
 
 def _text_html(rec: dict, pdf_url: str | None) -> str:
-    """A plan the doctor wrote or corrected: the patient's language first, then the doctor's own words."""
+    """A plan the doctor wrote or corrected: the patient's language first; the doctor's own words folded beneath."""
     lang, dl = rec["lang"], rec.get("doc_lang", "en")
-    L = labels(lang)
-    parts = [f"<h1 lang='{lang}'>{_e(L['title'])}</h1>"]
-    if rec.get("text_native") and lang != dl:
-        parts.append(_text_sections(rec["text_native"], lang))
-        parts.append(f"<p class='h1en'>{'العربية' if dl == 'ar' else 'English'}</p>")
-    parts.append(_text_sections(rec.get("text_doc") or "", dl))
+    L, E = labels(lang), labels("en")
+    d = " dir='rtl'" if lang in RTL_LANGS else " dir='auto'"
+    parts = [f"<header class='title'><h1 lang='{lang}'{d}>{_e(L['title'])}</h1>"
+             + (f"<p class='sub'>{_e(E['title'])}</p>" if L["title"] != E["title"] else "") + "</header>"]
     if pdf_url:
         parts.append(download_button(pdf_url, lang))
+    if rec.get("text_native") and lang != dl:
+        parts.append(_text_sections(rec["text_native"], lang))
+        parts.append(f"<details class='orig'><summary>{'العربية' if dl == 'ar' else 'English'}</summary>"
+                     f"{_text_sections(rec.get('text_doc') or '', dl)}</details>")
+    else:
+        parts.append(_text_sections(rec.get("text_doc") or "", dl))
     parts.append("<p class='foot'>From your visit today. This page is private and is deleted after 24 hours.</p>")
     return "".join(parts)
 

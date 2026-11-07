@@ -1,0 +1,546 @@
+{
+ "openai/gpt-oss-120b|cerebras": [
+  0.35,
+  0.75
+ ],
+ "openai/gpt-oss-120b|groq": [
+  0.15,
+  0.75
+ ],
+ "Qwen/Qwen3.8-27B|novita": [
+  0.42,
+  3.0
+ ],
+ "Qwen/Qwen3.8-27B|cerebras": [
+  0.99,
+  1.49
+ ],
+ "Qwen/Qwen3.8-27B|nscale": [
+  0.2,
+  2.5
+ ],
+ "Qwen/Qwen3.8-27B|ovhcloud": [
+  0.47,
+  3.19
+ ],
+ "Qwen/Qwen3.8-27B|deepinfra": [
+  0.2,
+  2.5
+ ],
+ "zai-org/GLM-5.3-Flash|novita": [
+  0.15,
+  0.5
+ ],
+ "zai-org/GLM-5.3-Flash|baseten": [
+  0.15,
+  0.5
+ ],
+ "zai-org/GLM-5.3-Flash|deepinfra": [
+  0.15,
+  0.5
+ ],
+ "meta-llama/Llama-3.1-8B-Instruct|novita": [
+  0.02,
+  0.05
+ ],
+ "meta-llama/Llama-3.1-8B-Instruct|deepinfra": [
+  0.02,
+  0.05
+ ],
+ "moonshotai/Kimi-K3|baseten": [
+  3.0,
+  15.0
+ ],
+ "moonshotai/Kimi-K3|deepinfra": [
+  2.8499999999999996,
+  14.25
+ ],
+ "google/gemma-4-31B-it|novita": [
+  0.14,
+  0.4
+ ],
+ "google/gemma-4-31B-it|deepinfra": [
+  0.2,
+  0.4
+ ],
+ "Qwen/Qwen3.5-9B|ovhcloud": [
+  0.12,
+  0.18
+ ],
+ "Qwen/Qwen3.5-9B|deepinfra": [
+  0.1,
+  0.15
+ ],
+ "zai-org/GLM-5.3|novita": [
+  1.4,
+  4.4
+ ],
+ "zai-org/GLM-5.3|nscale": [
+  1.4,
+  4.4
+ ],
+ "zai-org/GLM-5.3|baseten": [
+  1.4,
+  4.4
+ ],
+ "zai-org/GLM-5.3|deepinfra": [
+  0.9,
+  4.0
+ ],
+ "MiniMaxAI/MiniMax-M3.1-Flash|novita": [
+  0.15,
+  0.6
+ ],
+ "meta-models/Muse-Glimmer-30B|deepinfra": [
+  0.3,
+  1.2
+ ],
+ "Qwen/Qwen3.6-35B-A3B|deepinfra": [
+  0.1,
+  0.95
+ ],
+ "tencent/Hy4-preview|novita": [
+  0.834,
+  2.501
+ ],
+ "tencent/Hy4-preview|deepinfra": [
+  0.834,
+  2.5010000000000003
+ ],
+ "openai/gpt-oss-20b|groq": [
+  0.1,
+  0.5
+ ],
+ "openai/gpt-oss-20b|ovhcloud": [
+  0.05,
+  0.18
+ ],
+ "openai/gpt-oss-20b|deepinfra": [
+  0.030000000000000002,
+  0.14
+ ],
+ "meta-models/Muse-Spark-Open-816B-A42B|baseten": [
+  1.25,
+  4.25
+ ],
+ "XiaomiMiMo/MiMo-V2.6-Pro-RL|novita": [
+  0.435,
+  0.87
+ ],
+ "Qwen/Qwen3.8-2.4T-A95B|novita": [
+  2.0,
+  6.0
+ ],
+ "Qwen/Qwen3.8-2.4T-A95B|deepinfra": [
+  2.0,
+  5.999999999999999
+ ],
+ "reflection/Beam-1.0-501B-A23B|baseten": [
+  0.4,
+  1.2
+ ],
+ "google/gemma-4-26B-A4B-it|novita": [
+  0.13,
+  0.4
+ ],
+ "google/gemma-4-26B-A4B-it|deepinfra": [
+  0.07,
+  0.33999999999999997
+ ],
+ "openai/gpt-oss-120b|novita": [
+  0.05,
+  0.25
+ ],
+ "openai/gpt-oss-120b|baseten": [
+  0.1,
+  0.5
+ ],
+ "openai/gpt-oss-120b|ovhcloud": [
+  0.09,
+  0.47
+ ],
+ "openai/gpt-oss-120b|deepinfra": [
+  0.037,
+  0.16999999999999998
+ ],
+ "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4|baseten": [
+  0.2,
+  0.5
+ ],
+ "google/gemma-3-4b-it|deepinfra": [
+  0.05,
+  0.1
+ ],
+ "thinkingmachines/Inkling-Small|deepinfra": [
+  0.45,
+  1.2
+ ],
+ "ibm-granite/granite-4.2-3b|deepinfra": [
+  0.030000000000000002,
+  0.12000000000000001
+ ],
+ "XiaomiMiMo/MiMo-V2.6-Flash-RL|novita": [
+  0.14,
+  0.28
+ ],
+ "zai-org/GLM-5.2|novita": [
+  1.4,
+  4.4
+ ],
+ "zai-org/GLM-5.2|baseten": [
+  1.4,
+  4.4
+ ],
+ "zai-org/GLM-5.2|deepinfra": [
+  0.7499999999999999,
+  2.4
+ ],
+ "inclusionAI/Ling-3.1-flash|novita": [
+  0.3,
+  0.9
+ ],
+ "Qwen/Qwen3.8-Flash-Next-FP8|nscale": [
+  0.15,
+  0.47
+ ],
+ "Qwen/Qwen3.5-27B|novita": [
+  0.3,
+  2.4
+ ],
+ "Qwen/Qwen3.5-27B|deepinfra": [
+  0.26,
+  2.5999999999999996
+ ],
+ "meta-llama/Llama-3.3-70B-Instruct|novita": [
+  0.135,
+  0.4
+ ],
+ "meta-llama/Llama-3.3-70B-Instruct|ovhcloud": [
+  0.74,
+  0.74
+ ],
+ "Qwen/Qwen3.6-27B|ovhcloud": [
+  0.47,
+  3.19
+ ],
+ "Qwen/Qwen3.6-27B|deepinfra": [
+  0.32,
+  3.2
+ ],
+ "google/gemma-3-27b-it|deepinfra": [
+  0.08,
+  0.16
+ ],
+ "zai-org/GLM-4.7-Flash|novita": [
+  0.07,
+  0.4
+ ],
+ "zai-org/GLM-4.7-Flash|deepinfra": [
+  0.060000000000000005,
+  0.4
+ ],
+ "Qwen/Qwen3-30B-A3B|deepinfra": [
+  0.12000000000000001,
+  0.5
+ ],
+ "google/gemma-3-12b-it|deepinfra": [
+  0.05,
+  0.15
+ ],
+ "thinkingmachines/Inkling|deepinfra": [
+  0.95,
+  4.05
+ ],
+ "meta-llama/Llama-4-Scout-17B-16E-Instruct|novita": [
+  0.18,
+  0.59
+ ],
+ "meta-llama/Llama-4-Scout-17B-16E-Instruct|deepinfra": [
+  0.1,
+  0.3
+ ],
+ "swiss-ai/Apertus-v1.5-70B|publicai": [
+  0.82,
+  2.92
+ ],
+ "microsoft/phi-4|deepinfra": [
+  0.07,
+  0.14
+ ],
+ "Qwen/Qwen3.5-35B-A3B|novita": [
+  0.25,
+  2.0
+ ],
+ "Qwen/Qwen3.5-35B-A3B|deepinfra": [
+  0.14,
+  1.0
+ ],
+ "Qwen/Qwen3.5-122B-A10B|novita": [
+  0.4,
+  3.2
+ ],
+ "Qwen/Qwen3.5-122B-A10B|deepinfra": [
+  0.29,
+  2.4
+ ],
+ "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16|deepinfra": [
+  1.0,
+  5.0
+ ],
+ "moonshotai/Kimi-K2.7-Code|novita": [
+  0.95,
+  4.0
+ ],
+ "moonshotai/Kimi-K2.7-Code|deepinfra": [
+  0.6799999999999999,
+  3.4
+ ],
+ "ibm-granite/granite-4.2-8b|deepinfra": [
+  0.060000000000000005,
+  0.25
+ ],
+ "inclusionAI/Ling-3.0-flash-Fin|novita": [
+  0.075,
+  0.22
+ ],
+ "inclusionAI/Ling-3.0-flash-Fin|deepinfra": [
+  0.060000000000000005,
+  0.18
+ ],
+ "speakleash/Bielik-11B-v3.0-Instruct|publicai": [
+  0.4,
+  0.4
+ ],
+ "Qwen/Qwen2.5-72B-Instruct|deepinfra": [
+  0.36,
+  0.4
+ ],
+ "moonshotai/Kimi-K2.5|novita": [
+  0.6,
+  3.0
+ ],
+ "moonshotai/Kimi-K2.5|deepinfra": [
+  0.45,
+  2.25
+ ],
+ "meta-llama/Llama-Guard-4-12B|deepinfra": [
+  0.18,
+  0.18
+ ],
+ "Qwen/Qwen3-14B|deepinfra": [
+  0.12000000000000001,
+  0.24000000000000002
+ ],
+ "MiniMaxAI/MiniMax-M3|novita": [
+  0.3,
+  1.2
+ ],
+ "MiniMaxAI/MiniMax-M3|deepinfra": [
+  0.28,
+  1.1
+ ],
+ "Qwen/Qwen3-VL-235B-A22B-Instruct|deepinfra": [
+  0.2,
+  0.8799999999999999
+ ],
+ "Qwen/Qwen3.5-397B-A17B|novita": [
+  0.6,
+  3.6
+ ],
+ "Qwen/Qwen3.5-397B-A17B|ovhcloud": [
+  0.71,
+  4.25
+ ],
+ "Qwen/Qwen3.5-397B-A17B|deepinfra": [
+  0.45,
+  2.9999999999999996
+ ],
+ "aisingapore/Qwen-SEA-LION-v4.5-27B-IT|publicai": [
+  0.2,
+  0.4
+ ],
+ "Qwen/Qwen3-32B|deepinfra": [
+  0.08,
+  0.28
+ ],
+ "zai-org/GLM-4.6V-Flash|novita": [
+  0.3,
+  0.9
+ ],
+ "zai-org/AutoGLM-Phone-9B-Multilingual|novita": [
+  0.035,
+  0.138
+ ],
+ "moonshotai/Kimi-K2.6|novita": [
+  0.8,
+  3.4
+ ],
+ "moonshotai/Kimi-K2.6|deepinfra": [
+  0.7499999999999999,
+  3.5
+ ],
+ "inclusionAI/Ling-3.0-flash-VL|novita": [
+  0.075,
+  0.22
+ ],
+ "inclusionAI/Ling-3.0-flash-VL|deepinfra": [
+  0.060000000000000005,
+  0.18
+ ],
+ "swiss-ai/Apertus-8B-Instruct-2509|publicai": [
+  0.1,
+  0.2
+ ],
+ "zai-org/GLM-4.7|novita": [
+  0.6,
+  2.2
+ ],
+ "zai-org/GLM-4.7|deepinfra": [
+  0.4,
+  1.75
+ ],
+ "Sao10K/L3-8B-Stheno-v3.2|novita": [
+  0.05,
+  0.05
+ ],
+ "zai-org/GLM-5|novita": [
+  1.0,
+  3.2
+ ],
+ "zai-org/GLM-5|deepinfra": [
+  0.6,
+  2.08
+ ],
+ "moonshotai/Kimi-K2-Instruct|novita": [
+  0.57,
+  2.3
+ ],
+ "XiaomiMiMo/MiMo-V2.5-Pro|deepinfra": [
+  1.0,
+  2.9999999999999996
+ ],
+ "inclusionAI/Ling-3.0-flash|novita": [
+  0.06,
+  0.18
+ ],
+ "inclusionAI/Ling-3.0-flash|deepinfra": [
+  0.060000000000000005,
+  0.18
+ ],
+ "XiaomiMiMo/MiMo-V2.5|deepinfra": [
+  0.14,
+  0.28
+ ],
+ "ibm-granite/granite-4.2-30b|deepinfra": [
+  0.16,
+  0.6499999999999999
+ ],
+ "Qwen/Qwen2.5-VL-72B-Instruct|ovhcloud": [
+  1.01,
+  1.01
+ ],
+ "alpindale/WizardLM-2-8x22B|novita": [
+  0.62,
+  0.62
+ ],
+ "zai-org/GLM-4.5-Air|novita": [
+  0.13,
+  0.85
+ ],
+ "NousResearch/Hermes-3-Llama-3.1-70B|deepinfra": [
+  0.7,
+  0.7
+ ],
+ "aisingapore/Gemma-SEA-LION-v4-27B-IT|publicai": [
+  0.2,
+  0.4
+ ],
+ "swiss-ai/Apertus-70B-Instruct-2509|publicai": [
+  0.82,
+  2.92
+ ],
+ "MiniMaxAI/MiniMax-M1-80k|novita": [
+  0.55,
+  2.2
+ ],
+ "zai-org/GLM-4.6|novita": [
+  0.55,
+  2.2
+ ],
+ "zai-org/GLM-4.6|deepinfra": [
+  0.5,
+  2.0
+ ],
+ "Qwen/Qwen3-235B-A22B-Instruct-2507|deepinfra": [
+  0.09,
+  0.55
+ ],
+ "aisingapore/Qwen-SEA-LION-v4-32B-IT|publicai": [
+  0.25,
+  0.5
+ ],
+ "moonshotai/Kimi-K2-Instruct-0905|novita": [
+  0.6,
+  2.5
+ ],
+ "Qwen/Qwen3-235B-A22B-Thinking-2507|deepinfra": [
+  0.22999999999999998,
+  2.3
+ ],
+ "BSC-LT/ALIA-40b-instruct-2606|publicai": [
+  0.3,
+  0.6
+ ],
+ "MiniMaxAI/MiniMax-M2.5|novita": [
+  0.3,
+  1.2
+ ],
+ "zai-org/GLM-5.1|deepinfra": [
+  1.05,
+  3.5
+ ],
+ "aisingapore/Nemotron-SEA-LION-v4.8-120B-A12B|publicai": [
+  0.5,
+  2.0
+ ],
+ "MiniMaxAI/MiniMax-M2.7|novita": [
+  0.3,
+  1.2
+ ],
+ "MiniMaxAI/MiniMax-M2.7|deepinfra": [
+  0.25,
+  1.0
+ ],
+ "Qwen/Qwen3-Next-80B-A3B-Instruct|deepinfra": [
+  0.09,
+  1.1
+ ],
+ "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8|novita": [
+  0.27,
+  0.85
+ ],
+ "zai-org/GLM-4.5V|novita": [
+  0.6,
+  1.8
+ ],
+ "stepfun-ai/Step-3.5-Flash|deepinfra": [
+  0.1,
+  0.3
+ ],
+ "tencent/Hy3|deepinfra": [
+  0.13,
+  0.53
+ ],
+ "Qwen/Qwen3-VL-30B-A3B-Instruct|novita": [
+  0.2,
+  0.7
+ ],
+ "Qwen/Qwen3-VL-30B-A3B-Instruct|deepinfra": [
+  0.15,
+  0.6
+ ],
+ "stepfun-ai/Step-3.7-Flash|deepinfra": [
+  0.2,
+  1.15
+ ]
+}

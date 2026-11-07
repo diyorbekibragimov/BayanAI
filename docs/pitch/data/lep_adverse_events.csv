@@ -1,0 +1,4 @@
+metric,lep_patients_pct,english_speakers_pct,source,year,confidence,note
+adverse events causing physical harm,49.1,29.5,https://doi.org/10.1093/intqhc/mzl069,2007,high,"Divi et al., 6 Joint Commission hospitals, 2005 data, pilot"
+harmful events: moderate temporary harm to death,46.8,24.4,https://doi.org/10.1093/intqhc/mzl069,2007,high,
+adverse events caused by communication errors,52.4,35.9,https://doi.org/10.1093/intqhc/mzl069,2007,high,

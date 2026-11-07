@@ -979,3 +979,26 @@ def test_no_pseudonymous_or_machine_wording():
     for t in texts:
         assert "pseudonymous" not in t and "(machine)" not in t and "clinician-supervised" not in t
     assert "Bayan AI" in texts[2] and f"P-{str(c.id)[:6].upper()}" in texts[2]
+
+
+def test_care_plan_withdrawal_is_not_repeated_as_advice():
+    # demo bug: "Let's not use amoxicillin." under "Other instructions" as well as under "Do not take"
+    st = {"allergies": [{"substance": "penicillin", "class": ["penicillin"]}],
+          "stopped_meds": [{"drug": "amoxicillin"}],
+          "prescribed_meds": [{"drug": "azithromycin"}, {"drug": "paracetamol"}]}
+    plan = {"medicines": [{"drug": "azithromycin", "name": "Azithromycin", "note_en": "Take 1 tablet once a day."}],
+            "avoid": [{"substance": "penicillin", "en": "Penicillin medicines, for example amoxicillin. You are "
+                                                       "allergic."}],
+            "red_flags": [{"en": "Your lips or face swell.", "native": ""},
+                          {"en": "Your lips or face swell.", "native": ""}],
+            "advice": [{"en": "Let's not use amoxicillin.", "native": ""},
+                       {"en": "Do not take Augmentin.", "native": ""},
+                       {"en": "Take azithromycin after food.", "native": ""},
+                       {"en": "Drink plenty of water.", "native": ""},
+                       {"en": "Drink plenty of water!", "native": ""},
+                       {"en": "Avoid ibuprofen for now.", "native": ""}],
+            "follow_up": {"en": "Come back in 3 days.", "native": ""}}
+    dropped = wrapup.dedupe_plan_lines(plan, st)
+    assert [a["en"] for a in plan["advice"]] == ["Drink plenty of water.", "Avoid ibuprofen for now."]
+    assert [r["en"] for r in plan["red_flags"]] == ["Your lips or face swell."]
+    assert len(dropped) == 5

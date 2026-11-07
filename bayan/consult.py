@@ -15,6 +15,7 @@ structured care plan, PDFs) that bayan.careplan serves to the patient.
 from __future__ import annotations
 
 import html
+import itertools
 import json
 import os
 import re
@@ -22,6 +23,7 @@ import secrets
 import threading
 import time
 import uuid
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -58,8 +60,11 @@ LANGS = {
 }
 CHARS_PER_SEC = {"ne": 11.0, "hi": 12.0, "ur": 12.0, "bn": 12.0, "ml": 10.0, "tl": 13.0, "ta": 10.0, "sw": 13.0,
                  "en": 14.0, "ar": 12.0, **{code: v["cps"] for code, v in MORE.items()}}
-SLOW_DESCRIPTION = ("A female speaker speaks very slowly and calmly, pausing a little between words, with a very "
-                    "clear voice. The recording is very clear with no background noise.")
+# "Slower" replays the cached clip at this rate in the browser (pitch preserved) with longer sentence gaps; the worker's
+# TTS ignored the old "speak slowly" voice description (Indic Parler pace did not change), so nothing is re-synthesised.
+SLOW_RATE = 0.8
+SLOW_GAP_EXTRA_S = 0.35   # extra silence (playback time) at each sentence gap
+SLOW_GAP_MIN_S = 0.4      # a sentence gap: a run of (near) zeros at least this long
 
 # Bayan does not store audio: consent is to processing only (other languages are translated from CONSENT_EN at
 # runtime and cached in memory per process; the spoken audio is synthesised fresh each visit, never cached).
@@ -98,7 +103,9 @@ def garbled(text: str) -> bool:
     import zlib
     if not text:
         return False
-    raw = text.encode("utf-8")
+    # One byte per character, not UTF-8: non-Latin scripts share 2-byte UTF-8 prefixes, which made long, correct
+    # Georgian/Devanagari sentences look "compressible" (see voice_worker _degenerate). Real loops still score > 3.
+    raw = bytes(ord(c) & 0xFF for c in text)
     return len(raw) / max(1, len(zlib.compress(raw))) > 2.4 or bool(_LOOP_RE.search(text))
 
 
@@ -114,10 +121,11 @@ def consent_text(lang: str) -> str:
         if lang in _CONSENT:
             return _CONSENT[lang]
     out = talk.translate(CONSENT_EN, "doctor", "en", lang).get("translation", "").strip()
-    if out:
+    if out and speakable(out, lang, CONSENT_EN):
         with _CONSENT_LOCK:
             _CONSENT[lang] = out
-    return out or CONSENT_EN
+        return out
+    return CONSENT_EN   # shown to the doctor; queue_speech never says it in the patient's voice
 
 
 @dataclass
@@ -127,13 +135,20 @@ class Speech:
     to: str = "patient"          # patient | doctor
     caption: bool = True         # caption mode while speaking (patient-facing doctor speech)
     en: str = ""                 # English shown under the caption
-    slow: bool = False
+    slow: bool = False           # "Slower": the browser replays the clip at SLOW_RATE (no new synthesis)
     kind: str = "turn"           # turn | consent | ask | override | again
+    cid: str = ""                # the consultation it belongs to (stamped by queue_speech); speak_clip refuses others
+
+
+def _cid() -> str:
+    return uuid.uuid4().hex[:12]
 
 
 @dataclass
 class Consult:
     sid: str
+    cid: str = field(default_factory=_cid)  # this consultation (a reset is a new Consult, so a new cid); every audio
+                                            # payload carries it and the page plays only the current one's
     lang: str = "ne"
     doc_lang: str = "en"         # doctor's language, chosen on the start screen: en | ar (UI follows it)
     next_speaker: str = "doctor" # whose turn it is; flips after each completed turn (the page can override)
@@ -180,6 +195,7 @@ class Consult:
     auto_end: int = 0
     stop_mic: int = 0
     seq: int = 0
+    hearing: bool = False        # a recording is being heard / translated (one turn at a time)
     touched: float = field(default_factory=time.time)
     lock: threading.RLock = field(default_factory=threading.RLock)
 
@@ -208,9 +224,19 @@ def find(args) -> Consult | None:
     return None
 
 
+def alive(s: Consult) -> bool:
+    """This Consult is still the tab's current consultation (not reset by Home / No / new, not collected)."""
+    return SESS.get(s.sid) is s
+
+
 def reset(sess: Consult) -> Consult:
-    fresh = Consult(sid=sess.sid, lang=sess.lang, doc_lang=sess.doc_lang, seq=sess.seq + 1)
+    """Drop the visit: a fresh Consult (new cid) replaces it. Everything still running for the old one (talk loop,
+    speech, demo) sees alive() turn False and stops; its queued speech is cleared so nothing of it is ever said."""
+    fresh = Consult(sid=sess.sid, lang=sess.lang, doc_lang=sess.doc_lang)
     SESS[sess.sid] = fresh
+    with sess.lock:
+        sess.pending.clear()
+        sess.last_speech = None
     erase(sess)
     return fresh
 
@@ -270,6 +296,7 @@ def erase(sess: Consult) -> None:
     """Privacy: drop the session's doctor-side files and its brain consultation (state, transcript, cards, PDFs).
     An approved care plan stays with its /plan/<id> page (in memory, 24 h) for the patient."""
     careplan.forget_files(sess.file_tokens)
+    drop_clips(sess.cid)
     _purge_brain(sess.brain)
 
 
@@ -293,6 +320,8 @@ def status(s: Consult) -> list:
         return [T("st_speaking_you"), doc_name, BLUE]
     if s.speaking:
         return [T("st_speaking_patient"), name, GREEN]
+    if s.pending and s.live in ("doctor", "patient"):  # translated, voice not started yet
+        return [T("st_translating"), "", INK]
     return [T("st_tap"), T("st_or", a=doc_name, b=name), INK]
 
 
@@ -321,8 +350,11 @@ def refresh(s: Consult) -> list:
         return s.suggestions
 
 
+_SEQ = itertools.count(1)  # view order across every Consult of the process: a reset never restarts it
+
+
 def view(s: Consult) -> dict:
-    s.seq += 1
+    s.seq = next(_SEQ)
     _sync_cards(s)
     st = status(s)
     err = ui.t(s.doc_lang, s.error) if s.error else ""
@@ -345,13 +377,13 @@ def view(s: Consult) -> dict:
             pv["note"] = out[k]
     s.loc_seen = _LOC_VERSION[0]
     v = {
-        "seq": s.seq, "screen": s.screen, "live": s.live, "tint": s.tint, "lang": s.lang,
+        "seq": s.seq, "cid": s.cid, "screen": s.screen, "live": s.live, "tint": s.tint, "lang": s.lang,
         "langName": LANGS.get(s.lang, {}).get("name", s.lang),
         "elapsed": round(time.time() - s.started_at, 1) if s.started_at else 0,
         "docLang": s.doc_lang, "settle": s.settling, "ack": s.audio_ack, "turn": s.next_speaker,
         "turnSeq": s.turn_seq,
         "confirm": ({"detected": s.confirm["detected"], "selected": s.confirm["selected"]} if s.confirm else None),
-        "speak": s.speaking, "processing": s.processing, "status": st, "demo": s.demo, "notice": s.notice,
+        "speak": s.speaking, "processing": s.processing, "queued": bool(s.pending), "status": st, "demo": s.demo, "notice": s.notice,
         "consent": {"native": s.consent_native, "en": CONSENT_EN},
         "doctor": s.doctor_view, "patient": pv, "caption": s.caption, "held": s.held,
         "notes": s.notes + card_notes,
@@ -366,9 +398,14 @@ def view(s: Consult) -> dict:
 
 
 def render(s: Consult) -> str:
+    """The stage view of the tab's CURRENT consultation. A generator still running for a dropped visit (Home, No,
+    new consultation) renders the fresh one, never its own stale state."""
+    cur = SESS.get(s.sid)
+    if cur is not None:
+        s = cur
     with s.lock:
         data = json.dumps(view(s), ensure_ascii=False)
-    return fill(_STATE, data=html.escape(data, quote=True))
+    return fill(_STATE, data=html.escape(data, quote=True), cid=s.cid)
 
 
 def poll_render(s: Consult | None) -> str | None:
@@ -400,6 +437,66 @@ def wait(s: Consult, seconds: float):
 def notify(s: Consult, key: str):
     """One-off toast on the stage (shown once per id), in the doctor's language."""
     s.notice = {"id": s.notice["id"] + 1, "text": ui.t(s.doc_lang, key)}
+
+
+# ------------------------------------------------------------------ who hears what (one rule for every speak path)
+# Bayan only ever says the current consultation's utterance, in the listener's language. Anything else (an English
+# fallback, a translation that came back in another language, an echo of the source) is shown, never spoken.
+_SCRIPT_RANGES = {
+    "deva": "\u0900-\u097F\uA8E0-\uA8FF", "arab": "\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF",
+    "beng": "\u0980-\u09FF", "mlym": "\u0D00-\u0D7F", "taml": "\u0B80-\u0BFF", "telu": "\u0C00-\u0C7F",
+    "geor": "\u10A0-\u10FF\u1C90-\u1CBF\u2D00-\u2D2F", "hang": "\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F",
+    "jpan": "\u3040-\u30FF\u31F0-\u31FF\u3400-\u4DBF\u4E00-\u9FFF\uFF66-\uFF9F",
+    "grek": "\u0370-\u03FF\u1F00-\u1FFF", "cyrl": "\u0400-\u052F",
+    "latn": "A-Za-z\u00C0-\u024F\u1E00-\u1EFF",
+}
+_SCRIPT_RE = {k: re.compile(f"[{v}]") for k, v in _SCRIPT_RANGES.items()}
+LANG_SCRIPT = {"ne": "deva", "hi": "deva", "ur": "arab", "ar": "arab", "bn": "beng", "ml": "mlym", "ta": "taml",
+               "te": "telu", "ka": "geor", "ko": "hang", "ja": "jpan", "el": "grek", "ru": "cyrl", "uk": "cyrl",
+               "bg": "cyrl"}  # everything else (en, tl, sw, id, es, fr, ...) is Latin
+
+
+def listener_lang(s: Consult, to: str) -> str:
+    """The language the listener hears in THIS consultation: the patient's (s.lang) or the doctor's (s.doc_lang)."""
+    return s.lang if to == "patient" else s.doc_lang
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"[\W_]+", " ", (text or "").lower()).strip()
+
+
+def speakable(text: str, lang: str, source: str = "") -> bool:
+    """Is `text` really in `lang`? At least a third of its letters (vowel signs included) in the language's script, so
+    a drug name or "ECG" in Latin inside a Nepali sentence is fine but an untranslated English sentence is not; and not an
+    echo of the source sentence. Same-script languages (tl/sw/id/en...) cannot be told apart by script; the echo check
+    catches the common failure there."""
+    import unicodedata
+    letters = [c for c in text or "" if c.isalpha() or unicodedata.category(c).startswith("M")]
+    if not letters:
+        return False
+    rx = _SCRIPT_RE[LANG_SCRIPT.get(lang, "latn")]
+    if sum(1 for c in letters if rx.match(c)) * 3 < len(letters):
+        return False
+    src = _norm(source)
+    return not (src and len(src.split()) >= 3 and _norm(text) == src)
+
+
+def queue_speech(s: Consult, sp: Speech, source: str = "") -> bool:
+    """Queue one utterance for the voice, stamped with this consultation. Refused (False; the text stays on screen)
+    when it is not in the listener's language of this consultation."""
+    want = listener_lang(s, sp.to)
+    if sp.lang != want or not speakable(sp.text, sp.lang, source):
+        print(f"[speak] not queued: to={sp.to} lang={sp.lang} want={want} kind={sp.kind} text={sp.text[:60]!r}", flush=True)
+        return False
+    sp.cid = s.cid
+    with s.lock:
+        s.pending.append(sp)
+    return True
+
+
+def _may_speak(s: Consult, sp: Speech) -> bool:
+    return (alive(s) and s.screen in ("consent", "live") and bool(sp.cid) and sp.cid == s.cid
+            and sp.lang == listener_lang(s, sp.to))
 
 
 # App-generated English (notes, held headline, idiom notes, suggestions) -> the doctor's language.
@@ -479,7 +576,7 @@ def _held_payload(s: Consult, hits: list[dict], drugs: list[dict], english: str,
     from .brain.vocab import classes_of
     h = hits[0]
     key = str(h.get("key") or "")
-    drug = key.split("|", 1)[1] if "|" in key else next(
+    drug = key.split("|")[1] if "|" in key else next(
         (d["name"] for d in drugs if d.get("intent") == "prescribe"), "this medicine")
     head, pq, allergies = "", "", []
     if h.get("family") == "drug_allergy" or str(h.get("rule_id", "")).startswith("ALG-"):
@@ -559,6 +656,13 @@ def _hear(s: Consult, sr: int, arr: np.ndarray, role: str = "") -> dict | None:
     return heard
 
 
+MISMATCH_CONFIDENCE = 0.9  # the worker's language ID must be this sure before Bayan questions the doctor's choice
+# ...and the clip long enough: on 1-2 s answers ("হ্যাঁ, গতকাল থেকে", "نعم، منذ أمس") VoxLingua107 was ~0.95 sure of the
+# WRONG side (2 of 48 live calls). Short clips need near-certainty before the confirm prompt interrupts the doctor.
+MISMATCH_MIN_SECONDS, MISMATCH_SHORT_CONFIDENCE = 2.0, 0.99
+ROLES = ("doctor", "patient")
+
+
 def _confidence(s: Consult, heard: dict, role: str) -> float:
     lid = heard.get("lid") or {}
     if role == "patient":
@@ -569,15 +673,24 @@ def _confidence(s: Consult, heard: dict, role: str) -> float:
 def process_audio(s: Consult, sr: int, arr: np.ndarray, speaker: str = ""):
     """One tapped recording. `speaker` is whose turn the doctor selected; the worker transcribes with that
     role forced. Its own language ID is only a safety check: a confident disagreement asks the doctor first."""
-    speaker = speaker if speaker in ("doctor", "patient") else ""
+    speaker = speaker if speaker in ROLES else ""
     heard = _hear(s, sr, arr, speaker)
-    if heard is None:
+    if heard is None or not alive(s):   # nothing usable, or the visit was dropped while the worker listened
         yield UI
         return
-    role = heard.get("role", "patient")
+    role = heard.get("role")
     detected = heard.get("detected_role") or role
+    if role not in ROLES or (not speaker and detected not in ROLES):
+        # No role at all (old worker, odd reply): never guess a direction. Say it again.
+        print(f"[hear] no usable role: role={role!r} detected={detected!r} speaker={speaker!r}", flush=True)
+        notify(s, NOT_CAUGHT)
+        yield UI
+        return
     if speaker:
-        if detected != speaker and _confidence(s, heard, detected) >= 0.9:
+        conf = _confidence(s, heard, detected) if detected in ROLES else 0.0
+        short = float(heard.get("audio_seconds") or 0.0) < MISMATCH_MIN_SECONDS
+        if detected in ROLES and detected != speaker and conf >= (MISMATCH_SHORT_CONFIDENCE if short
+                                                                     else MISMATCH_CONFIDENCE):
             with s.lock:
                 s.confirm = {"selected": speaker, "detected": detected, "forced": bool(heard.get("role_forced")),
                              "engine_role": role, "text": heard["text"], "lang": heard.get("lang")}
@@ -586,7 +699,13 @@ def process_audio(s: Consult, sr: int, arr: np.ndarray, speaker: str = ""):
             print(f"[hear] speaker mismatch: selected={speaker} detected={detected} lid={heard.get('lid')}", flush=True)
             yield UI
             return
-        role = speaker
+        if role != speaker:
+            # The worker did not transcribe with the chosen role forced (its text is in the other side's language):
+            # translating it in the chosen direction would say the wrong thing. Ask for it again instead.
+            print(f"[hear] role not forced: selected={speaker} engine={role}", flush=True)
+            notify(s, NOT_CAUGHT)
+            yield UI
+            return
     src = heard.get("lang") or ("en" if role == "doctor" else s.lang)
     if role == "doctor" and src not in ("en", "ar"):
         src = s.doc_lang
@@ -605,12 +724,21 @@ def resolve_confirm(s: Consult, take_detected: bool):
         yield UI
         return
     role = c["detected"] if take_detected else c["selected"]
+    if role not in ROLES:
+        s.processing = False
+        yield UI
+        return
     yield UI
     if role == c["engine_role"]:
         text, src = c["text"], c["lang"]
     else:
         heard = _hear(s, pcm[0], pcm[1], role)
-        if heard is None:
+        if heard is None or not alive(s):
+            yield UI
+            return
+        if heard.get("role") != role:   # the worker did not honour the forced role: never translate the wrong way
+            notify(s, NOT_CAUGHT)
+            s.processing = False
             yield UI
             return
         text, src = heard["text"], heard.get("lang")
@@ -626,6 +754,9 @@ def _cap(x: str) -> str:
 def process_text(s: Consult, role: str, text: str, src: str | None = None):
     """Translate one utterance, update the stage, and queue what Bayan should say.
     The doctor sees everything in their own language (s.doc_lang); the patient hears theirs (s.lang)."""
+    if role not in ROLES or not alive(s):
+        yield UI
+        return
     s.error = ""
     if not text.strip() or garbled(text):  # safety net: nothing degenerate reaches the translator or the screen
         notify(s, NOT_CAUGHT)
@@ -651,6 +782,8 @@ def process_text(s: Consult, role: str, text: str, src: str | None = None):
             print(f"[translate] {type(e).__name__}: {e}", flush=True)
             s.error, s.doctor_view["pending"] = "err_translate", False
             yield UI
+            return
+        if not alive(s):  # the visit was dropped while translating: nothing of it is recorded or said
             return
         english = text if src == "en" else (tr.get("english") or text)
         turn = s.brain.add_turn("doctor", src, text, english=english, translation=tr["translation"])
@@ -684,12 +817,14 @@ def process_text(s: Consult, role: str, text: str, src: str | None = None):
                 s.held = reason
                 s.live, s.tint = "held", "h"
             else:
+                # Queued before the stage sees the new turn: the page keeps the turn switch until this is spoken.
+                if tr["translation"].strip() and not queue_speech(
+                        s, Speech(tr["translation"], s.lang, "patient", True, text, kind="turn"), source=text):
+                    notify(s, "voice_unavailable")   # not in the patient's language: shown, never spoken
                 set_turn(s, "patient")
         yield UI
         if not reason:
             brain.on_turn(s.brain, turn)  # a held sentence waits for the doctor's choice
-            if tr["translation"].strip():
-                s.pending.append(Speech(tr["translation"], s.lang, "patient", True, text, kind="turn"))
         return
 
     # patient
@@ -716,6 +851,8 @@ def process_text(s: Consult, role: str, text: str, src: str | None = None):
         s.error, s.patient_view["pending"] = "err_translate", False
         yield UI
         return
+    if not alive(s):
+        return
     shown_text = (tr.get("translation") or tr.get("english") or "").strip()  # in the doctor's language
     english = (tr.get("english") or shown_text).strip()                      # the record, rules and care plan
     turn = s.brain.add_turn("patient", s.lang, text, english=english, translation=english)
@@ -730,11 +867,14 @@ def process_text(s: Consult, role: str, text: str, src: str | None = None):
         for txt in shown:
             add_note(s, "allergy", txt)
         s.patient_view = {"native": text, "en": shown_text, "idiom": None, "note": "", "pending": False, "utt": turn.id}
+        # The doctor hears the patient's words in their own language (worker voice; text stays on screen). Only the
+        # translation itself: an English rendering is never read out in an Arabic voice, nor an echo of the patient.
+        said = (tr.get("translation") or "").strip() or (english if s.doc_lang == "en" else "")
+        if said:
+            queue_speech(s, Speech(said, s.doc_lang, "doctor", False, shown_text, kind="turn"), source=text)
         set_turn(s, "doctor")
     brain.on_turn(s.brain, turn)
     yield UI
-    if shown_text:  # the doctor hears the patient's words in their own language (worker voice; text stays on screen)
-        s.pending.append(Speech(shown_text, s.doc_lang, "doctor", False, shown_text, kind="turn"))
 
 
 # ------------------------------------------------------------------ actions
@@ -762,7 +902,8 @@ def ask_suggestion(s: Consult, sug_id: str) -> bool:
         shown_q = loc(s, [q])[0]
         s.doctor_view = {"en": shown_q, "native": tr["translation"], "pending": False}
         s.live, s.tint, s.held = "doctor", "d", None
-        s.pending.append(Speech(tr["translation"], s.lang, "patient", True, shown_q, kind="ask"))
+        if not queue_speech(s, Speech(tr["translation"], s.lang, "patient", True, shown_q, kind="ask"), source=q):
+            notify(s, "voice_unavailable")
         set_turn(s, "patient")
     brain.on_turn(s.brain, turn)
     return True
@@ -789,15 +930,17 @@ def held_anyway(s: Consult):
         add_note(s, "override", loc(s, [f"{_cap(h['drug'])} spoken anyway"])[0])
         print(f"[audit] override {h['rule']} sid={s.sid[:6]} drug={h['drug']}", flush=True)
         s.live, s.tint = "doctor", "d"
-        s.pending.append(Speech(h["translation"], s.lang, "patient", True, h["dq"], kind="override"))
+        if not queue_speech(s, Speech(h["translation"], s.lang, "patient", True, h["dq"], kind="override"), source=h["dq"]):
+            notify(s, "voice_unavailable")
         set_turn(s, "patient")
 
 
 def again(s: Consult, slow: bool):
+    """Say it again / Slower: the last thing said to the patient in THIS consultation (the clip comes from the cache;
+    Slower is the same clip replayed slower by the page)."""
     sp = s.last_speech
-    if sp and sp.to == "patient":
-        with s.lock:
-            s.pending.append(Speech(sp.text, sp.lang, "patient", sp.caption, sp.en, slow=slow, kind="again"))
+    if sp and sp.to == "patient" and sp.cid == s.cid:
+        queue_speech(s, Speech(sp.text, sp.lang, "patient", sp.caption, sp.en, slow=slow, kind="again"))
 
 
 def pop_pending(s: Consult) -> Speech | None:
@@ -832,16 +975,61 @@ def _end_speech(s: Consult, sp: Speech):
 
 
 # ------------------------------------------------------------------ speech out (streamed to the page)
-_CLIPS: "OrderedDict[tuple, tuple]" = None  # (text, lang, slow) -> (sr, int16): consent and repeats play instantly
+# Finished worker clips, so consent and "Say it again" / "Slower" play at once without a GPU call. Key:
+# (scope, text, lang, voice): scope is the consultation id (a visit's sentences are never served to another visit, and
+# erase() drops them) or "consent" for the fixed consent lines; voice = worker URL + voice version + failure epoch.
+# Never cached: a clip that failed or was cut off, one too short or silent for its text, mixed sample rates, or one
+# that was streaming when the worker failed (a failure clears the cache and bumps the epoch).
+CLIP_MAX = 48
+CLIP_MAX_BYTES = 24 << 20
+CLIP_TTL_S = 1800.0
+CLIP_MIN_S = 0.3
+_CLIPS: "OrderedDict[tuple, tuple]" = OrderedDict()   # key -> (sr, int16, stored_at)
 _CLIPS_LOCK = threading.Lock()
+_VOICE_EPOCH = [0]
 
 
-def _clip_cache():
-    global _CLIPS
-    if _CLIPS is None:
-        from collections import OrderedDict
-        _CLIPS = OrderedDict()
-    return _CLIPS
+def _voice_id() -> tuple:
+    return (talk.WORKER_URL, os.environ.get("BAYAN_VOICE_VERSION", ""), _VOICE_EPOCH[0])
+
+
+def voice_failed() -> None:
+    """The worker failed (down, rebooting, cut a stream): nothing synthesised before now is trusted any more."""
+    with _CLIPS_LOCK:
+        _VOICE_EPOCH[0] += 1
+        _CLIPS.clear()
+
+
+def drop_clips(scope: str) -> None:
+    with _CLIPS_LOCK:
+        for k in [k for k in _CLIPS if k[0] == scope]:
+            del _CLIPS[k]
+
+
+def _clip_get(key: tuple):
+    with _CLIPS_LOCK:
+        hit = _CLIPS.get(key)
+        if hit and time.time() - hit[2] > CLIP_TTL_S:
+            del _CLIPS[key]
+            return None
+        if hit:
+            _CLIPS.move_to_end(key)
+        return hit
+
+
+def _clip_put(key: tuple, sr: int, pcm: np.ndarray, text: str, lang: str) -> bool:
+    if pcm.size / sr < max(CLIP_MIN_S, 0.25 * _est_seconds(text, lang, False)):
+        return False                                   # far too short for the text: a cut or garbage clip
+    if int(np.abs(pcm.astype(np.int32)).max()) < 300:
+        return False                                   # silence
+    with _CLIPS_LOCK:
+        if key[3] != _voice_id():
+            return False                               # the worker failed while this clip was streaming
+        _CLIPS[key] = (sr, pcm, time.time())
+        _CLIPS.move_to_end(key)
+        while len(_CLIPS) > CLIP_MAX or sum(v[1].nbytes for v in _CLIPS.values()) > CLIP_MAX_BYTES:
+            _CLIPS.popitem(last=False)
+    return True
 
 
 def _to_i16(f32) -> np.ndarray:
@@ -856,71 +1044,115 @@ def _half_rate(sr: int, pcm: np.ndarray) -> tuple[int, np.ndarray]:
     return sr // 2, ((pcm[:n:2].astype(np.int32) + pcm[1:n:2].astype(np.int32)) // 2).astype(np.int16)
 
 
-def voice_chunks(text: str, lang: str, slow: bool = False):
-    """(sr, int16) chunks as the voice worker produces them; cached once complete."""
-    key = (text, lang, slow)
-    with _CLIPS_LOCK:
-        hit = _clip_cache().get(key)
+def voice_chunks(text: str, lang: str, scope: str):
+    """(sr, int16) chunks as the voice worker produces them; cached (under `scope`) once complete and sane."""
+    key = (scope, text, lang, _voice_id())
+    hit = _clip_get(key)
     if hit:
-        sr, pcm = hit
-        step = sr  # 1 s pieces
-        for i in range(0, pcm.size, step):
-            yield sr, pcm[i:i + step]
+        sr, pcm, _ = hit
+        for i in range(0, pcm.size, sr):   # 1 s pieces
+            yield sr, pcm[i:i + sr]
         return
-    parts, out_sr = [], None
     if lang not in talk.WORKER_TTS_LANGS:
         return
-    # Parler-TTS takes a voice description (slower); Supertonic / MMS ignore it.
-    src = ((sr, _to_i16(f)) for sr, f in talk.speak_chunks(text, lang, SLOW_DESCRIPTION if slow else ""))
-    for sr, pcm in src:
-        sr, pcm = _half_rate(sr, pcm)
-        out_sr = sr
-        parts.append(pcm)
-        yield sr, pcm
-    if parts:
-        with _CLIPS_LOCK:
-            c = _clip_cache()
-            c[key] = (out_sr, np.concatenate(parts))
-            while len(c) > 48:
-                c.popitem(last=False)
+    parts, rates = [], set()
+    try:
+        for sr, f in talk.speak_chunks(text, lang):
+            sr, pcm = _half_rate(sr, _to_i16(f))
+            if pcm.size == 0:
+                continue
+            parts.append(pcm)
+            rates.add(sr)
+            yield sr, pcm
+    except Exception as e:
+        if not _refused(e):   # a refusal (no voice / wrong script) is not a worker failure
+            voice_failed()
+        raise
+    if parts and len(rates) == 1:   # reached only when the stream completed (a closed generator never stores)
+        _clip_put(key, rates.pop(), np.concatenate(parts), text, lang)
 
 
-def _audio_item(key: str, i: int, sr: int, pcm: np.ndarray) -> str:
+def _refused(e: BaseException) -> bool:
+    nv = getattr(talk, "NoVoice", None)
+    return nv is not None and isinstance(e, nv)
+
+
+def sentence_gaps(pcm: np.ndarray, sr: int) -> list[int]:
+    """Sample positions (middles) of the pauses between sentences: interior runs of zeros >= SLOW_GAP_MIN_S."""
+    quiet = (np.abs(pcm.astype(np.int32)) <= 2).astype(np.int8)
+    if not quiet.any():
+        return []
+    d = np.diff(np.concatenate(([0], quiet, [0])))
+    starts, ends = np.flatnonzero(d == 1), np.flatnonzero(d == -1)
+    min_len = int(SLOW_GAP_MIN_S * sr)
+    return [int((a + b) // 2) for a, b in zip(starts, ends) if b - a >= min_len and a > 0 and b < pcm.size]
+
+
+def slow_seconds(n: int, sr: int, gaps: int) -> float:
+    """How long the page's slow replay lasts: the clip at SLOW_RATE plus the stretched sentence gaps."""
+    return n / sr / SLOW_RATE + gaps * SLOW_GAP_EXTRA_S
+
+
+def _audio_item(s: Consult, key: str, i: int, sr: int, pcm: np.ndarray, slow: bool = False) -> str:
     import base64
-    return (f"<i class='bz-au' data-k='{key}' data-i='{i}' data-sr='{sr}' "
-            f"data-p='{base64.b64encode(pcm.astype('<i2').tobytes()).decode('ascii')}'></i>")
+    return (f"<i class='bz-au' data-c='{s.cid}' data-k='{key}' data-i='{i}' data-sr='{sr}'"
+            + (f" data-rate='{SLOW_RATE}'" if slow else "")
+            + f" data-p='{base64.b64encode(pcm.astype('<i2').tobytes()).decode('ascii')}'></i>")
 
 
 def speak_clip(s: Consult, sp: Speech, voice_on: bool = True):
     """Stream one utterance to the page's WebAudio player. Yields UI, or ("say", audio_html) when the
-    stage and the (cumulative, append-only) audio must go out together. Returns after playback ends."""
+    stage and the (cumulative, append-only) audio must go out together. Returns after playback ends.
+    Speaks only the current consultation's utterance in its listener's language (else: silent, nothing yielded).
+    Every audio item carries the consultation id (data-c): the page discards items of any other consultation.
+    "Slower" (sp.slow) streams the same clip marked with data-rate: the page replays it slower, pitch preserved."""
+    if not _may_speak(s, sp):
+        print(f"[speak] refused: cid={sp.cid} current={s.cid} lang={sp.lang} to={sp.to} alive={alive(s)} "
+              f"screen={s.screen}", flush=True)
+        return
     key = uuid.uuid4().hex[:10]
-    audio_html, t_first, total, i = "", None, 0.0, 0
+    scope = "consent" if sp.to == "patient" and sp.text == s.consent_native else s.cid
+    audio_html, t_first, total, i, parts = "", None, 0.0, 0, []
     if voice_on:
         try:
-            for sr, pcm in voice_chunks(sp.text, sp.lang, sp.slow):
-                if s.screen not in ("consent", "live") or SESS.get(s.sid) is not s:
-                    return  # the visit ended while we were synthesising: say nothing
+            for sr, pcm in voice_chunks(sp.text, sp.lang, scope):
+                if not _may_speak(s, sp):
+                    return  # the visit ended or was dropped while we were synthesising: say nothing more
                 if pcm.size == 0:
                     continue
-                audio_html += _audio_item(key, i, sr, pcm)
+                audio_html += _audio_item(s, key, i, sr, pcm, sp.slow)
                 i += 1
                 total += pcm.size / sr
+                if sp.slow:
+                    parts.append((sr, pcm))
                 if t_first is None:
                     t_first = time.time()
                     _begin_speech(s, sp, None)
                 yield "say", audio_html
         except Exception as e:  # noqa: BLE001 - keep the visit going in text
             print(f"[speak] {type(e).__name__}: {e}", flush=True)
-            s.error = "err_voice_off"
+            if _refused(e):
+                notify(s, "voice_unavailable")   # this sentence only: the worker would not voice it in sp.lang
+            else:
+                s.error = "err_voice_off"
     if t_first is None:
-        if sp.to == "doctor" or s.screen not in ("consent", "live"):
+        if sp.to == "doctor" or not _may_speak(s, sp):
             return
-        _begin_speech(s, sp, None, audio=False)
+        _begin_speech(s, sp, None, audio=False)   # text only: the caption shows "voice unavailable"
         yield "say", None
         time.sleep(min(8.0, _est_seconds(sp.text, sp.lang, sp.slow)))
     else:
-        audio_html += f"<i class='bz-au' data-k='{key}' data-i='{i}' data-end='1' data-dur='{total:.3f}'></i>"
+        end = f"data-end='1'"
+        if sp.slow:   # the page plays a slow replay once it has every chunk (from the cache: at once)
+            sr0, all_pcm = parts[0][0], np.concatenate([p for _, p in parts])
+            gaps = sentence_gaps(all_pcm, sr0) if all(r == sr0 for r, _ in parts) else []
+            total = slow_seconds(all_pcm.size, sr0, len(gaps))
+            end += (f" data-rate='{SLOW_RATE}' data-gapx='{SLOW_GAP_EXTRA_S}'"
+                    f" data-gaps='{','.join(str(g) for g in gaps)}'")
+            t_first = time.time()
+        audio_html += f"<i class='bz-au' data-c='{s.cid}' data-k='{key}' data-i='{i}' {end} data-dur='{total:.3f}'></i>"
+        if not _may_speak(s, sp):
+            return
         yield "say", audio_html
         # The page starts ~0.15 s after the first chunk lands; keep the stage in "speaking" until it is done.
         time.sleep(max(0.0, t_first + total + 0.35 - time.time()))
@@ -971,10 +1203,35 @@ def _advance_steps(s: Consult, trace: list[dict]) -> bool:
     return moved
 
 
+_RULE_PREFIX = re.compile(r"^[A-Z]+(?:-[A-Z0-9]+)+ \((?:critical|caution|info)\):\s*")
+_QUOTE_PAREN = re.compile(r"\s*\(“[^”]*”(?:,\s*\d\d:\d\d)?\)")
+
+
+def _plain_reason(reason: str) -> str:
+    """'ALG-PEN-01 (critical): Penicillin allergy reported (“...”, 00:19). Amoxicillin is a penicillin.'
+    -> 'Penicillin allergy reported. Amoxicillin is a penicillin.' (first rule only)."""
+    first = re.split(r"; (?=[A-Z]+(?:-[A-Z0-9]+)+ \()", reason or "")[0]
+    return re.sub(r"\.\.+", ".", _QUOTE_PAREN.sub("", _RULE_PREFIX.sub("", first))).strip()
+
+
 def _review_warnings(out: dict) -> list[str]:
-    ws = [w for w in out.get("warnings") or [] if isinstance(w, str) and w.strip()]
-    if not PLAN_AUDIO:  # audio is switched off on purpose: not a problem to flag
-        ws = [w for w in ws if not w.startswith("Audio not available")]
+    """What the doctor must know before sending, in plain words. Internal notes (dropped note lines, layout
+    fallbacks, emergency-number resets…) stay in the doctor PDF's audit trail, not on the review screen."""
+    plan = out.get("care_plan") or {}
+    ws = []
+    for e in plan.get("excluded") or []:
+        name = str(e.get("name") or "").strip().capitalize()
+        if name:
+            ws.append(f"{name} was left off the patient's sheet. {_plain_reason(e.get('reason', ''))}".strip())
+    for w in out.get("warnings") or []:
+        if not isinstance(w, str):
+            continue
+        if w.startswith("Removed ") and "not in the doctor's final prescription" in w:
+            ws.append(w)
+        elif w.startswith("Translation of") or "translation; they are shown in English" in w:
+            ws.append(w)
+        elif "a translated line has numbers not in the prescription" in w:
+            ws.append(w)
     return list(dict.fromkeys(ws))
 
 

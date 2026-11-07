@@ -30,7 +30,7 @@ EXTRACT_REASONING = os.environ.get("BAYAN_EXTRACT_REASONING", "medium")   # neve
 EXTRACT_MAX_TOKENS = int(os.environ.get("BAYAN_EXTRACT_MAX_TOKENS", "3000"))   # reasoning counts against it
 # Same model (gpt-oss-120b), cheaper host: Groq input is $0.15/1M vs Cerebras $0.35 (output equal), JSON-schema mode
 # verified live; it runs in the background, so Groq's lower throughput (~1.3 s vs ~0.9 s) never touches the talk loop.
-EXTRACT_PROVIDER = os.environ.get("BAYAN_EXTRACT_PROVIDER", "groq")
+EXTRACT_PROVIDER = os.environ.get("BAYAN_EXTRACT_PROVIDER", "groq")   # BAYAN_BRAIN_LLM/_PROVIDER override (llm.brain_route)
 EXTRACT_FALLBACK = os.environ.get("BAYAN_EXTRACT_FALLBACK", "cerebras")
 SEVERITY_VALUES = ["mild", "moderate", "severe", "anaphylaxis", "scar", "unknown"]
 DISPOSITION_VALUES = ["discharge", "admit", "refer", "observe"]
@@ -169,6 +169,13 @@ troponin" -> troponin ordered) or resulted ("your heart tracing is normal" -> re
 Vitals: only stated numbers ("128 over 82" -> bp_sys 128, bp_dia 82).
 Disposition: "you can go home" -> discharge; admit; refer; observe. "Come back if..." is not a disposition.
 Patient: "I work outside on a site" -> heat_exposure true. heat_illness_suspected only if the doctor says so.
+Heat (a patient working in the sun or heat): "head/brain got hot" (matha gorom, dimaag taatyo, sar garam) is a
+heat clue, not only anger -> heat_exposure true; "I fell / collapsed / went down" at work -> collapse; fainted or
+passed out -> syncope (and collapse if it happened in the heat); muddled, confused, does not know where they are or
+what day it is (wrong or unsure answers to orientation questions) -> confusion; vomiting in the heat -> vomiting AND
+vomiting_in_heat. dehydration: "you look dry" / "you are dehydrated" (doctor), or drinks little water with dark or
+deep-yellow urine -> moderate; with dizziness on standing, very little urine or confusion -> severe; thirst only ->
+mild.
 questions_asked: topics the DOCTOR (or BAYAN for the doctor) asked in the NEW turns, from the topic list.
 Edge cases: a bare "yes" answers the previous question - record what it affirms (Doctor: "Does it spread to your
 arm?" Patient: "Yes" -> symptom jaw_arm_pain, evidence both turns); a bare "no" records nothing. A companion speaking
@@ -432,6 +439,50 @@ _CHEST_KEYWORDS = [
 ]
 
 
+_DRY_RX = re.compile(r"\byou(?:'re| are| look| seem| appear)(?: (?:very|quite|a bit|a little|really|so))?"
+                     r" (?:dry|dehydrated)\b|\b(?:you are|you're) (?:very )?(?:low on|short of) (?:fluids?|water)\b",
+                     re.I)
+_COLLAPSE_RX = re.compile(r"\b(collapsed?|collapsing|passed out|fainted|blacked out|lost consciousness)\b", re.I)
+
+
+def heat_keyword_delta(new_turns: list) -> dict:
+    """Deterministic heat facts that always run alongside the extractor (the rules HEAT-MED-01 / WORK-HEAT-01 need
+    them and the model sometimes leaves them out): the doctor saying the patient looks dry or dehydrated ->
+    patient.dehydration "moderate"; the patient saying they collapsed / fainted / passed out -> symptom collapse."""
+    delta: dict = {}
+    for t in new_turns:
+        text = t.english or t.text or ""
+        ev = [{"utt": t.id, "t_min": t.t_min, "quote": text[:200]}]
+        if t.role == "doctor" and _DRY_RX.search(text):
+            delta["patient"] = {"dehydration": "moderate"}
+        elif t.role == "patient" and _COLLAPSE_RX.search(text):
+            delta.setdefault("symptoms", []).append({"code": "collapse", "first_mention_min": t.t_min, "evidence": ev})
+    return delta
+
+
+_DEHYD_RANK = {"none": 0, "mild": 1, "moderate": 2, "severe": 3}
+
+
+def add_keyword_facts(delta: dict, kw: dict) -> dict:
+    """Fold heat_keyword_delta into an extractor delta without overriding what the model said (a dehydration grade
+    is only raised, never lowered; symptoms the model already gave are not repeated)."""
+    if not kw:
+        return delta
+    out = dict(delta or {})
+    have = {s.get("code") for s in out.get("symptoms") or [] if isinstance(s, dict)}
+    extra = [s for s in kw.get("symptoms") or [] if s["code"] not in have]
+    if extra:
+        out["symptoms"] = list(out.get("symptoms") or []) + extra
+    kd = (kw.get("patient") or {}).get("dehydration")
+    if kd:
+        pat = dict(out.get("patient") or {})
+        cur = str(pat.get("dehydration") or "").lower()
+        if _DEHYD_RANK.get(kd, 0) > _DEHYD_RANK.get(cur, -1):
+            pat["dehydration"] = kd
+            out["patient"] = pat
+    return out
+
+
 def keyword_delta(consult, new_turns: list) -> dict:
     """Deterministic last resort when the LLM extractor fails: chest-pain-group symptoms from the English rendering
     of patient turns, so the chest-pain workup rules still fire. Nothing else is guessed."""
@@ -445,7 +496,7 @@ def keyword_delta(consult, new_turns: list) -> dict:
                 symptoms.append({"code": code, "first_mention_min": t.t_min,
                                  "evidence": [{"utt": t.id, "t_min": t.t_min, "quote": text[:200]}]})
                 break
-    return {"symptoms": symptoms} if symptoms else {}
+    return add_keyword_facts({"symptoms": symptoms} if symptoms else {}, heat_keyword_delta(new_turns))
 
 
 def extract_delta_ex(consult, new_turns: list) -> tuple[dict, str | None]:
@@ -456,12 +507,12 @@ def extract_delta_ex(consult, new_turns: list) -> tuple[dict, str | None]:
     try:
         raw = llm.chat_json(SYSTEM, build_prompt(consult, turns), schema=EXTRACT_SCHEMA,
                             max_tokens=EXTRACT_MAX_TOKENS, reasoning=EXTRACT_REASONING,
-                            provider=EXTRACT_PROVIDER, fallback=EXTRACT_FALLBACK)
+                            **llm.brain_route(EXTRACT_PROVIDER, EXTRACT_FALLBACK))
     except Exception as e:  # noqa: BLE001
         consult.log("error", f"update_state failed: {e}")
         return {}, str(e)
     try:
-        return clean_delta(raw, consult, turns), None
+        return add_keyword_facts(clean_delta(raw, consult, turns), heat_keyword_delta(turns)), None
     except Exception as e:  # noqa: BLE001
         consult.log("error", f"update_state: bad extractor output ({e}): {json.dumps(raw)[:200]}")
         return {}, str(e)

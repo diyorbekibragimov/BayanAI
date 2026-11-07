@@ -1,0 +1,9 @@
+option,usd_per_clinic_month,qar_per_clinic_month,consults_per_month
+"Bayan online, dedicated L4 (12 h/day)",339,1234,1200
+"Bayan online, L4 shared by 4 clinics",107,389,1200
+"Bayan self-hosted S1 (2x L4), 1 clinic",607,2211,1200
+"Bayan self-hosted S2 (H100 + L40S), whole box",1980,7206,1200
+Phone interpreter for every consult (CyraCom/Propio ~$0.76/min),13680,49795,1200
+Phone interpreter for every consult (LanguageLine contract ~$1.05/min),18900,68796,1200
+Phone interpreter for half of consults (LanguageLine contract),9450,34398,1200
+"In-house interpreters, 6 languages x 12 h x 7 d (12.6 FTE)",21635,78750,1200

@@ -330,3 +330,277 @@ def test_file_tokens_reject_unknown_and_unsafe_names(tmp_path):
         careplan.register_files("../../etc", tmp_path, ["care_plan.pdf"])
     careplan.forget_files([tok])
     assert careplan.open_file(tok, "care_plan.pdf") is None
+
+
+# ------------------------------------------------------------------ voice state: one consultation, the right listener
+import numpy as np  # noqa: E402
+
+
+def _tone(lang: str, seconds: float = 1.0, sr: int = 16000) -> np.ndarray:
+    """A clip that says which language produced it (amplitude per language): cross-serving shows up at once."""
+    amp = {"ne": 0.1, "hi": 0.2, "sw": 0.3, "tl": 0.4, "id": 0.5, "en": 0.6, "ar": 0.7}.get(lang, 0.05)
+    return np.full(int(seconds * sr), amp, dtype=np.float32)
+
+
+@pytest.fixture
+def tts(monkeypatch):
+    """talk.speak_chunks stand-in that records every synthesis call."""
+    calls = []
+
+    def fake(text, lang, description=""):
+        calls.append((text, lang))
+        yield 16000, _tone(lang, max(0.8, len(text) / 12))
+    monkeypatch.setattr(talk, "speak_chunks", fake)
+    with consult._CLIPS_LOCK:
+        consult._CLIPS.clear()
+    yield calls
+    with consult._CLIPS_LOCK:
+        consult._CLIPS.clear()
+
+
+def _items(html: str) -> list[dict]:
+    return [dict(re.findall(r"data-(\w+)='([^']*)'", m)) for m in re.findall(r"<i class='bz-au'([^>]*)>", html or "")]
+
+
+def _speak(s, sp):
+    """Run speak_clip; returns the last audio html it sent (None if it never spoke)."""
+    last = None
+    for ev in consult.speak_clip(s, sp):
+        if ev != consult.UI and ev[1]:
+            last = ev[1]
+    return last
+
+
+def _pcm_amp(item: dict) -> float:
+    import base64
+    return float(np.frombuffer(base64.b64decode(item["p"]), dtype="<i2")[0]) / 32767
+
+
+def test_clip_cache_never_serves_another_language_or_visit(tts):
+    s = _new()
+    s.lang = "sw"
+    same = "Habari daktari ni mzuri sana leo"        # identical Latin text for two Latin-script patients
+    sp = consult.Speech(same, "sw", "patient", True, kind="turn", cid=s.cid)
+    a = _items(_speak(s, sp))
+    assert a and all(it["c"] == s.cid for it in a) and abs(_pcm_amp(a[0]) - 0.3) < 1e-3
+    s2 = _new()
+    s2.lang = "id"
+    b = _items(_speak(s2, consult.Speech(same, "id", "patient", True, kind="turn", cid=s2.cid)))
+    assert abs(_pcm_amp(b[0]) - 0.5) < 1e-3 and b[0]["c"] == s2.cid   # its own synthesis, its own voice
+    assert tts == [(same, "sw"), (same, "id")]
+    _speak(s, consult.Speech(same, "sw", "patient", True, kind="again", cid=s.cid))   # Say it again: from the cache
+    assert len(tts) == 2
+    consult.reset(s)                                                    # a dropped visit's clips are gone
+    assert not any(k[0] == s.cid for k in consult._CLIPS)
+    assert any(k[0] == s2.cid for k in consult._CLIPS)
+
+
+def test_clip_cache_refuses_garbage_and_anything_streamed_across_a_worker_failure(monkeypatch, tts):
+    key = ("scope", "नमस्ते, तपाईंलाई कस्तो छ? आज धेरै राम्रो दिन हो।", "ne")
+    # too short for the text, or silent: never stored
+    for pcm in (np.full(1600, 3000, np.int16), np.zeros(40000, np.int16)):
+        assert not consult._clip_put((*key, consult._voice_id()), 16000, pcm, key[1], "ne")
+    assert consult._clip_put((*key, consult._voice_id()), 16000, np.full(40000, 3000, np.int16), key[1], "ne")
+    # the worker fails mid-stream: the cache is cleared, the partial clip is not stored
+    def broken(text, lang, description=""):
+        yield 16000, _tone(lang)
+        raise RuntimeError("worker rebooting")
+    monkeypatch.setattr(talk, "speak_chunks", broken)
+    with pytest.raises(RuntimeError):
+        list(consult.voice_chunks("Some words to say here", "ne", "x"))
+    assert not consult._CLIPS
+    # a stream that was running while another one failed is never stored either
+    def slow_ok(text, lang, description=""):
+        yield 16000, _tone(lang, 3.0)
+        consult.voice_failed()
+    monkeypatch.setattr(talk, "speak_chunks", slow_ok)
+    assert len(list(consult.voice_chunks("नमस्ते", "ne", "x"))) == 1 and not consult._CLIPS
+    # a refusal (no voice / wrong script) is not a worker failure: the cache survives
+    if hasattr(talk, "NoVoice"):
+        consult._clip_put((*key, consult._voice_id()), 16000, np.full(40000, 3000, np.int16), key[1], "ne")
+        def refuse(text, lang, description=""):
+            raise talk.NoVoice("not in script", "script", lang)
+            yield  # noqa: unreachable - a generator
+        monkeypatch.setattr(talk, "speak_chunks", refuse)
+        with pytest.raises(talk.NoVoice):
+            list(consult.voice_chunks("hello", "ne", "x"))
+        assert len(consult._CLIPS) == 1
+
+
+def test_clip_cache_is_bounded(monkeypatch, tts):
+    monkeypatch.setattr(consult, "CLIP_MAX", 3)
+    for i in range(6):
+        assert consult._clip_put(("s", f"t{i}", "ne", consult._voice_id()), 16000, np.full(16000, 3000, np.int16), "x", "ne")
+    assert [k[1] for k in consult._CLIPS] == ["t3", "t4", "t5"]
+    monkeypatch.setattr(consult, "CLIP_MAX_BYTES", 40000)
+    consult._clip_put(("s", "big", "ne", consult._voice_id()), 16000, np.full(16000, 3000, np.int16), "x", "ne")
+    assert sum(v[1].nbytes for v in consult._CLIPS.values()) <= 40000
+
+
+def test_speak_clip_only_speaks_the_current_visit_in_the_listeners_language(tts):
+    s = _new()
+    s.doc_lang = "ar"
+    ok = consult.Speech("के तपाईंलाई दुख्छ?", "ne", "patient", True, kind="turn", cid=s.cid)
+    assert _speak(s, consult.Speech(ok.text, "ne", "patient", True, kind="turn", cid="other")) is None   # another visit
+    assert _speak(s, consult.Speech(ok.text, "ne", "patient", True, kind="turn")) is None                # unstamped
+    assert _speak(s, consult.Speech("Does it hurt?", "en", "doctor", False, kind="turn", cid=s.cid)) is None  # doctor is ar
+    assert _speak(s, consult.Speech(ok.text, "hi", "patient", True, kind="turn", cid=s.cid)) is None     # patient is ne
+    assert not tts
+    fresh = consult.reset(s)
+    assert _speak(s, ok) is None and not tts                                   # Home / No: the old visit is silent
+    assert fresh.cid != s.cid and fresh.lang == "ne" and not fresh.pending
+
+
+def test_dropped_visit_never_records_or_queues_a_late_reply(monkeypatch):
+    s = _new()
+    real = talk.translate
+
+    def translate_then_home(*a, **k):
+        consult.reset(s)                          # the doctor pressed Home while the LLM was translating
+        return real(*a, **k)
+    monkeypatch.setattr(talk, "translate", translate_then_home)
+    n = len(s.brain.turns)
+    _say(s, "doctor", "Do you have any allergies to medicines?")
+    assert not s.pending and len(s.brain.turns) == n
+    fresh = consult.SESS[s.sid]
+    assert fresh is not s and not fresh.pending and not fresh.brain.turns
+
+
+def test_render_of_a_dropped_visit_shows_the_current_one_and_seq_never_goes_back():
+    s = _new()
+    s.lang = "ne"
+    v1 = _view(s)
+    fresh = consult.reset(s)
+    fresh.lang = "hi"
+    v2 = _view(s)                                  # a generator of the old visit renders: the page sees the new one
+    assert v2["cid"] == fresh.cid != v1["cid"] and v2["screen"] == "start" and v2["seq"] > v1["seq"]
+    assert f'data-c="{fresh.cid}"' in consult.render(s)
+    assert _view(fresh)["seq"] > v2["seq"]
+
+
+def test_wrong_language_text_is_shown_never_spoken():
+    assert consult.speakable("के तपाईंलाई दुख्छ?", "ne") and consult.speakable("هل يؤلمك؟", "ar")
+    assert consult.speakable("Paracetamol 1 g मात्र खानुहोस्।", "ne")       # a drug name inside the sentence is fine
+    assert not consult.speakable("Does it hurt?", "ne")                       # untranslated English, Nepali voice
+    assert not consult.speakable("Does it hurt?", "ar")                       # English text, Arabic doctor voice
+    assert not consult.speakable("के तपाईंलाई दुख्छ?", "sw")                   # Nepali text, Swahili voice
+    assert not consult.speakable("Do you have any pain today?", "sw", source="Do you have any pain today?")  # echo
+    assert not consult.speakable("500 mg", "ne") and not consult.speakable("", "en")
+    s = _new()
+    assert not consult.queue_speech(s, consult.Speech("Does it hurt?", "ne", "patient"))
+    assert not consult.queue_speech(s, consult.Speech("के दुख्छ?", "ne", "doctor"))     # the doctor hears en, not ne
+    assert consult.queue_speech(s, consult.Speech("के दुख्छ?", "ne", "patient")) and s.pending[-1].cid == s.cid
+
+
+def test_untranslated_doctor_sentence_is_not_spoken_to_the_patient(monkeypatch):
+    s = _new()
+    monkeypatch.setattr(talk, "translate", lambda text, *a, **k: {"translation": text, "english": text, "drugs": [],
+                                                                    "allergies": [], "tests": []})
+    _say(s, "doctor", "Please lie down on the bed for me.")
+    assert not s.pending and s.notice["text"] == consult.ui.t("en", "voice_unavailable")
+    assert s.next_speaker == "patient"           # the visit goes on, in text
+
+
+def test_patient_reply_reaches_an_arabic_doctor_only_in_arabic(monkeypatch):
+    s = _new()
+    s.doc_lang = "ar"
+    monkeypatch.setattr(talk, "translate", lambda *a, **k: {"translation": "", "english": "My chest hurts.",
+                                                            "drugs": [], "allergies": [], "tests": []})
+    _say(s, "patient", "मेरो छाती दुख्छ।")
+    assert not s.pending                         # no Arabic translation: the English line is never read in Arabic
+    monkeypatch.setattr(talk, "translate", lambda *a, **k: {"translation": "صدري يؤلمني.", "english": "My chest hurts.",
+                                                            "drugs": [], "allergies": [], "tests": []})
+    _say(s, "patient", "मेरो छाती दुख्छ।")
+    assert [(p.to, p.lang, p.text) for p in s.pending] == [("doctor", "ar", "صدري يؤلمني.")]
+
+
+def test_consent_fallback_is_not_spoken_or_cached(monkeypatch):
+    monkeypatch.setattr(talk, "translate", lambda *a, **k: {"translation": consult.CONSENT_EN})   # an echo
+    monkeypatch.delitem(consult._CONSENT, "te", raising=False)
+    assert consult.consent_text("te") == consult.CONSENT_EN and "te" not in consult._CONSENT
+    s = _new()
+    s.lang = "te"
+    assert not consult.queue_speech(s, consult.Speech(consult.CONSENT_EN, "te", "patient", False, kind="consent"),
+                                    source=consult.CONSENT_EN)
+
+
+def _heard(role, detected=None, lid=None, text="Do you have any allergies to medicines?", lang="en", seconds=3.0):
+    return {"role": role, "detected_role": detected or role, "lid": lid or {}, "text": text, "lang": lang,
+            "role_forced": True, "audio_seconds": seconds}
+
+
+def test_short_clip_needs_near_certainty_before_questioning_the_speaker(monkeypatch):
+    # 1-2 s answers fooled VoxLingua at ~0.95 live; under 2 s the prompt needs >= 0.99
+    s = _new()
+    arr = np.zeros(16000, np.int16)
+    monkeypatch.setattr(talk, "hear", lambda *a, **k: _heard("doctor", "patient", {"ne": 0.95, "en": 0.05}, seconds=1.4))
+    list(consult.process_audio(s, 16000, arr, "doctor"))
+    assert s.live != "confirm"
+    s2 = _new()
+    monkeypatch.setattr(talk, "hear", lambda *a, **k: _heard("doctor", "patient", {"ne": 0.995, "en": 0.005}, seconds=1.4))
+    list(consult.process_audio(s2, 16000, arr, "doctor"))
+    assert s2.live == "confirm"
+
+
+def test_speaker_choice_is_kept_unless_the_worker_is_very_sure(monkeypatch):
+    s = _new()
+    arr = np.zeros(16000, np.int16)
+    # low-confidence disagreement: translated as the doctor chose (doctor -> patient)
+    monkeypatch.setattr(talk, "hear", lambda *a, **k: _heard("doctor", "patient", {"ne": 0.6, "en": 0.4}))
+    list(consult.process_audio(s, 16000, arr, "doctor"))
+    assert s.confirm is None and [p.to for p in s.pending] == ["patient"]
+    s.pending.clear()
+    # a confident disagreement asks first and says nothing
+    monkeypatch.setattr(talk, "hear", lambda *a, **k: _heard("doctor", "patient", {"ne": 0.97, "en": 0.03}))
+    list(consult.process_audio(s, 16000, arr, "doctor"))
+    assert s.confirm and s.live == "confirm" and not s.pending
+    s.confirm = s.confirm_pcm = None
+    s.live = "idle"
+    # an 'unclear' / unknown detected role never asks and never flips the direction
+    monkeypatch.setattr(talk, "hear", lambda *a, **k: _heard("doctor", "unclear", {"en": 0.99}))
+    list(consult.process_audio(s, 16000, arr, "doctor"))
+    assert s.confirm is None and [p.to for p in s.pending] == ["patient"]
+    s.pending.clear()
+    # the worker did not honour the forced role (its text is in the other side's language): nothing is translated
+    monkeypatch.setattr(talk, "hear", lambda *a, **k: _heard("patient", "patient", {"ne": 0.5}, "मलाई दुख्छ", "ne"))
+    n = len(s.brain.turns)
+    list(consult.process_audio(s, 16000, arr, "doctor"))
+    assert not s.pending and len(s.brain.turns) == n and s.notice["text"] == consult.ui.t("en", "not_caught")
+    # no role at all and no choice: never guessed
+    monkeypatch.setattr(talk, "hear", lambda *a, **k: {"text": "hello there", "lid": {}})
+    list(consult.process_audio(s, 16000, arr, ""))
+    assert not s.pending and len(s.brain.turns) == n
+
+
+def test_confirm_with_an_unknown_role_does_nothing():
+    s = _new()
+    s.confirm = {"selected": "doctor", "detected": "unclear", "engine_role": "doctor", "text": "x", "lang": "en"}
+    s.confirm_pcm = (16000, np.zeros(10, np.int16))
+    n = len(s.brain.turns)
+    list(consult.resolve_confirm(s, True))
+    assert not s.pending and len(s.brain.turns) == n and not s.processing
+
+
+def test_slower_replays_the_cached_clip_marked_for_the_page_no_new_synthesis(monkeypatch, tts):
+    s = _new()
+    text = "पहिलो वाक्य। दोस्रो वाक्य।"
+    # a clip with one sentence gap (0.5 s of zeros) between two voiced parts
+    clip = np.concatenate([np.full(8000, 0.2, np.float32), np.zeros(8000, np.float32), np.full(8000, 0.2, np.float32)])
+    calls = []
+
+    def fake(t, lang, description=""):
+        calls.append((t, lang, description))
+        yield 16000, clip
+    monkeypatch.setattr(talk, "speak_chunks", fake)
+    first = _items(_speak(s, consult.Speech(text, "ne", "patient", True, kind="turn", cid=s.cid)))
+    assert "rate" not in first[0] and first[-1]["end"] == "1"
+    consult.again(s, slow=True)
+    sp = consult.pop_pending(s)
+    assert sp.slow and sp.cid == s.cid
+    slow = _items(_speak(s, sp))
+    assert len(calls) == 1 and calls[0][2] == ""            # Slower is not a new TTS call (and no ignored "slow" hint)
+    end = slow[-1]
+    assert all(it["rate"] == str(consult.SLOW_RATE) for it in slow) and all(it["c"] == s.cid for it in slow)
+    assert end["gaps"] == "12000" and float(end["gapx"]) == consult.SLOW_GAP_EXTRA_S
+    assert abs(float(end["dur"]) - (24000 / 16000 / consult.SLOW_RATE + consult.SLOW_GAP_EXTRA_S)) < 1e-3
+    assert consult.sentence_gaps(np.zeros(100, np.int16), 16000) == []      # leading/trailing silence is no gap

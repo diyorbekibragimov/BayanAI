@@ -1,0 +1,80 @@
+# False-positive traps: ordinary visits where the copilot must stay quiet (no hold, no caution/critical card).
+# Info-level ask cards are tolerated (they are "useful next question" suggestions), caution+ are not.
+- id: quiet-01-cold-paracetamol
+  title: Common cold after allergies asked; paracetamol 1 g TDS
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "Hello. What brings you in?"}
+    - {role: patient, text: "दुई दिनदेखि रुघा लागेको छ, नाक बगिरहन्छ, अलिअलि घाँटी खसखस गर्छ।"}
+    - {role: doctor, text: "Any fever? Any allergies to medicines?"}
+    - {role: patient, text: "ज्वरो छैन। एलर्जी पनि छैन।"}
+    - {role: doctor, text: "It's a common cold. Paracetamol 1 g three times a day for three days if needed, warm salt-water gargles and plenty of fluids."}
+    - {role: patient, text: "धन्यवाद डाक्टर साब।"}
+  expect:
+    must_not_hold: ["*"]
+    must_not_flag: [{severity: caution}, {source: rules}]
+
+- id: quiet-02-bp-followup
+  title: Hypertension follow-up, BP controlled, continue amlodipine 5 mg
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "Good morning. How are you feeling on the amlodipine?"}
+    - {role: patient, text: "ठीक हूँ डॉक्टर साहब, कोई दिक्कत नहीं। रोज़ सुबह एक गोली लेता हूँ।"}
+    - {role: doctor, text: "Your blood pressure today is 128 over 82, that's good. Any allergies to medicines?"}
+    - {role: patient, text: "नहीं, कोई एलर्जी नहीं।"}
+    - {role: doctor, text: "Continue amlodipine 5 mg once every morning. See you in three months."}
+  expect:
+    must_not_hold: ["*"]
+    must_not_flag: [{severity: caution}, {source: rules}]
+
+- id: quiet-03-salbutamol-refill
+  title: Asthma inhaler refill, well controlled
+  patient_lang: tl
+  turns:
+    - {role: doctor, text: "You need a refill of your inhaler? How often do you use it?"}
+    - {role: patient, text: "Opo doc, mga isang beses lang po sa isang linggo, pag maalikabok sa site."}
+    - {role: doctor, text: "Any allergies? Any night cough?"}
+    - {role: patient, text: "Wala po allergy, wala ring ubo sa gabi."}
+    - {role: doctor, text: "Good. Salbutamol inhaler, two puffs when needed for wheeze."}
+  expect:
+    must_not_hold: ["*"]
+    must_not_flag: [{severity: caution}, {source: rules}]
+
+- id: quiet-04-spanish-gases-trap
+  title: Spanish patient with 'gases' after beans (the English rendering says 'gas'; no Hindi idiom card expected)
+  patient_lang: es
+  turns:
+    - {role: doctor, text: "What's the problem?"}
+    - {role: patient, text: "Doctor, tengo muchos gases y la barriga hinchada después de comer frijoles, nada más. No me duele el pecho."}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "No, ninguna."}
+    - {role: doctor, text: "Take simethicone 80 mg after meals as needed, and eat slowly."}
+  expect:
+    must_not_hold: ["*"]
+    must_not_flag: [{kind: idiom}, {severity: caution}, {source: rules}]
+
+- id: quiet-05-work-tension
+  title: "'A bit of tension at work', sleeping less (tension idiom); caution allowed, critical not"
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "How can I help?"}
+    - {role: patient, text: "काममा अलि टेन्सन छ डाक्टर साब, निद्रा अलि कम लाग्छ। अरु त ठीकै छ।"}
+    - {role: doctor, text: "Any thoughts of harming yourself?"}
+    - {role: patient, text: "छैन छैन, त्यस्तो केही छैन। परिवार राम्रो छ।"}
+    - {role: doctor, text: "Try to sleep at fixed times and avoid tea after 4 pm. Come back in two weeks if it's not better."}
+  expect:
+    must_not_hold: ["*"]
+    must_flag: [{kind: idiom, grounding: mul-001}]
+    must_not_flag: [{severity: critical}]
+
+- id: quiet-06-indonesian-followup-diabetes
+  title: Diabetes follow-up, metformin 500 mg BD continued, allergies asked
+  patient_lang: id
+  turns:
+    - {role: doctor, text: "How is your sugar control? Any allergies?"}
+    - {role: patient, text: "Gula darah saya sekarang sekitar 120 waktu pagi, Dok. Tidak ada alergi."}
+    - {role: doctor, text: "Very good. Continue metformin 500 mg twice a day with breakfast and dinner."}
+    - {role: patient, text: "Baik Dok, terima kasih."}
+  expect:
+    must_not_hold: ["*"]
+    must_not_flag: [{severity: caution}, {source: rules}]

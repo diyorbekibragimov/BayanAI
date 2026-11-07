@@ -7,6 +7,9 @@ careplan (download button), ui (names in English and Arabic) and the stage scrip
 """
 
 MORE = {
+    'ka': {"en": 'Georgian', "ar": 'الجورجية', "native": 'ქართული', "cps": 12.0,
+           "consent": 'გამარჯობა, მე ვარ ბაიანი. ვთარგმნი თქვენსა და ექიმს შორის. თქვენი ხმა მუშავდება თარგმნისთვის და არ ინახება. ეთანხმებით?',
+           "in_lang": 'ქართულად', "again": 'გაიმეორეთ', "slower": 'უფრო ნელა', "yes": 'დიახ', "no": 'არა', "download": 'PDF-ის ჩამოტვირთვა'},
     'ja': {"en": 'Japanese', "ar": 'اليابانية', "native": '日本語', "cps": 7.0,
            "consent": 'こんにちは、私はBayanです。あなたと医師の間を通訳します。あなたの声は翻訳のために処理され、保存されません。よろしいですか？',
            "in_lang": '日本語で', "again": 'もう一度', "slower": 'ゆっくり', "yes": 'はい', "no": 'いいえ', "download": 'PDFをダウンロード'},

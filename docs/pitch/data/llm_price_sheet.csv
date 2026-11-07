@@ -1,0 +1,10 @@
+model,provider,usd_per_1M_input,usd_per_1M_output,listed_throughput_tok_s,source,retrieved
+openai/gpt-oss-120b,baseten,0.1,0.5,230,https://router.huggingface.co/v1/models,2026-11-07
+openai/gpt-oss-120b,cerebras,0.35,0.75,1105,https://router.huggingface.co/v1/models,2026-11-07
+openai/gpt-oss-120b,deepinfra,0.037,0.17,15,https://router.huggingface.co/v1/models,2026-11-07
+openai/gpt-oss-120b,groq,0.15,0.75,405,https://router.huggingface.co/v1/models,2026-11-07
+openai/gpt-oss-120b,novita,0.05,0.25,212,https://router.huggingface.co/v1/models,2026-11-07
+openai/gpt-oss-120b,ovhcloud,0.09,0.47,45,https://router.huggingface.co/v1/models,2026-11-07
+openai/gpt-oss-20b,deepinfra,0.03,0.14,83,https://router.huggingface.co/v1/models,2026-11-07
+openai/gpt-oss-20b,groq,0.1,0.5,741,https://router.huggingface.co/v1/models,2026-11-07
+openai/gpt-oss-20b,ovhcloud,0.05,0.18,37,https://router.huggingface.co/v1/models,2026-11-07

@@ -34,13 +34,15 @@ _ROUTES = {
     "topical": "topical", "pr": "rectal", "rectal": "rectal", "sl": "sublingual", "sublingual": "sublingual",
 }
 _FREQ_WORDS = [
-    (r"\b(od|qd|once|daily|nocte|mane|once a day|once daily|every day|at night)\b", 1),
+    (r"\b(od|qd|once|daily|nocte|mane|once a day|once daily|every day|at night|at bedtime|before bed)\b", 1),
     (r"\b(bd|bid|twice|two times|2 times)\b", 2),
     (r"\b(tds|tid|three times|thrice|3 times)\b", 3),
     (r"\b(qds|qid|four times|4 times)\b", 4),
     (r"\b(five times|5 times)\b", 5),
     (r"\b(six times|6 times)\b", 6),
 ]
+_FREQ_NUM_WORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "eight": "8",
+                   "twelve": "12", "twenty-four": "24", "twenty four": "24"}
 _DISPOSITIONS = {
     "discharge": "discharge", "discharged": "discharge", "home": "discharge", "go home": "discharge",
     "send home": "discharge", "discharge home": "discharge",
@@ -121,22 +123,41 @@ def parse_time_min(t: Any) -> float | None:
     return None
 
 
+def frequency_from_text(text: Any) -> float | None:
+    """Doses per day from a frequency PHRASE only (never a bare number): clinical abbreviations (OD/QD/nocte/mane = 1,
+    BD/BID = 2, TDS/TID = 3, QDS/QID = 4, with or without dots), intervals ("q4h", "every 6 hours", "4-hourly",
+    "every 4 to 6 hours" -> the shorter interval) and counts ("up to 4 times a day", "x3/day")."""
+    if text is None or isinstance(text, bool):
+        return None
+    s = " " + str(text).strip().lower() + " "
+    s = re.sub(r"\b([a-z])\.(?=[a-z]\b\.?)", r"\1", s)            # q.d.s. / t.i.d. -> qds / tid
+    s = re.sub(r"\b([a-z]{2,3})\.", r"\1", s)
+    for word, n in _FREQ_NUM_WORDS.items():
+        s = re.sub(rf"\b{word}\b", n, s)
+    m = re.search(r"(?:\bevery|\bq)\s*(\d+(?:\.\d+)?)(?:\s*(?:-|to|or)\s*\d+(?:\.\d+)?)?\s*(?:h|hr|hrs|hrly|hour|hours|hourly)\b"
+                  r"|\b(\d+(?:\.\d+)?)\s*-?\s*(?:hourly|hrly)\b", s)
+    if m:
+        h = float(m.group(1) or m.group(2))
+        if h > 0:
+            return round(24 / h, 3)
+    for pat, n in _FREQ_WORDS[1:] + _FREQ_WORDS[:1]:
+        if re.search(pat, s):
+            return float(n)
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:x|times)\b", s) or re.search(r"\bx\s*(\d+(?:\.\d+)?)\b", s)
+    if m and float(m.group(1)) > 0:
+        return float(m.group(1))
+    return None
+
+
 def parse_frequency(v: Any) -> float | None:
     if v is None or isinstance(v, bool):
         return None
     if isinstance(v, (int, float)):
         return float(v) if v > 0 else None
-    s = str(v).strip().lower()
-    m = re.search(r"(?:every|q)\s*(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b", s)
-    if m and float(m.group(1)) > 0:
-        return round(24 / float(m.group(1)), 3)
-    for pat, n in _FREQ_WORDS[1:] + _FREQ_WORDS[:1]:
-        if re.search(pat, s):
-            return float(n)
-    m = re.search(r"(\d+(?:\.\d+)?)\s*(?:x|times)", s)
-    if m:
-        return float(m.group(1))
-    n = _num(s)
+    f = frequency_from_text(v)
+    if f is not None:
+        return f
+    n = _num(str(v).strip().lower())
     return n if n and n > 0 else None
 
 
@@ -154,12 +175,17 @@ def _unit_kind(u: Any) -> str | None:
 
 
 def parse_dose(raw: Any) -> tuple[float | None, str | None, float | None]:
-    """'1 g' -> (1.0, 'g', None); '500/125 mg' -> (500.0, 'mg', 125.0); '100 micrograms' -> (100.0, 'mcg', None)."""
+    """'1 g' -> (1.0, 'g', None); '500/125 mg' -> (500.0, 'mg', 125.0); '100 micrograms' -> (100.0, 'mcg', None);
+    '50 to 100 mg' -> (100.0, 'mg', None) (the upper bound of a range)."""
     if raw is None:
         return None, None, None
     s = str(raw).strip().lower().replace("µ", "u").replace("μ", "u")
     for word, n in _WORD_NUMS.items():
         s = re.sub(rf"\b{word}\b", n, s)
+    # a range with a unit ("50 to 100 mg", "50-100mg"): the upper bound, so dose ceilings are never under-counted
+    r = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:-|–|to|or)\s*(\d+(?:[.,]\d+)?)\s*(mcg|ug|micrograms?|mg|milligrams?|grams?|gm|g)\b", s)
+    if r:
+        return float(r.group(2).replace(",", ".")), _unit_kind(r.group(3)), None
     m = re.search(r"(\d+(?:[.,]\d+)?)\s*(?:/\s*(\d+(?:[.,]\d+)?))?\s*(mcg|ug|micrograms?|mg|milligrams?|grams?|gm|g)?\b", s)
     if not m:
         return None, None, None
@@ -486,6 +512,11 @@ def normalise_med(item: dict, consult: Any = None) -> dict:
     daily = _num(item.get("daily_dose_mg"))
     if dose_mg is not None and freq is not None:
         daily = dose_mg * freq
+    combined = _num(item.get("combined_daily_mg"))     # same drug twice in one order (combine_same_drug)
+    if combined is not None and (daily is None or combined > daily):
+        daily = combined
+    else:
+        combined = None
 
     out: dict = {
         "drug": drug,
@@ -498,6 +529,8 @@ def normalise_med(item: dict, consult: Any = None) -> dict:
     }
     if dose_mcg is not None:
         out["dose_mcg"] = _clean_num(dose_mcg)
+    if combined is not None:
+        out["combined_daily_mg"] = _clean_num(combined)
     dur = _num(item.get("duration_days"))
     if dur is not None:
         out["duration_days"] = _clean_num(dur)
@@ -530,6 +563,39 @@ def normalise_med(item: dict, consult: Any = None) -> dict:
     return out
 
 
+# Reaction wording that makes an allergy severe whatever the model said (a drug reaction with swelling is treated as
+# angioedema until proven otherwise; breathing difficulty / collapse = anaphylaxis). Deterministic, so a non-severe
+# label from the LLM can never keep a cross-reactivity alert (e.g. ALG-PEN-02) from escalating.
+_ANAPHYLAXIS_RX = re.compile(
+    r"anaphyla|\b(could|can)(n'?t| ?not)\b.{0,12}\bbreath|\bbreath\w*\s+(difficult|trouble|problem|stopp)"
+    r"|\b(difficult\w*|trouble|problem\w*|hard|struggl\w*|unable|short(ness)? of)\b.{0,15}\bbreath|\bbreathless"
+    r"|\bwheez|\bthroat\b.{0,25}\b(clos|tight|swell|swoll)|\b(collaps|faint|passed out|unconscious|blacked out)"
+    r"|\bblood pressure\b.{0,15}\b(drop|fell|low)|\bshock\b|\bepipen|\badrenaline\b", re.I)
+_SEVERE_RX = re.compile(
+    r"angio-?o?edema|\b(swell|swelled|swelling|swellings|swollen|swole|puff(ed|y|ing)? up|bloat(ed)? up)\b"
+    r"|\b(blister\w*|peel\w*|skin came off|sjs|stevens|necrolysis)\b|\badmitted\b|\bhospitali[sz]ed\b", re.I)
+_SEV_RANK = {"unknown": 0, "mild": 1, "moderate": 2, "severe": 3, "scar": 4, "anaphylaxis": 4}
+
+
+def reaction_severity(reaction: Any) -> str | None:
+    """Severity floor implied by the reaction as told: "anaphylaxis", "severe" or None (no severe feature)."""
+    text = " ".join(str(x) for x in reaction) if isinstance(reaction, (list, tuple)) else str(reaction or "")
+    if not text.strip():
+        return None
+    if _ANAPHYLAXIS_RX.search(text):
+        return "anaphylaxis"
+    if _SEVERE_RX.search(text):
+        return "severe"
+    return None
+
+
+def _floor_severity(sev: str, reaction: Any) -> str:
+    floor = reaction_severity(reaction)
+    if floor and _SEV_RANK.get(floor, 0) > _SEV_RANK.get(sev, 0):
+        return floor
+    return sev
+
+
 def _normalise_allergy(item: dict, consult: Any) -> dict:
     sub_raw = item.get("substance") or item.get("drug") or item.get("name") or ""
     substance = normalise_drug(sub_raw) or str(sub_raw).strip().lower()
@@ -538,6 +604,8 @@ def _normalise_allergy(item: dict, consult: Any) -> dict:
     if sev not in _SEVERITIES:
         sev = "unknown"
     reaction = item.get("reaction")
+    if not _is_unknown(reaction):
+        sev = _floor_severity(sev, reaction)
     out = {
         "substance": substance,
         "class": _drug_classes(substance, item.get("class")),
@@ -572,6 +640,54 @@ def _drug_of(x: Any) -> str:
     if isinstance(x, dict):
         x = x.get("drug") or x.get("name") or ""
     return normalise_drug(str(x))
+
+
+# ----------------------------------------------------------------------------- same drug, two schedules
+def _dose_freq(item: dict) -> tuple[float | None, float | None]:
+    m = normalise_med(item)
+    return m.get("dose_mg"), m.get("frequency_per_day")
+
+
+def combine_same_drug(items: list) -> list:
+    """One order that names the same drug twice ("tramadol 100 mg QDS, plus another 100 mg at night if needed") is
+    ONE prescription whose daily total is the sum: 100 x 4 + 100 x 1 = 500 mg/day, which the dose-ceiling rules must
+    see (otherwise the second item replaces the first and each looks safe on its own). Prescribe items of the same
+    drug that both carry a dose and a frequency are folded into the first: its schedule stays as said, the extra
+    doses become an instruction ("plus 100 mg at night if needed"), combined_daily_mg = the summed daily dose
+    (normalise_med uses it for daily_dose_mg) and dose_mg = the larger single dose (single-dose ceilings).
+    Items without both (extra detail such as "take it after food") are left alone for the field merge."""
+    out: list = []
+    first: dict[str, dict] = {}
+    parts: dict[str, list[tuple[float, float]]] = {}
+    for raw in items or []:
+        if not isinstance(raw, dict) or str(raw.get("intent") or "prescribe").lower() != "prescribe":
+            out.append(raw)
+            continue
+        drug = normalise_drug(raw.get("drug") or raw.get("name") or "")
+        dose, freq = _dose_freq(raw)
+        if not drug or dose is None or freq is None:
+            out.append(raw)
+            continue
+        if drug not in first:
+            first[drug] = dict(raw)
+            parts[drug] = [(float(dose), float(freq))]
+            out.append(first[drug])
+            continue
+        base = first[drug]
+        parts[drug].append((float(dose), float(freq)))
+        if float(dose) > float(_dose_freq(base)[0] or 0):
+            base["dose_mg"] = _clean_num(dose)
+        base["combined_daily_mg"] = _clean_num(sum(d * f for d, f in parts[drug]))
+        extra = str(raw.get("dose_raw") or raw.get("dose") or f"{_clean_num(dose)} mg x{_clean_num(freq)}/day").strip()
+        said = str(base.get("dose_raw") or base.get("dose") or "").strip()
+        base["dose_raw"] = f"{said}; plus {extra}" if said else f"plus {extra}"
+        ins = base.get("instructions")
+        ins = list(ins) if isinstance(ins, list) else ([ins] if isinstance(ins, str) and ins.strip() else [])
+        base["instructions"] = ins + [f"plus {extra}" + ("" if re.search(r"\bif\b|need", extra, re.I) or
+                                                         not raw.get("as_needed") else " if needed")]
+        ev = list(base.get("evidence") or [])
+        base["evidence"] = ev + [e for e in (raw.get("evidence") or []) if e not in ev]
+    return out
 
 
 # ----------------------------------------------------------------------------- merge
@@ -615,6 +731,12 @@ def merge_delta(consult: Any, delta: dict) -> set[str]:
                 if a["severity"] != "unknown" and old.get("severity") != a["severity"]:
                     old["severity"] = a["severity"]
                     c = True
+                # a later, milder label never drops a severe feature already told (either reaction wording counts)
+                sev = _floor_severity(_floor_severity(old.get("severity") or "unknown", old.get("reaction")),
+                                      a.get("reaction"))
+                if sev != old.get("severity"):
+                    old["severity"] = sev
+                    c = True
                 for cl in a["class"]:
                     if cl not in old.setdefault("class", []):
                         old["class"].append(cl)
@@ -624,7 +746,10 @@ def merge_delta(consult: Any, delta: dict) -> set[str]:
 
         # --- medications
         for coll in ("current_meds", "prescribed_meds"):
-            for raw in delta.get(coll) or []:
+            items = delta.get(coll) or []
+            if coll == "prescribed_meds":
+                items = combine_same_drug(items)
+            for raw in items:
                 if not isinstance(raw, dict):
                     raw = {"drug": raw}
                 intent = str(raw.get("intent", "")).lower()
@@ -640,9 +765,14 @@ def merge_delta(consult: Any, delta: dict) -> set[str]:
                     if coll == "prescribed_meds":
                         events.add(ON_PRESCRIBE)
                 else:
-                    dose_changed = _fill(old, m, _MED_DOSE_FIELDS)
+                    dose_changed = _fill(old, m, _MED_DOSE_FIELDS + ("combined_daily_mg",))
+                    if (old.get("combined_daily_mg") is not None and m.get("combined_daily_mg") is None
+                            and (m.get("frequency_per_day") is not None or m.get("dose_mg") is not None)):
+                        old.pop("combined_daily_mg")       # a new schedule replaces the combined order
+                        dose_changed = True
                     if dose_changed and old.get("dose_mg") is not None and old.get("frequency_per_day") is not None:
-                        old["daily_dose_mg"] = _clean_num(old["dose_mg"] * old["frequency_per_day"])
+                        old["daily_dose_mg"] = _clean_num(max(old["dose_mg"] * old["frequency_per_day"],
+                                                              _num(old.get("combined_daily_mg")) or 0))
                     c = _fill(old, m, ("dose_raw", "unit_raw", "indication", "confidence"))
                     c = _fill(old, m, MED_DETAIL_SCALARS) or c       # more detail on the same drug: merge
                     if m.get("times") and old.get("times") != m["times"]:
@@ -824,6 +954,8 @@ def merge_delta(consult: Any, delta: dict) -> set[str]:
                 state["questions_asked"].append(q)
                 changed = True
 
+        changed = _derive_heat(state) or changed
+
         if changed:
             events.add(STATE_CHANGE)
             if hasattr(consult, "state_version"):
@@ -832,6 +964,29 @@ def merge_delta(consult: Any, delta: dict) -> set[str]:
             events.discard(ON_PRESCRIBE)
             events.discard(ON_DISPOSITION)
         return events
+
+
+# Symptoms that mean something more in a heat-exposed patient (the codes WORK-HEAT-01 tests for).
+_HEAT_DERIVED = {"vomiting": "vomiting_in_heat", "syncope": "collapse"}
+
+
+def _derive_heat(state: dict) -> bool:
+    """Deterministic: in a heat-exposed patient (patient.heat_exposure true) vomiting is also vomiting_in_heat and a
+    faint is also a collapse, with the same evidence. Returns True if a symptom was added."""
+    if (state.get("patient") or {}).get("heat_exposure") is not True:
+        return False
+    syms = state.get("symptoms") or []
+    have = {s.get("code") for s in syms}
+    added = False
+    for src, derived in _HEAT_DERIVED.items():
+        base = next((s for s in syms if s.get("code") == src), None)
+        if base is not None and derived not in have:
+            syms.append({"code": derived, "severity": base.get("severity"), "onset": base.get("onset"),
+                         "first_mention_min": base.get("first_mention_min"),
+                         "evidence": [dict(e) for e in base.get("evidence") or []], "derived_from": src})
+            have.add(derived)
+            added = True
+    return added
 
 
 def _apply_remove(state: dict, coll: str, items: list, consult: Any) -> bool:

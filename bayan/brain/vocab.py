@@ -82,6 +82,19 @@ _SYNONYMS = {
     "ringer lactate": "ringer's lactate", "hartmann's": "hartmann's solution", "hartmanns": "hartmann's solution",
     "viagra": "sildenafil", "cialis": "tadalafil", "coumadin": "warfarin", "zantac": "ranitidine",
     "septra": "co-trimoxazole", "cipro": "ciprofloxacin", "ciproxin": "ciprofloxacin",
+    # common brands in the Gulf / South Asia (the talk loop's translator is told to give generics, but a brand or a
+    # mangled brand can still come through; see repair_drug_items)
+    "augmentin": "co-amoxiclav", "augmentin duo": "co-amoxiclav", "clavulin": "co-amoxiclav",
+    "co-amoxyclav": "co-amoxiclav", "brufen": "ibuprofen", "panadol": "paracetamol", "adol": "paracetamol",
+    "tylenol": "paracetamol", "biogesic": "paracetamol", "crocin": "paracetamol", "dolo": "paracetamol",
+    "fevadol": "paracetamol", "voltaren": "diclofenac", "voltarol": "diclofenac", "septrin": "co-trimoxazole",
+    "zithromax": "azithromycin", "azithral": "azithromycin", "ventolin": "salbutamol", "klacid": "clarithromycin",
+    "rocephin": "ceftriaxone", "zinnat": "cefuroxime", "flagyl": "metronidazole", "tramal": "tramadol",
+    "ultram": "tramadol", "naprosyn": "naproxen", "glucophage": "metformin", "norvasc": "amlodipine",
+    "losec": "omeprazole", "zofran": "ondansetron", "plavix": "clopidogrel", "lipitor": "atorvastatin",
+    "zocor": "simvastatin", "tegretol": "carbamazepine", "eltroxin": "levothyroxine", "synthroid": "levothyroxine",
+    "ponstan forte": "mefenamic acid", "arcoxia": "etoricoxib", "celebrex": "celecoxib", "aspro": "aspirin",
+    "disprin": "aspirin",
 }
 
 # Allergy wording -> class or INN.
@@ -215,6 +228,129 @@ def _singular(s: str) -> str:
     return s
 
 
+def is_known_drug(name: str) -> bool:
+    """True when the name (brand, synonym or INN) normalises to a drug or class the rules know."""
+    n = normalise_drug(name)
+    return bool(n) and (n in _known_drugs() or n.lower() in _class_keys())
+
+
+@lru_cache(maxsize=1)
+def _name_index() -> dict[str, str]:
+    """Every spelling the rules know (INNs, synonyms, brands; lowercase) -> generic."""
+    idx = {d: d for d in _known_drugs()}
+    idx.update(_brand_map())
+    return idx
+
+
+_TOKEN_RE = re.compile(r"[a-z][a-z'\-]*[a-z]|[a-z]")
+FUZZY_CUTOFF = 88
+
+
+def fuzzy_drug(name: str, cutoff: float = FUZZY_CUTOFF) -> str:
+    """A misspelt INN or brand ("amoxicilin", "augmentine") -> generic, or "" when nothing is close enough.
+    Short names (< 6 letters) are never fuzzy-matched (too many near neighbours)."""
+    s = _clean(name)
+    if len(s) < 6:
+        return ""
+    try:
+        from rapidfuzz import fuzz, process
+    except Exception:  # noqa: BLE001 - rapidfuzz missing: exact matching only
+        return ""
+    best = process.extractOne(s, list(_name_index()), scorer=fuzz.ratio, score_cutoff=cutoff)
+    return _name_index()[best[0]] if best else ""
+
+
+def drugs_in_text(text: str) -> list[str]:
+    """Generics whose INN, synonym or brand appears as a whole word (or two-word phrase) in the text, in order of
+    appearance. Exact matching only: free text is full of words one letter away from a drug name."""
+    toks = _TOKEN_RE.findall(str(text or "").lower().replace("’", "'"))
+    idx, out = _name_index(), []
+    i = 0
+    while i < len(toks):
+        two = f"{toks[i]} {toks[i + 1]}" if i + 1 < len(toks) else ""
+        if two and two in idx:
+            g, i = idx[two], i + 2
+        elif toks[i] in idx and toks[i] not in _FORMS:
+            g, i = idx[toks[i]], i + 1
+        else:
+            i += 1
+            continue
+        if g not in out:
+            out.append(g)
+    return out
+
+
+def clause_for(drug: str, text: str) -> str:
+    """The part of `text` about one drug: from its first mention (INN, synonym or brand) up to the next drug
+    mention or the end of the sentence. "" when the drug is not named in the text."""
+    low = str(text or "").lower().replace("’", "'")
+    g = normalise_drug(drug)
+    if not low or not g:
+        return ""
+    spans = []
+    for name, gen in _name_index().items():
+        for m in re.finditer(rf"(?<![a-z]){re.escape(name)}(?![a-z])", low):
+            spans.append((m.start(), m.end(), gen))
+    mine = sorted(sp for sp in spans if sp[2] == g)
+    if not mine:
+        return ""
+    start, end0 = mine[0][0], mine[0][1]
+    stops = [sp[0] for sp in spans if sp[0] >= end0 and sp[2] != g]
+    m = re.search(r"[.;!?](\s|$)", low[end0:])
+    if m:
+        stops.append(end0 + m.start())
+    return str(text)[start:min(stops) if stops else len(low)]
+
+
+def _said(name: str, texts: list[str]) -> bool:
+    n = str(name or "").strip().lower()
+    return bool(n) and any(re.search(rf"(?<![a-z]){re.escape(n)}(?![a-z])", t.lower()) for t in texts if t)
+
+
+def repair_drug_items(drugs: list[dict], texts: list[str] | tuple = ()) -> list[dict]:
+    """Deterministic safety net for the translator's drug names (mutates and returns the list).
+
+    The LLM sometimes "normalises" a brand into an ordinary word ("Augmentin 625" -> name "augmented"), and an
+    unknown name silently passes the prescription gate. For each item whose name the rules do not know:
+      1. fuzzy match against every known INN / brand (misspellings), unless the speaker literally said that name
+         (a real drug the rules do not list, e.g. nitrofurantoin, is left alone);
+      2. else, when the name is not in what was said, take the known drug / brand that IS in the speaker's words
+         (`texts`: original utterance and its English rendering) and that no other item accounts for.
+    A repaired item keeps the model's name in "name_llm". Known names are left as they are."""
+    texts = [str(t) for t in texts or [] if t]
+    items = [d for d in drugs or [] if isinstance(d, dict) and str(d.get("name") or d.get("drug") or "").strip()]
+    key = lambda d: "name" if d.get("name") else "drug"  # noqa: E731
+    claimed = {normalise_drug(d[key(d)]) for d in items if is_known_drug(d[key(d)])}
+    unresolved = []
+    for d in items:
+        name = str(d[key(d)]).strip()
+        if is_known_drug(name) or (texts and _said(name, texts)):
+            continue
+        g = fuzzy_drug(name)
+        if g:
+            d["name_llm"], d[key(d)] = name, g
+            claimed.add(g)
+        else:
+            unresolved.append(d)
+    if unresolved and texts:
+        spare = [g for g in drugs_in_text(" \n ".join(texts)) if g not in claimed]
+        if len(spare) == len(unresolved):       # one-to-one, in order of appearance
+            for d, g in zip(unresolved, spare):
+                d["name_llm"], d[key(d)] = str(d[key(d)]).strip(), g
+    return drugs
+
+
+def literal_gloss(literal_en: str) -> str:
+    """Short plain gloss of an idiom's literal_en for alert text: the quoted word when there is one, else the text
+    without brackets, up to any semicolon. "'gastric' (English loanword)" -> "gastric"; "heat (in the body)" -> "heat"."""
+    lit = str(literal_en or "").strip()
+    m = re.search(r"[‘'“\"]([^’'”\"]+)[’'”\"]", lit)
+    if m and lit.startswith(m.group(0)[0]):
+        return m.group(1).strip()
+    short = re.sub(r"\s*\([^)]*\)", "", lit)
+    return re.split(r"\s*;", short, 1)[0].strip(" ,.") or lit
+
+
 def classes_of(drug_or_class: str) -> list[str]:
     """Classes for a drug (via meta.drug_classes); a class name (singular or plural) maps to itself."""
     if not drug_or_class:
@@ -332,7 +468,10 @@ CODE_ALIASES = {
     },
     "interventions": {"cooling": "active_cooling", "ice_bath": "cold_water_immersion"},
     "assessments": {"risk_assessment": "suicide_risk_assessment"},
-    "symptoms": {"chest_burn": "chest_burning", "burning_chest": "chest_burning", "dizzy": "dizziness"},
+    "symptoms": {"chest_burn": "chest_burning", "burning_chest": "chest_burning", "dizzy": "dizziness",
+                 "faint": "syncope", "fainting": "syncope", "fainted": "syncope", "passed_out": "syncope",
+                 "collapsed": "collapse", "disorientation": "confusion", "disoriented": "confusion",
+                 "confused": "confusion", "acute_confusion": "confusion"},
 }
 
 

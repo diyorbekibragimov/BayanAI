@@ -1,0 +1,5 @@
+interpretation_group,readmitted_30d_pct,n,added_los_days_vs_both,source,year,confidence,note
+neither admission nor discharge,24.3,423,1.49,https://doi.org/10.1007/s11606-012-2041-5,2012,high,"Lindholm et al. JGIM; single US hospital, retrospective; abstract gives LOS range 0.75-1.47 d"
+admission only,16.9,963,0.25 (n.s.),https://doi.org/10.1007/s11606-012-2041-5,2012,high,
+discharge only,17.6,482,0.76,https://doi.org/10.1007/s11606-012-2041-5,2012,high,
+both admission and discharge,14.9,1192,0 (reference),https://doi.org/10.1007/s11606-012-2041-5,2012,high,

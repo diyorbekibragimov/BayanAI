@@ -1,0 +1,107 @@
+# Pregnancy: RAAS blockers, isotretinoin, warfarin, NSAIDs >= 20/30 weeks, unknown pregnancy status in a woman of
+# child-bearing age (PREG-*, WORK-PREG-01). Pregnancy status / age / sex come from the background extractor.
+- id: preg-01-lisinopril-12wk
+  title: 12 weeks pregnant with high blood pressure; doctor starts lisinopril
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "How many weeks pregnant are you? Any allergies?"}
+    - {role: patient, text: "तीसरा महीना चल रहा है डॉक्टर, बारह हफ्ते। एलर्जी कोई नहीं।"}
+    - {role: doctor, text: "Your blood pressure is 152 over 100. I'll start lisinopril 10 mg once daily."}
+    - {action: held_else}
+    - {role: doctor, text: "Instead, labetalol 100 mg twice a day, and we will check your urine for protein."}
+  expect:
+    must_hold: [{drug: lisinopril, rule: PREG-RAAS-01, turn: 2}]
+    must_not_hold: [labetalol]
+    state: {patient: {pregnant: true}, prescribed_not: [lisinopril], prescribed_has: [labetalol]}
+    care_plan: {meds_not: [lisinopril], meds_has: [labetalol]}
+    pdf: {patient_meds_not: [lisinopril]}
+
+- id: preg-02-isotretinoin-status-unknown
+  title: 24-year-old woman with acne; isotretinoin prescribed without asking about pregnancy
+  patient_lang: tl
+  turns:
+    - {role: doctor, text: "How old are you, and what is the problem?"}
+    - {role: patient, text: "Twenty-four po ako, doc. Ang dami pong tigyawat sa mukha ko, matagal na, ayaw mawala kahit anong sabon."}
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "Wala naman po."}
+    - {role: doctor, text: "I'll start isotretinoin 20 mg once a day for your acne."}
+  expect:
+    must_not_hold: [isotretinoin]
+    must_flag:
+      - {rule: PREG-UNK-01, severity: caution, by_turn: 4}
+    must_suggest:
+      - {keywords: [pregnan, period, menstrual, contracept], note: "agent or rule card should prompt a pregnancy question/test"}
+    state: {patient: {sex: female, age_years: 24}}
+
+- id: preg-03-isotretinoin-pregnant
+  title: Pregnant patient (8 weeks) asks about acne; doctor prescribes isotretinoin
+  patient_lang: ko
+  turns:
+    - {role: doctor, text: "Any allergies? Are you pregnant or could you be?"}
+    - {role: patient, text: "알레르기는 없어요. 네, 지금 임신 8주예요."}
+    - {role: doctor, text: "For the severe acne, I'll prescribe isotretinoin 20 mg daily."}
+    - {action: held_else}
+    - {role: doctor, text: "Let's use azelaic acid cream twice a day on the face instead."}
+  expect:
+    must_hold: [{drug: isotretinoin, rule: PREG-ISO-01, turn: 2}]
+    state: {patient: {pregnant: true}, prescribed_not: [isotretinoin]}
+    care_plan: {meds_not: [isotretinoin]}
+    pdf: {patient_meds_not: [isotretinoin]}
+
+- id: preg-04-ibuprofen-32wk
+  title: 32 weeks pregnant with back pain; ibuprofen prescribed (critical >= 30 weeks)
+  patient_lang: sw
+  turns:
+    - {role: doctor, text: "How many weeks pregnant are you? Any allergies?"}
+    - {role: patient, text: "Nina mimba ya wiki thelathini na mbili, daktari. Sina mzio wowote."}
+    - {role: doctor, text: "For the back pain, take ibuprofen 400 mg three times a day."}
+    - {action: held_else}
+    - {role: doctor, text: "Take paracetamol 1 g up to four times a day and use a warm pack on your back."}
+  expect:
+    must_hold: [{drug: ibuprofen, rule: PREG-NSAID-01, turn: 2}]
+    must_not_hold: [paracetamol]
+    state: {patient: {pregnant: true, gestation_weeks: 32}}
+    care_plan: {meds_not: [ibuprofen], meds_has: [paracetamol]}
+
+- id: preg-05-paracetamol-early-trap
+  title: 8 weeks pregnant with a cold; paracetamol 1 g TDS (correct) - no pregnancy alert expected
+  patient_lang: es
+  turns:
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "No, ninguna. Estoy embarazada de ocho semanas, por eso no he tomado nada."}
+    - {role: doctor, text: "That's fine. Paracetamol 1 g three times a day for the fever is safe in pregnancy, plus fluids and rest."}
+  expect:
+    must_not_hold: ["*"]
+    must_not_flag: [{rule_any: [PREG-NSAID-01, PREG-UNK-01, PREG-RAAS-01]}, {severity: critical}]
+    state: {patient: {pregnant: true}, prescribed_has: [paracetamol]}
+
+- id: preg-06-warfarin-dvt-pregnant
+  title: Pregnant woman (20 weeks) with a DVT; doctor prescribes warfarin
+  patient_lang: ur
+  turns:
+    - {role: doctor, text: "Any allergies? How far along is the pregnancy?"}
+    - {role: patient, text: "کوئی الرجی نہیں۔ پانچواں مہینہ ہے، بیس ہفتے۔ بائیں ٹانگ بہت سوجی ہوئی ہے اور درد ہے۔"}
+    - {role: doctor, text: "The scan shows a clot in your leg. Start warfarin 5 mg once a day."}
+    - {action: held_else}
+    - {role: doctor, text: "Instead, enoxaparin injection 1 mg per kg twice a day under the skin."}
+  expect:
+    must_hold: [{drug: warfarin, rule: PREG-WARF-01, turn: 2}]
+    state: {patient: {pregnant: true}, prescribed_not: [warfarin]}
+    care_plan: {meds_not: [warfarin]}
+
+- id: preg-07-abdo-pain-unknown-status
+  title: 26-year-old woman with lower abdominal pain and dizziness; pregnancy never asked; discharged
+  patient_lang: ta
+  turns:
+    - {role: doctor, text: "How old are you and what is wrong?"}
+    - {role: patient, text: "எனக்கு இருபத்தாறு வயசு டாக்டர். நேத்துலேர்ந்து அடிவயிறு வலிக்குது, தலை சுத்துது."}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "இல்ல டாக்டர்."}
+    - {role: doctor, text: "It is probably gastritis. Take omeprazole 20 mg daily, you can go home."}
+  expect:
+    must_flag:
+      - {rule: WORK-PREG-01, by_turn: 3}
+      - {rule: WORK-PREG-01, severity: critical, note: "escalates to critical on discharge"}
+    must_suggest:
+      - {keywords: [pregnan, period, menstrual], kind_any: [ask, missed]}
+    state: {patient: {sex: female, age_years: 26}}

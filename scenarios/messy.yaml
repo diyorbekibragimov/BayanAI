@@ -1,0 +1,83 @@
+# Messy speech: a bare "yes" to a two-part question, contradictions, code-switching (Hinglish in Latin script),
+# numbers in native digits (Devanagari, Bengali).
+- id: messy-01-yes-to-two-part-question
+  title: Patient answers 'yes' to 'chest pain or shortness of breath?' (ambiguous); copilot should split it
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "What brings you today?"}
+    - {role: patient, text: "हिजोदेखि अलि अप्ठ्यारो भइरहेको छ डाक्टर साब, जिउ गल्छ।"}
+    - {role: doctor, text: "Do you have chest pain or shortness of breath?"}
+    - {role: patient, text: "हजुर।"}
+  expect:
+    must_flag:
+      - {kind_any: [ask, observation], keywords: [chest, breath, which, both, separate, pain], by_turn: 3}
+
+- id: messy-02-hinglish-no-allergy-but-penicillin
+  title: "'No allergy... but once a rash from penicillin, in childhood' (contradiction), then amoxicillin"
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "No allergy doctor... वैसे बचपन में एक बार penicillin से पूरे body पे rash हुआ था, but वो तो बहुत पहले की बात है।"}
+    - {role: doctor, text: "For the tonsillitis, amoxicillin 500 mg three times a day for five days."}
+    - {action: held_else}
+    - {role: doctor, text: "Then clarithromycin 500 mg twice a day for five days."}
+  expect:
+    must_hold: [{drug: amoxicillin, rule: ALG-PEN-01, turn: 2}]
+    must_not_hold: [clarithromycin]
+    state: {allergy_has: [penicillin], prescribed_not: [amoxicillin]}
+    care_plan: {meds_not: [amoxicillin], avoid_has: [penicillin]}
+
+- id: messy-03-nepali-digits-weight-42kg
+  title: Small woman gives her weight in Devanagari digits (४२ किलो); paracetamol 1 g QDS = 95 mg/kg/day
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "Any allergies? And do you know your weight?"}
+    - {role: patient, text: "एलर्जी छैन। तौल त ४२ किलो मात्र छ, आजकल खाना नरुचेर दुब्लाएँ।"}
+    - {role: doctor, text: "For the fever and body pain, paracetamol 1 g four times a day."}
+    - {action: held_else}
+    - {role: doctor, text: "Paracetamol 500 mg four times a day then."}
+  expect:
+    must_hold: [{drug: paracetamol, rule: DOSE-PARA-03, turn: 2}]
+    must_not_hold: [{drug: paracetamol, turn: 4}]
+    state: {patient: {weight_kg: 42}}
+
+- id: messy-04-bengali-digits-child-18kg
+  title: Father gives the child's weight in Bengali digits (১৮ কেজি); paracetamol 500 mg QDS = 111 mg/kg/day
+  patient_lang: bn
+  turns:
+    - {role: doctor, text: "How old is she, and her weight?"}
+    - {role: patient, text: "মেয়ের বয়স পাঁচ বছর, ওজন ১৮ কেজি। দুই দিন ধরে জ্বর, ১০২ ডিগ্রি পর্যন্ত উঠছে।"}
+    - {role: doctor, text: "Is she allergic to any medicine?"}
+    - {role: patient, text: "না, কোনো এলার্জি নেই।"}
+    - {role: doctor, text: "Give her paracetamol 500 mg four times a day."}
+    - {action: held_else}
+    - {role: doctor, text: "Give her paracetamol syrup 270 mg every six hours, not more than four doses a day."}
+  expect:
+    must_hold: [{drug: paracetamol, rule: DOSE-PARA-03, turn: 4}]
+    state: {patient: {weight_kg: 18}}
+
+- id: messy-05-hinglish-latin-chest-arm
+  title: Hinglish in Latin script, 'chest mein pressure' on stairs radiating to the left arm
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "What's the problem?"}
+    - {role: patient, text: "Doctor sahab, mujhe chest mein pressure feel hota hai jab main stairs chadhta hoon, aur left arm mein bhi pain jaata hai."}
+    - {role: doctor, text: "Any allergies?"}
+    - {role: patient, text: "Nahi, koi allergy nahi."}
+    - {role: doctor, text: "Probably muscular. Ibuprofen 400 mg three times a day, you can go home."}
+  expect:
+    must_flag:
+      - {rule: WORK-CHEST-05, by_turn: 1}
+      - {rule_any: [WORK-CHEST-02, WORK-CHEST-03], severity: critical, by_turn: 4}
+
+- id: messy-06-dose-said-twice-differently
+  title: Doctor states two different amoxicillin doses in one sentence (500 then 250)
+  patient_lang: ta
+  turns:
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "ஒண்ணும் இல்ல டாக்டர்."}
+    - {role: doctor, text: "Amoxicillin 500 mg three times a day, sorry, 250 mg, three times a day for five days."}
+  expect:
+    must_not_hold: ["*"]
+    must_flag:
+      - {kind_any: [observation, ask], keywords: [dose, 500, 250, twice, two different, confirm, clarify], gap: true, note: "Only the copilot can catch a self-corrected dose; no rule. The final plan must carry 250 mg."}
