@@ -108,7 +108,7 @@ def llm():
     global _llm
     if _llm is None:
         from huggingface_hub import InferenceClient
-        _llm = InferenceClient(provider=LLM_PROVIDER, api_key=HF_TOKEN)
+        _llm = InferenceClient(provider=LLM_PROVIDER, api_key=HF_TOKEN, timeout=45)
     return _llm
 
 
@@ -119,7 +119,7 @@ def tts_client():
     global _tts_client
     if _tts_client is None:
         from huggingface_hub import InferenceClient
-        _tts_client = InferenceClient(provider="auto", api_key=HF_TOKEN)
+        _tts_client = InferenceClient(provider="auto", api_key=HF_TOKEN, timeout=20)
     return _tts_client
 
 
@@ -145,7 +145,8 @@ Return ONLY a JSON object with these keys:
   "translation": the utterance in the TARGET language,
   "english": a literal English rendering of what the speaker said,
   "drugs": medicines the speaker prescribes, proposes or names: [{"name": "<generic name, lowercase>", "dose": "<as said or null>"}],
-  "allergies": allergies or bad reactions to medicines the speaker reports: [{"substance": "<lowercase drug or class>", "reaction": "<as said or null>"}]
+  "allergies": allergies or bad reactions to medicines the speaker reports: [{"substance": "<lowercase drug or class>", "reaction": "<as said or null>"}],
+  "tests": tests or investigations the doctor orders or reports today, as short English names: ["ECG", "troponin blood test"]
 Use [] when there are none. Reasoning: low"""
 
 
@@ -179,6 +180,10 @@ def translate(text: str, role: str, src: str, tgt: str) -> dict:
     data.setdefault("english", text if src == "en" else "")
     data.setdefault("drugs", [])
     data.setdefault("allergies", [])
+    data.setdefault("tests", [])
+    for k in ("drugs", "allergies", "tests"):
+        if not isinstance(data[k], list):
+            data[k] = []
     return data
 
 
@@ -200,11 +205,11 @@ def split_sentences(text: str, max_chars: int = 160) -> list[str]:
     return out
 
 
-def _stream_worker_tts(text: str, lang: str):
+def _stream_worker_tts(text: str, lang: str, description: str = ""):
     """Stream patient-language speech from the worker: ~0.5 s chunks, generated continuously
     across sentences, with a start buffer sized so playback never overtakes generation."""
     import base64
-    job = worker().submit(text, lang, "", api_name="/speak_stream")
+    job = worker().submit(text, lang, description, api_name="/speak_stream")
     for out in job:
         if not isinstance(out, dict) or out.get("done") or not out.get("pcm"):
             continue
@@ -212,10 +217,10 @@ def _stream_worker_tts(text: str, lang: str):
         yield out["sr"], pcm
 
 
-def speak_chunks(text: str, lang: str):
+def speak_chunks(text: str, lang: str, description: str = ""):
     """Yield (sample_rate, float32 array) chunks; yields nothing if no voice for this language yet."""
     if lang in WORKER_TTS_LANGS:
-        yield from _stream_worker_tts(text, lang)
+        yield from _stream_worker_tts(text, lang, description)
         return
     if lang != "en":
         return
@@ -225,12 +230,12 @@ def speak_chunks(text: str, lang: str):
             yield voiced
 
 
-def speak(text: str, lang: str):
+def speak(text: str, lang: str, description: str = ""):
     """Return (sample_rate, float32 mono array) or None if no voice for this language yet."""
     if not text.strip():
         return None
     if lang in WORKER_TTS_LANGS:
-        wav_path, _stats = worker().predict(text, lang, "", api_name="/speak")
+        wav_path, _stats = worker().predict(text, lang, description, api_name="/speak")
         audio, sr = sf.read(wav_path, dtype="float32")
         return sr, audio
     if lang == "en":
