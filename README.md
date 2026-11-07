@@ -217,7 +217,7 @@ space/README.md        Hugging Face Space card
 
 Team QH-129, Qai × Hugging Face Hackathon O1, Doha, 5–7 November 2026.
 
-<!-- Members and roles: add names here. -->
+Diyorbek Ibragimov, Sangyoon Lim, Mohammed Al-Kuwari, George Chkhaidze.
 
 ## License
 

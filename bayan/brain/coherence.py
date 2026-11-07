@@ -216,8 +216,8 @@ def post_card(consult, turn, result: dict) -> str | None:
     dim = DIMENSION.get(kind, "consistency")
     try:
         res = consult.cards.post(
-            "observation", result.get("reason") or "Sentence held",
-            (result.get("reason") or "") + " The sentence was held before the patient heard it.",
+            "observation", result.get("reason") or "Please check this",
+            (result.get("reason") or "") + " Bayan paused it so the doctor could check before the patient heard it.",
             result.get("evidence") or [], dim, severity="caution", source="agent", t_min=consult.now_min(),
             dimension=dim, confidence=result.get("confidence"), coherence=True, coherence_kind=kind,
             held_utt=turn.id if turn is not None else "")

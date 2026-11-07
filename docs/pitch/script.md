@@ -3,11 +3,11 @@
 Team QH-129, Qai × Hugging Face Hackathon O1, Doha.
 Deck: [`deck/index.html`](deck/index.html). PDF: [`Bayan-pitch.pdf`](Bayan-pitch.pdf).
 
-**Budget:** 368 spoken words across 15 timed slides; slide 9 is an untimed alternate. 310 are spoken over slides in 2:15, about 138 words a minute; 58 go over the 44-second demo video. The slides carry no footnotes; every source is in the table below.
+**Budget:** 370 spoken words across 15 timed slides. Slide 9 is an untimed alternate, slide 17 (Team) is untimed or a 3-second mention, and slide 18 (Thank you) comes after 3:00. 312 words are spoken over slides in 2:15, about 139 words a minute; 58 go over the 44-second demo video. The slides carry no footnotes; every source is in the table below.
 Tone: plain and conversational. Say what the product does and what the numbers are; no slogans. Speak at an even pace and leave a short gap after each number.
 
 **Deck controls:** → / Space / click = next, ← = back, `f` = fullscreen, `r` = restart the demo video, `p` = pause or play it.
-Slide 6 plays `assets/demo.webm` automatically. It starts at 0:22 of the recording, plays at 1.5× and ends on the held screen 44 s later.
+Slide 6 plays `assets/demo.webm` automatically. It starts at 0:22 of the recording, plays at 1.5× and ends on the paused screen 44 s later.
 
 **Demo choice:** by default, play the recorded video. Inference credits are frozen, so a live run is not possible today. If credits come back and the venue network is solid, the same scripted consultation can run live at `/?demo=1` on the Space. Even then, keep the video one keypress away.
 
@@ -57,12 +57,12 @@ Below the bars: "Bayan is built to close this gap: it interprets, reasons about 
 | 0:18 | *Gyastrik* underlined; Notes panel with flags and Ask next | "He says gyastrik. The notes flag it as possible heart pain and suggest the next question." |
 | 0:28 | The suggested question as a Nepali caption | "The doctor taps it, and it's asked in Nepali." |
 | 0:38 | The doctor's next sentence | "Then the doctor prescribes amoxicillin." |
-| 0:41 | The pearl turns vermillion: Sentence held | (wait for the video to stop, then advance) |
+| 0:41 | The pearl turns vermillion and the sentence is paused. The recording shows the older label "Sentence held"; the app now says "Paused: please check" | (wait for the video to stop, then advance) |
 
-## 7. Held, 1:39–1:47
-**On screen:** the held screen, full size.
+## 7. Check before it is said, 1:39–1:47
+**On screen:** the paused screen (cropped above the old status label), with the caption underneath.
 
-> Bayan holds it: amoxicillin is a penicillin. That's a fixed rule, not the language model, and the doctor can override.
+> Bayan paused the sentence so the doctor could check it: amoxicillin is a penicillin. That's a fixed rule, not the language model.
 
 ## 8. Care plan and doctor's note, 1:47–1:54
 **On screen:** the phone care-plan page in Nepali, a patient sheet PDF in Tamil and the doctor's note PDF.
@@ -73,7 +73,7 @@ Below the bars: "Bayan is built to close this gap: it interprets, reasons about 
 This is an alternate to slide 10; we will keep one of the two. If you use this one, skip slide 10 and say the slide 10 line here.
 
 **On screen:** three parts:
-- Each turn: Hear (speaker check, speech-to-text), Interpret (gpt-oss-120b), Safety gate (83 rules; vermillion, "held, not spoken"), Speak, then Spoken translation.
+- Each turn: Hear (speaker check, speech-to-text), Interpret (gpt-oss-120b), Safety gate (83 rules; vermillion, "paused for the doctor to check"), Speak, then Spoken translation.
 - Reasoning loop (each turn, in the background): Case summary, Clinical review agent (smolagents + gpt-oss-120b; tools: rules, idioms, drug check), Attention filter, Doctor's screen (one Ask next + flags), with a "next turn" arrow back to the summary.
 - Wrap-up at the end: care plan, PDFs, QR.
 
@@ -119,6 +119,14 @@ A line underneath gives the timings and cost: 0.9 s per turn, an agent card abou
 
 > It isn't a certified interpreter yet. Next: a pilot clinic, clinician review of our rules, and native-speaker testing. Thank you.
 
+## 17. Team (untimed, or a 3-second mention)
+**On screen:** "Team", Team QH-129, and four initials avatars with names: Diyorbek Ibragimov, Sangyoon Lim, Mohammed Al-Kuwari, George Chkhaidze.
+
+> (optional, about 3 s) This is our team.
+
+## 18. Thank you (after 3:00)
+**On screen:** the pearl, "Thank you", "Questions", and the Space URL. Leave it up during questions.
+
 ---
 
 ## Numbers on stage and where they come from
@@ -129,10 +137,10 @@ A line underneath gives the timings and cost: 0.9 s per turn, an agent card abou
 | Sidra in-person interpreters: 9 languages, no Nepali, Malayalam, Bengali or Tagalog | Sidra Medicine website, 2026 [10] |
 | Adverse events, limited English vs English-speaking patients: physical harm 49.1% vs 29.5% (shown 49% and 30%, 1.7×); moderate harm to death 46.8% vs 24.4% (47% and 24%, 1.9×); caused by communication errors 52.4% vs 35.9% (52% and 36%, 1.5×) | Divi C, et al. *Int J Qual Health Care* 2007;19(2):60–67, https://doi.org/10.1093/intqhc/mzl069 (research.md [19]). Rows 1–3 of `docs/pitch/data/lep_adverse_events.csv`. Six US Joint Commission hospitals, voluntarily reported events, pilot study. Say "adverse events", not "twice as many events". The year is not shown on the slide |
 | *Gyastrik* ("gastric") can hide cardiac pain; Anurag is an illustrative persona | `data/idiom_lexicon.json` entry npi-005; in Nepal only 23.8% of STEMI patients thought their pain was cardiac (Prajapati, *JNHRC* 2022 [36]) |
-| Held in about 3 ms, no LLM | `bayan/brain/copilot.py` prescription gate; docs/11 §2 |
+| Paused in about 3 ms, no LLM | `bayan/brain/copilot.py` prescription gate; docs/11 §2 |
 | 83 rules, 98 idioms | Counted in `data/safety_rules.json` (83) and `data/idiom_lexicon.json` (98 entries; the 38-scenario simulation ran on the earlier 59-entry lexicon). Older docs say 81 rules |
 | 37 patient languages | `bayan/ui.py`: 5 start chips plus 32 in "More…" (Filipino, Tamil, Swahili, then the 29 in `bayan/langs.py`) |
-| 99% of 727, 0/44 traps, 477/477 PDF checks, 3 of 16 holds missed, $0.011 median, 0.9 s per turn | `reports/sim/gptoss120b-full/summary.md` (text turns, no audio) |
+| 99% of 727, 0/44 traps, 477/477 PDF checks, 3 of 16 expected pauses missed, $0.011 median, 0.9 s per turn | `reports/sim/gptoss120b-full/summary.md` (text turns, no audio) |
 | Clinical review: 8 of 12 expected concerns, 0 caution alerts on 6 quiet visits, 30/30 clinical checks, 0/22 traps, agent card median 7.0 s, $0.0143 median per consultation | `reports/sim/coherence-r2/summary.md`: one full run of 16 scenarios in 9 languages (7 coherence, 6 quiet, 3 regression). Smaller reruns caught 4 of 7 (`coherence-r3`) and 2 of 5 (`coherence-r4`), so results vary between runs |
 | Online $0.09–0.28, clinic box $0.13–0.51, hospital $0.16–1.65 per consultation; phone interpreter $11.40–15.75 | research.md §6.3, `data/cost_per_consultation.csv`, `data/cost_per_clinic_month.csv`. Model assumptions: 1,200 consultations per clinic-month; L4 Space at $0.80/h for 12 h a day; CPU Space at $0.03/h; LLM $0.025 per consultation from the token model; 15 interpreter-minutes per visit |
 | Clinic box $14.6k (QAR 53k), hospital server $48k (QAR 175k) | research.md §6.1, `data/cost_model.json`: street prices L4 ≈ $2,800, L40S ≈ $8,500, H100 PCIe ≈ $27,500, plus a $9–12k server; 36-month amortisation, support at 15% of capex a year, Qatar business electricity QAR 0.13/kWh, PUE 1.5. Sharing across clinics not load-tested; offline not demonstrated end to end |
@@ -150,10 +158,10 @@ We haven't measured it per language with native speakers yet, and we say so. Pub
 Translators move words; none checks a sentence against the patient's allergies or doses before it is spoken. Opalite's Guardian checks translation fidelity, not clinical content. As for end-to-end speech: no open model produces Nepali or Malayalam speech. We also need the text in the middle, because that text is what the rules check, the audit trail records and the PDFs print.
 
 **3. Won't the alerts annoy doctors?**
-Our suite included 44 deliberate traps, such as a sulfa allergy with furosemide or a mild penicillin rash with ceftriaxone. None of them tripped. Only a critical rule holds a sentence. Everything else is a quiet card in the Notes panel. "Speak it anyway" is always available and is logged. In a pilot we would track alert precision, with a target of at least 70%.
+Our suite included 44 deliberate traps, such as a sulfa allergy with furosemide or a mild penicillin rash with ceftriaxone. None of them tripped. Only a critical rule pauses a sentence. Everything else is a quiet card in the Notes panel. "Speak it anyway" is always available and is logged. In a pilot we would track alert precision, with a target of at least 70%.
 
 **4. What did it miss?**
-Three of 16 expected holds:
+Three of 16 expected pauses:
 - Augmentin given by brand name: the brand alias was missing.
 - An allergy described only as "my body swelled" from "that red amoxi capsule", followed by cephalexin.
 - Tramadol four times a day plus extra at night, where the daily total was not summed.
@@ -179,7 +187,7 @@ gpt-oss-120b has four jobs:
 
 Every candidate concern must quote the transcript. An attention filter scores each one by severity, confidence and novelty, shows one "Ask next" at a time, and merges or expires older cards.
 
-The agent cannot hold a sentence; only the deterministic prescription gate can.
+The agent cannot pause a sentence; only the deterministic prescription gate can.
 
 **6. Privacy and data residency?**
 - Audio is deleted right after transcription, and transcripts stay in memory.

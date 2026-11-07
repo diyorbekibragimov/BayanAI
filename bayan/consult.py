@@ -983,7 +983,7 @@ def held_anyway(s: Consult):
     brain.override_turn(s.brain, h.get("utt", ""), h.get("cards") or [], "spoken anyway by clinician")
     with s.lock:
         add_note(s, "override", loc(s, [f"{_cap(h['drug'])} spoken anyway" if h.get("drug")
-                                        else "Held sentence spoken anyway"])[0])
+                                        else "Said anyway after the pause"])[0])
         print(f"[audit] override {h['rule']} sid={s.sid[:6]} drug={h['drug']}", flush=True)
         s.live, s.tint = "doctor", "d"
         if not queue_speech(s, Speech(h["translation"], s.lang, "patient", True, h["dq"], kind="override"), source=h["dq"]):

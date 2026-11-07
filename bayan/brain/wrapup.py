@@ -441,7 +441,7 @@ def decision_log(consult: Consultation) -> list[dict]:
                      "alert": alert, "action": "; ".join(parts), "rule_ids": ids})
     for t in held:
         rows.append({"time": fmt_t(t.t_min), "level": "Critical", "rule_ids": [],
-                     "alert": "Prescribing sentence held by the safety gate (not interpreted)",
+                     "alert": "Prescribing sentence paused for the doctor to check (not interpreted)",
                      "action": "Plan revised by clinician"})
     if unused_asks:
         rows.append({"time": "", "level": "Info", "rule_ids": [],
@@ -624,9 +624,9 @@ def safety_alerts(consult: Consultation) -> list[str]:
                    "prescribed."
             gone = _norm_drug(drug) in stopped
             if held and gone:
-                line += f" The instruction was held and {drug} stopped."
+                line += f" The instruction was paused and {drug} stopped."
             elif held:
-                line += " The instruction was held."
+                line += " The instruction was paused."
             elif gone:
                 line += f" {drug.capitalize()} was stopped."
             elif "override" in verbs:
@@ -671,8 +671,8 @@ def safety_alerts(consult: Consultation) -> list[str]:
         elif verbs & {"acknowledge", "accept"}:
             line += " Acknowledged by the clinician."
         out.append(line)
-    if held and not any("held" in x for x in out):
-        out.append("A prescribing instruction was held and not interpreted to the patient.")
+    if held and not any("paused" in x for x in out):
+        out.append("A prescribing instruction was paused and not interpreted to the patient.")
     return [dedash(x) for x in out]
 
 

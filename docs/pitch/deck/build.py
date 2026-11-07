@@ -233,8 +233,8 @@ def chart_arch() -> str:
         out.append(text(cx, 733, label, 18, INK, 600, "middle"))
         out.append(_arrow([(cx, 702), (cx, R[0] + 36)]))
     out.append(_arrow([(382, R[3]), (404, R[3])], HELD, 2.4))
-    out.append(text(410, R[3] - 4, "Held,", 18, HELD, 600))
-    out.append(text(410, R[3] + 18, "not spoken", 18, HELD, 600))
+    out.append(text(410, R[3] - 4, "Paused for the", 18, HELD, 600))
+    out.append(text(410, R[3] + 18, "doctor to check", 18, HELD, 600))
 
     # ---- reasoning loop (each substantive turn, in the background) - the focus
     cx, bw = 830, 424
@@ -343,8 +343,8 @@ def chart_arch_overview() -> str:
         out.append(text(cx, 749, label, 22, INK, 600, "middle"))
         out.append(arrow([(cx, 712), (cx, R[0] + bh / 2 + 2)]))
     out.append(arrow([(ix + iw / 2, R[2]), (ix + iw / 2 + 34, R[2])], HELD, 2.6))
-    out.append(text(ix + iw / 2 + 42, R[2] - 4, "held,", 21, HELD, 600))
-    out.append(text(ix + iw / 2 + 42, R[2] + 20, "not spoken", 21, HELD, 600))
+    out.append(text(ix + iw / 2 + 42, R[2] - 4, "paused for the", 21, HELD, 600))
+    out.append(text(ix + iw / 2 + 42, R[2] + 20, "doctor to check", 21, HELD, 600))
 
     # reasoning loop (one grouped block)
     rx, rw = 990, 440
@@ -425,15 +425,13 @@ def foot(n: int, note: str = "") -> str:
 
 def slides() -> list[str]:
     S = []
-    total = 16
+    total = 18
 
     # 1 Title
     S.append(f'''
 <section class="slide s-title" data-title="Title">
-  {brand()}
   <div class="title">
-    <h1>Bayan AI</h1>
-    <p class="ar" lang="ar">بيان</p>
+    <h1><span>Bayan AI</span><span class="ar" lang="ar">بيان</span></h1>
     <p class="tag">A clinical AI system that interprets between doctors and patients in Qatar, reasons about the consultation, and flags what gets missed.</p>
     <p class="meta"><span>Team QH-129</span><span>Qai × Hugging Face Hackathon O1</span><span>Doha, 5–7 Nov 2026</span></p>
   </div>
@@ -512,11 +510,14 @@ def slides() -> list[str]:
   <span class="pg">{{PG}}</span>
 </section>''')
 
-    # 5 Held (hero)
+    # 5 Pause (hero)
     S.append(f'''
-<section class="slide s-held" data-title="Held">
-  <img class="bleed" src="../assets/screens/07-held-penicillin-amoxicillin.png" alt="Sentence held: the patient reported a penicillin allergy; amoxicillin is a penicillin">
-  <p class="heldcap">Held before the patient hears it. Rule ALG-PEN-01, checked in about 3 ms, with no language model in the path. “Speak it anyway” is logged.</p>
+<section class="slide s-held" data-title="Pause">
+  {brand()}
+  <h2>Check before it is said</h2>
+  <div class="pausewrap"><img src="../assets/screens/07-held-penicillin-amoxicillin.png" alt="Bayan paused the doctor's sentence: the patient reported a penicillin allergy; amoxicillin is a penicillin"></div>
+  <p class="heldcap">The patient does not hear the sentence until the doctor decides. Rule ALG-PEN-01 found it in about 3 ms, with no language model involved. The doctor can say something else, or speak it anyway, which is logged.</p>
+  <span class="pg">{{PG}}</span>
 </section>''')
 
     # 6 Take-home
@@ -530,7 +531,7 @@ def slides() -> list[str]:
     <figure class="page"><div class="img"><img src="../assets/screens/13-care-plan-pdf.png" alt="Patient care sheet PDF in Tamil"></div>
       <figcaption>Patient sheet in Tamil: penicillins under “Do not take”</figcaption></figure>
     <figure class="page doc"><div class="img"><img src="../assets/screens/14-doctor-report-pdf.png" alt="Doctor's consultation note PDF"></div>
-      <figcaption>Doctor’s note: the held amoxicillin, on the record</figcaption></figure>
+      <figcaption>Doctor’s note: the paused amoxicillin, on the record</figcaption></figure>
   </div>
   {foot(6, "Phone page: current build, Nepali demo plan, rendered locally. PDFs: simulation scenario alg-09, Tamil patient (reports/sim/gptoss120b-full). The care plan is re-checked against the rules before rendering.")}
 </section>''')
@@ -574,7 +575,7 @@ def slides() -> list[str]:
       <p class="es">38 consultations, 14 languages</p>
       <div class="er"><p class="v">99%</p><p class="l">of 727 checks passed</p></div>
       <div class="er"><p class="v">0 of 44</p><p class="l">false-alarm traps tripped</p></div>
-      <div class="er"><p class="v">100%</p><p class="l">of 477 PDF checks: native script, held drug never on the patient sheet</p></div>
+      <div class="er"><p class="v">100%</p><p class="l">of 477 PDF checks: native script, paused drug never on the patient sheet</p></div>
     </div>
     <div class="eg">
       <p class="eh">Clinical review</p>
@@ -629,7 +630,7 @@ def slides() -> list[str]:
   {brand()}
   <h2>Comparison</h2>
   <table class="cmp">
-    <thead><tr><th></th><th>Nepali, Malayalam, Bengali in the room</th><th>Checks allergy, dose, missed workup</th><th>Holds a sentence before the patient hears it</th><th>Can run in-country</th><th>Cost per visit</th></tr></thead>
+    <thead><tr><th></th><th>Nepali, Malayalam, Bengali in the room</th><th>Checks allergy, dose, missed workup</th><th>Pauses a sentence for the doctor to check</th><th>Can run in-country</th><th>Cost per visit</th></tr></thead>
     <tbody>
       <tr class="us"><th>Bayan</th><td>Yes, 37 languages</td><td>Yes, 83 cited rules</td><td>Yes</td><td>Yes, open weights</td><td>$0.09–0.28</td></tr>
       <tr><th>Phone and video interpreters</th><td>Yes, remote</td><td>Human judgement</td><td>No</td><td>No</td><td>$11–74</td></tr>
@@ -657,6 +658,29 @@ def slides() -> list[str]:
   </div>
   {foot(13, "Limits we state up front: machine translation is not certified interpreting; Bayan covers the visits that today get a roommate or no one, not consent or bad news. Rules and idioms are cited but not yet clinician-reviewed; accuracy varies by language.")}
 </section>''')
+    # Team
+    people = [("DI", "Diyorbek Ibragimov"), ("SL", "Sangyoon Lim"), ("MA", "Mohammed Al-Kuwari"), ("GC", "George Chkhaidze")]
+    S.append(f'''
+<section class="slide s-team" data-title="Team">
+  {brand()}
+  <h2>Team</h2>
+  <p class="lede">Team QH-129</p>
+  <div class="people">{"".join(f'<figure><span class="pearl av"><b>{i}</b></span><figcaption>{n}</figcaption></figure>' for i, n in people)}</div>
+  {foot(0)}
+</section>''')
+
+    # Thank you
+    S.append(f'''
+<section class="slide s-thanks" data-title="Thank you">
+  {brand()}
+  <div class="orb mid"><span class="ring r1"></span><span class="ring r2"></span><span class="pearl"></span></div>
+  <div class="thanks">
+    <p class="ty">Thank you</p>
+    <p class="q">Questions</p>
+    <p class="url">huggingface.co/spaces/dullgrey/team-qh-129-bayan-app</p>
+  </div>
+</section>''')
+
     assert len(S) == total
     return [sl.replace("{PG}", str(k + 1)) for k, sl in enumerate(S)]
 
@@ -695,9 +719,9 @@ h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-heigh
 .orb.l{left:190px;top:250px}
 
 /* 1 title */
-.title{position:absolute;left:128px;top:290px;width:960px}
-.title h1{margin:0;font-size:150px;line-height:1;font-weight:600;letter-spacing:-.03em}
-.title .ar{margin-top:18px;font-size:92px;line-height:1.3;font-weight:500}
+.title{position:absolute;left:128px;top:300px;width:980px}
+.title h1{margin:0;display:flex;align-items:baseline;gap:64px;font-size:168px;line-height:1.1;font-weight:600;letter-spacing:-.03em;white-space:nowrap}
+.title h1 .ar{font-family:'Reem Kufi',sans-serif;font-size:150px;font-weight:500;letter-spacing:0}
 .title .tag{margin-top:34px;font-size:40px;line-height:1.3;font-weight:500;width:900px}
 .title .meta{margin-top:48px;display:flex;gap:56px;font-size:24px;color:var(--muted)}
 
@@ -765,7 +789,10 @@ body.still .screen .poster{display:block}
 
 /* 5 held */
 .bleed{position:absolute;inset:0;width:1920px;height:1080px}
-.heldcap{position:absolute;left:772px;top:868px;width:900px;font-size:24px;line-height:1.45;color:var(--muted)}
+.pausewrap{position:absolute;left:128px;top:292px;width:1520px;height:630px;overflow:hidden;border-radius:22px;background:var(--bg);
+  box-shadow:0 0 0 1px var(--rule),0 50px 90px -60px rgba(23,52,48,.45)}
+.pausewrap img{display:block;width:1520px;height:auto}
+.heldcap{position:absolute;left:128px;top:946px;width:1520px;font-size:24px;line-height:1.45;color:var(--muted)}
 
 /* 6 outputs */
 .outs{position:absolute;left:128px;top:300px;display:flex;align-items:flex-start;gap:58px}
@@ -836,6 +863,22 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
 .cmp tbody td{color:var(--muted)}
 .cmp tr.us th,.cmp tr.us td{color:var(--ink);font-weight:600}
 .cmp col{width:auto}
+
+/* team */
+.people{position:absolute;left:128px;top:400px;width:1664px;display:grid;grid-template-columns:repeat(4,1fr);column-gap:48px}
+.people figure{margin:0;display:flex;flex-direction:column;align-items:center}
+.pearl.av{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 40px 70px -40px rgba(31,111,178,.40),0 20px 40px -30px rgba(14,138,111,.35),inset 0 10px 24px rgba(255,255,255,.95)}
+.pearl.av b{font-size:64px;font-weight:600;color:var(--ink);letter-spacing:.01em}
+.people figcaption{margin-top:36px;font-size:32px;font-weight:600;text-align:center}
+
+/* thank you */
+.orb.mid{width:300px;height:300px;left:810px;top:170px}
+.orb.mid .r1{inset:-34px}.orb.mid .r2{inset:-80px}
+.thanks{position:absolute;left:0;right:0;top:600px;text-align:center}
+.thanks .ty{font-size:120px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.thanks .q{margin-top:18px;font-size:48px;color:var(--muted)}
+.thanks .url{margin-top:56px;font-size:22px;color:var(--muted)}
 
 /* 12 close */
 .close{position:absolute;left:1000px;top:330px;width:800px}

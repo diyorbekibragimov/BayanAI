@@ -1086,14 +1086,14 @@ def render_doctor_report(consult, note_md: str, path, care_plan: dict | None = N
                 if t.role == "doctor":
                     said, slang = t.text, t.lang
                     if t.held:
-                        interp, ilang = "Not spoken (held by the safety check).", "en"
+                        interp, ilang = "Not said: paused for the doctor to check.", "en"
                     else:
                         interp, ilang = (t.translation or t.english or ""), (plang if t.translation else "en")
                 else:
                     said, slang = t.text, t.lang
                     interp, ilang = (t.english if t.english and t.english != t.text else ""), "en"
                 rows.append([Cell((fmt_t(t.t_min), "sans", "", 8.5, BLACK)),
-                             Cell((who, "sans", "", 8.5, BLACK), ("Held" if t.held else "", "semi", "", 8.5, BLACK)),
+                             Cell((who, "sans", "", 8.5, BLACK), ("Paused" if t.held else "", "semi", "", 8.5, BLACK)),
                              Cell((said, font_for(slang), "", 9, BLACK, _lh(9, 1.5),
                                    "R" if slang in RTL_LANGS else "L")),
                              Cell((interp, font_for(ilang), "", 8.5, BLACK, _lh(8.5, 1.4),

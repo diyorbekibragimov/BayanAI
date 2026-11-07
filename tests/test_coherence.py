@@ -254,7 +254,7 @@ def test_speak_it_anyway_overrides_and_the_same_issue_is_not_held_again(fake):
     assert not s.brain.turn_by_id(h["utt"]).held
     card = s.brain.cards.get(h["cards"][0])
     assert card["status"] == "overridden"
-    assert any(n["kind"] == "override" and n["text"] == "Held sentence spoken anyway" for n in s.notes)
+    assert any(n["kind"] == "override" and n["text"] == "Said anyway after the pause" for n in s.notes)
     row = next(r for r in wrapup.copilot_concerns(s.brain) if r["id"] == card["id"])
     assert row["status"] == "overridden" and row["severity"] == "caution"
     # the doctor insists: the same point (reworded) is not held again, and the prompt says it was overridden

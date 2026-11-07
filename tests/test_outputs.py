@@ -401,7 +401,7 @@ def test_golden_path_deterministic():
     assert "Penicillin: body swelling, reported as severe" in note and "—" not in note
     assert "BP 128/82 mmHg (as stated by clinician)" in note and "ECG (12-lead): normal (as stated by clinician)" in note
     assert "Amoxicillin" in note and "stopped" in note and "viral" in note.split("## Assessment")[1].split("## Plan")[0]
-    assert "The instruction was held and amoxicillin stopped." in note
+    assert "The instruction was paused and amoxicillin stopped." in note
     assert "Both were then done and were normal." in note and "which can hide heart pain" in note
     assert not re.search(r"\bu0\d\d\b", note) and "[u" not in note
     assert c.outputs["note_info"]["source"] == "llm" and c.outputs["note_json"]["plan"]
@@ -652,7 +652,7 @@ def test_fallback_note_from_state_content():
 def test_safety_alerts_are_plain_sentences():
     c = golden_consult()
     alerts = wrapup.safety_alerts(c)
-    assert "Penicillin allergy reported; amoxicillin was then prescribed. The instruction was held and amoxicillin " \
+    assert "Penicillin allergy reported; amoxicillin was then prescribed. The instruction was paused and amoxicillin " \
            "stopped." in alerts
     assert "Chest pain, with discharge planned before an ECG and troponin. Both were then done and were normal." \
         in alerts
