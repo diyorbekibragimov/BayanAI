@@ -87,7 +87,7 @@ def _prefetch(repo: str, patterns):
     t = time.time()
     for attempt in range(2):
         try:
-            snapshot_download(repo, allow_patterns=patterns, token=HF_TOKEN, max_workers=16)
+            snapshot_download(repo, allow_patterns=patterns, token=HF_TOKEN, max_workers=32)
             break
         except Exception as e:  # noqa: BLE001 - fall back to plain HTTP if hf_transfer misbehaves
             _log(f"prefetch {repo} failed ({type(e).__name__}: {e}); retrying without hf_transfer")
@@ -96,17 +96,21 @@ def _prefetch(repo: str, patterns):
 
 
 t0 = time.time()
-try:
-    with ThreadPoolExecutor(max_workers=len(_PREFETCH)) as ex:
-        list(ex.map(lambda kv: _prefetch(*kv), _PREFETCH.items()))
-except Exception as e:  # noqa: BLE001 - loaders below download whatever is missing
-    _log(f"prefetch error, continuing: {type(e).__name__}: {e}")
-_log(f"all downloads done in {time.time() - t0:.1f}s")
+_pool = ThreadPoolExecutor(max_workers=len(_PREFETCH))
+_fetched = {repo: _pool.submit(_prefetch, repo, pat) for repo, pat in _PREFETCH.items()}
+
+
+def _wait_fetch(*repos):
+    """Block until these repos are prefetched; loading starts while others are still downloading."""
+    for repo in repos:
+        try:
+            _fetched[repo].result()
+        except Exception as e:  # noqa: BLE001 - the loader downloads whatever is missing
+            _log(f"prefetch error for {repo}, continuing: {type(e).__name__}: {e}")
+
 
 # ---------------------------------------------------------------- models
-t = time.time()
-asr = AutoModel.from_pretrained(CONFORMER_ID, trust_remote_code=True, token=HF_TOKEN)
-_log(f"IndicConformer loaded in {time.time() - t:.1f}s")
+_wait_fetch(PARLER_ID, "google/flan-t5-large")
 t = time.time()
 tts = ParlerTTSForConditionalGeneration.from_pretrained(
     PARLER_ID, token=HF_TOKEN, torch_dtype=TTS_DTYPE,
@@ -116,6 +120,7 @@ tts_tok = AutoTokenizer.from_pretrained(PARLER_ID, token=HF_TOKEN)
 desc_tok = AutoTokenizer.from_pretrained(tts.config.text_encoder._name_or_path, token=HF_TOKEN)
 TTS_SR = tts.config.sampling_rate
 _log(f"Parler-TTS loaded in {time.time() - t:.1f}s")
+_wait_fetch(WHISPER_ID)
 t = time.time()
 w_proc = WhisperProcessor.from_pretrained(WHISPER_ID)
 w_model = WhisperForConditionalGeneration.from_pretrained(
@@ -123,6 +128,7 @@ w_model = WhisperForConditionalGeneration.from_pretrained(
 ).to(DEVICE)
 W_DTYPE = w_model.dtype
 _log(f"Whisper loaded in {time.time() - t:.1f}s")
+_wait_fetch(VOX_ID)
 t = time.time()
 # Dedicated spoken-language ID (107 languages incl. Nepali); Whisper's Nepali LID proved unreliable.
 lid_model = EncoderClassifier.from_hparams(
@@ -131,6 +137,12 @@ lid_model = EncoderClassifier.from_hparams(
 )
 VOX_INDEX = {lab.split(":")[0].strip(): idx for lab, idx in lid_model.hparams.label_encoder.lab2ind.items()}
 _log(f"VoxLingua107 loaded in {time.time() - t:.1f}s")
+_wait_fetch(CONFORMER_ID)
+_log(f"all downloads done in {time.time() - t0:.1f}s")
+_pool.shutdown(wait=False)
+t = time.time()
+asr = AutoModel.from_pretrained(CONFORMER_ID, trust_remote_code=True, token=HF_TOKEN)
+_log(f"IndicConformer loaded in {time.time() - t:.1f}s")
 LOAD_SECONDS = round(time.time() - t0, 1)
 
 DOCTOR_LANGS = ("en", "ar")
@@ -325,12 +337,12 @@ STREAM_OPTS = {
     "first_steps": K_CODEBOOKS + 24,  # decoding steps before the very first chunk (~0.28 s of audio)
     "play_steps": int(FRAME_RATE * 0.5),  # later chunks: ~0.5 s
     "first_max": 45,        # first segment is cut at a comma if longer than this (chars)
-    "max_len": 110,         # any segment is cut at commas if longer than this
-    "safety": 1.1,          # multiplier on the estimated segment durations
-    "margin": 0.2,          # extra seconds of buffer
+    "max_len": 60,          # any segment is cut at commas if longer than this
+    "safety": 1.05,         # multiplier on the estimated segment durations
+    "margin": 0.15,         # extra seconds of buffer
 }
 _TAU = {}  # measured seconds per decoding step, by batch size (EMA across requests)
-_TAU_DEFAULT = 1.6 / FRAME_RATE
+_TAU_DEFAULT = 0.020  # measured 16.7 ms (batch 1) to 19.9 ms (batch 8) on the L4
 _SENT_SPLIT = re.compile(r"(?<=[।॥.!?؟])\s+")
 _CLAUSE_SPLIT = re.compile(r"(?<=[,،;:])\s+")
 _STOP = object()
@@ -340,7 +352,7 @@ def _split_sentences(text: str) -> list:
     return [p.strip() for p in _SENT_SPLIT.split(text.strip()) if p.strip()]
 
 
-def _segments(text: str, first_max: int = 45, max_len: int = 110) -> list:
+def _segments(text: str, first_max: int = 45, max_len: int = 60) -> list:
     """Sentences; a sentence longer than the limit is cut at clause punctuation (never mid-clause)."""
     out = []
     for sent in _split_sentences(text):
@@ -427,7 +439,9 @@ def _payload(audio: np.ndarray, **meta) -> dict:
 
 
 def _est_seconds(seg: str, lang: str, o: dict) -> float:
-    return max(len(seg) / CHARS_PER_SEC.get(lang, 11.0), 0.4) * o["safety"]
+    # Measured on Nepali: a segment carries ~0.6 s of lead/tail silence plus ~13 chars/s of speech
+    # ("नमस्ते।" 0.78 s, 11 chars 1.43 s, 31 chars 2.8 s, 45 chars 3.4 s).
+    return (0.6 + len(seg) / (1.2 * CHARS_PER_SEC.get(lang, 11.0))) * o["safety"]
 
 
 def _stream_group(segs, lang, description, o, st):
@@ -468,15 +482,22 @@ def _stream_group(segs, lang, description, o, st):
         if not held:
             continue
         if not released:
-            tau = streamer.tau() or _TAU.get(B, _TAU_DEFAULT)
+            tau = max(streamer.tau() or 0.0, _TAU.get(B, _TAU_DEFAULT))
             t_gen = streamer.step_times[0] if streamer.step_times else t_launch
             # Segment k ends generating at t_gen + (a_k*F + K)*tau and ends playing at P + S_k + a_k.
             need = max((a * FRAME_RATE + K_CODEBOOKS) * tau - s - a for a, s in zip(est, before))
             release_at = t_gen + need + o["margin"]
             released = finished or max(time.time(), st["play_end"]) >= release_at
         if released:
+            # Merge what was held back (per segment): separate SSE messages can arrive ~0.3 s apart,
+            # which would let a tiny first chunk run dry.
+            merged = []
             for it in held:
-                yield it
+                if merged and merged[-1][1] == it[1]:
+                    merged[-1] = ("audio", it[1], np.concatenate([merged[-1][2], it[2]]), it[3])
+                else:
+                    merged.append(it)
+            yield from merged
             held = []
     th.join()
     if err:
@@ -576,7 +597,7 @@ def tts_probe(opts_json: str = "{}") -> dict:
         audio = {}
         for _, b, chunk, _end in _stream_group(segs, "ne", "", {**STREAM_OPTS, "margin": 0.0}, st):
             audio.setdefault(b, []).append(chunk)
-        out["tau_ms_by_batch"][B] = st["groups"][0]
+        out["tau_ms_by_batch"][str(B)] = st["groups"][0]
         if B == max(sizes):
             for b, seg in enumerate(segs):
                 wav = torch.from_numpy(np.concatenate(audio.get(b, [np.zeros(1, np.float32)]))).unsqueeze(0)
