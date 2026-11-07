@@ -1,0 +1,1175 @@
+{
+ "meta": {
+  "run_id": "20261107-092941-eov",
+  "models": {
+   "llm": "openai/gpt-oss-120b",
+   "llm_provider": "cerebras",
+   "agent": "openai/gpt-oss-120b",
+   "agent_provider": "cerebras",
+   "brain": "openai/gpt-oss-120b",
+   "brain_provider": "default",
+   "extract_provider": "groq"
+  },
+  "wall_s": 60.88689827919006,
+  "n": 1,
+  "git": "085796e",
+  "dirty_app_files": 14,
+  "created": "2026-11-07T09:30:44"
+ },
+ "results": [
+  {
+   "id": "coh-01-nasal-spray-butt",
+   "title": "The user's live test: buttock pain after cold tiles and low mood; doctor prescribes nasal spray, patient asks if it goes in the butt, doctor claims a high temperature never measured",
+   "category": "coherence",
+   "patient_lang": "ru",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "patient",
+     "action": null,
+     "process_s": 3.22,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 3.22
+     },
+     "utt": "u003",
+     "english": "Hello, doctor. My bottom hurts.",
+     "translation": "",
+     "wait_s": 7.35,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.88,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.88
+     },
+     "utt": "u004",
+     "english": "I sat on a cold tile and probably chilled my butt.",
+     "translation": "",
+     "wait_s": 5.33,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.9,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.89
+     },
+     "utt": "u005",
+     "english": "And also my heart feels somehow cold, I think I have no mood at all.",
+     "translation": "",
+     "wait_s": 5.5,
+     "open_cards": [
+      "c002"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.85,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.85
+     },
+     "utt": "u006",
+     "english": "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner.",
+     "translation": "Я думаю, это должно быть ваш нос. Я буду давать вам назальные спреи каждый день в течение следующих трёх недель после обеда и после ужина.",
+     "wait_s": 12.07,
+     "open_cards": [
+      "c003",
+      "c002"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.0,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 1.0
+     },
+     "utt": "u007",
+     "english": "And why do I need this? Do I have to spray it in my butt?",
+     "translation": "",
+     "wait_s": 6.1,
+     "open_cards": [
+      "c004",
+      "c002"
+     ]
+    },
+    {
+     "i": 5,
+     "t_min": 4.25,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.79,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.79
+     },
+     "utt": "u008",
+     "english": "You are not cold, you are very hot and have a really high temperature.",
+     "translation": "Вы не замерзаете, у вас очень жарко и температура действительно высокая.",
+     "wait_s": 7.74,
+     "open_cards": [
+      "c005",
+      "c004",
+      "c002"
+     ]
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T09:29:43",
+   "wrapup": true,
+   "cards_live": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Red flag symptoms",
+     "body": "Need to rule out infection, fracture, or nerve problems that need urgent care.",
+     "ask_text": "Do you have any fever, recent injury, or numbness or weakness in your legs?",
+     "dimension": "safety",
+     "score": 0.51
+    },
+    {
+     "id": "c002",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about self-harm",
+     "body": "The patient reports feeling very low mood and a cold feeling in the heart, which may indicate depression; you should screen for suicidal thoughts now.",
+     "ask_text": "In the past few weeks, have you had thoughts of hurting yourself or that life isn’t worth living?",
+     "dimension": "safety",
+     "score": 0.51
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "resolved",
+     "title": "Plan mismatched to complaint",
+     "body": "Doctor prescribed a nasal spray for buttock pain despite no nasal symptoms or examination, which is inconsistent and may confuse the patient.",
+     "ask_text": null,
+     "dimension": "consistency",
+     "score": 0.8
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Patient confused about spray location",
+     "body": "Patient wonders if the nasal spray should be applied to the butt, indicating the prescribed treatment does not match the complaint.",
+     "ask_text": null,
+     "dimension": "communication",
+     "score": 0.9
+    },
+    {
+     "id": "c005",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Temperature not measured",
+     "body": "Doctor states the patient has a very high temperature, but no temperature measurement is recorded in the visit.",
+     "ask_text": null,
+     "dimension": "consistency",
+     "score": 0.7
+    }
+   ],
+   "end_visit_s": 7.6,
+   "approve_s": 0.53,
+   "screen": "sent",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {
+    "total_s": 7.589,
+    "care_plan_s": 1.865,
+    "draft_note_s": 2.309,
+    "check_s": 0.0,
+    "render_s": 1.461,
+    "agent_s": 7.589,
+    "mode": "agent",
+    "agent_steps": 3,
+    "llm_calls": 2,
+    "note_source": "llm",
+    "note_llm_calls": 1,
+    "note_chunks": 0,
+    "care_plan_llm_s": 1.864,
+    "llm_prompt_tokens": 3680,
+    "llm_completion_tokens": 1600
+   },
+   "agentic": "agent",
+   "care_plan": {
+    "lang": "ru",
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [
+     {
+      "en": "Your temperature is very high.",
+      "native": "У вас очень высокая температура."
+     }
+    ],
+    "advice": [
+     {
+      "en": "Use nasal spray after lunch and dinner daily.",
+      "native": "Используйте назальный спрей после обеда и ужина ежедневно."
+     }
+    ],
+    "follow_up": {
+     "en": "",
+     "native": ""
+    }
+   },
+   "note_md": "# Consultation note\n\nEncounter F630A612 · 07 Nov 2026 09:29 · Patient language: Russian · Interpreter: Bayan AI\n\n## Allergies\n\n- No known allergies recorded\n\n## Presenting complaint\n\nMy bottom hurts.\n\n## History\n\n- My bottom hurts.\n- And also my heart feels somehow cold, I think I have no mood at all.\n- I sat on a cold tile and probably chilled my butt.\n\n## Observations and investigations\n\n- You are very hot and have a really high temperature.\n\n## Assessment\n\n- It should be the nose.\n\n## Plan\n\n- I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner.\n\n## Information given to patient\n\n- Care plan given in Russian (QR code to the plan page and PDF).\n",
+   "pdf": {
+    "patient": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-092941-eov/pdf/coh-01-nasal-spray-butt_patient.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 63243,
+     "pages": 1,
+     "title": "Your medicines and care instructions (Russian)",
+     "text": "Ваши лекарства и указания по уходу\nYour medicines and care instructions\n07 Nov 2026\nДругие указания\nOther instructions\nИспользуйте назальный спрей после обеда и ужина ежедневно.\nUse nasal spray after lunch and dinner daily.\nПозвоните 999 или приходите сейчас, если\nCall 999 or come back now if\nУ вас очень высокая температура.\nYour temperature is very high.\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-092941-eov/png/coh-01-nasal-spray-butt_patient_p1.png"
+    },
+    "doctor": {
+     "path": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-092941-eov/pdf/coh-01-nasal-spray-butt_doctor.pdf",
+     "exists": true,
+     "magic_ok": true,
+     "bytes": 74337,
+     "pages": 3,
+     "title": "Consultation note",
+     "text": "Bayan AI\nInterpreter & Clinical Safety Copilot\nConsultation note\nEncounter F630A612\n07 Nov 2026, 09:29\nPatient ID\nP-F630A6\nAge / sex\nNot recorded\nPatient language\nRussian\nClinician language\nEnglish\nInterpretation\nBayan AI\nConsent to interpretation\nAgreed\nEncounter start\n2026-11-07 09:29\nDuration\n4 min\nAllergies\nNo known allergies recorded\nPresenting complaint\nMy bottom hurts.\nHistory\nMy bottom hurts.\nAnd also my heart feels somehow cold, I think I have no mood at all.\nI sat on a cold tile and probably chilled my butt.\nObservations and investigations\nYou are very hot and have a really high temperature.\nAssessment\nIt should be the nose.\nPlan\nI'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner.\nInformation given to patient\nCare plan given in Russian (QR code to the plan page and PDF).\nCopilot concerns\nRaised live by the copilot and the safety rules during the visit, with what happened to each. Decision support, not findings.\nConcern\nDimension\nStatus\nTranscript\nAsk about self-harm: “In the past\nfew weeks, have you had thoughts\nof hurting yourself or that life isn’t\nworth living?”\nThe patient reports feeling very low\nmood and a cold feeling in the heart,\nwhich may indicate depression; you\nshould screen for suicidal thoughts\nnow.\nSafety\nOpen\n“I think I have no mood at all”\n02:00\nPage 1 of 3\n\nConcern\nDimension\nStatus\nTranscript\nPatient confused about spray\nlocation\nPatient wonders if the nasal spray\nshould be applied to the butt,\nindicating the prescribed treatment\ndoes not match the complaint.\nCommunication\nOpen\n“Do I have to spray it in my butt?”\n03:30\nTemperature not measured\nDoctor states the patient has a very\nhigh temperature, but no temperature\nmeasurement is recorded in the visit.\nConsistency\nOpen\n“You are not cold, you are very\nhot and have a really high\ntemperature.”\n04:15\nPlan mismatched to complaint\nDoctor prescribed a nasal spray for\nbuttock pain despite no nasal\nsymptoms or examination, which is\ninconsistent and may confuse the\npatient.\nConsistency\nAddressed\n“I think it should be your nose.\nI'm gonna give you nasal sprays”\n02:45\nReviewed by\nSignature\nDate/time\nPage 2 of 3\n\nTranscript\nTime\nSpeaker\nSaid\nInterpreted\n00:00\nInterpreter\nЗдравствуйте, я, Баян. Я перевожу вас и\nврача. Ваш голос обрабатывается для\nперевода и не сохраняется. Вы\nсогласны?\nConsent: Hello, I am Bayan. I translate\nbetween you and the doctor. Your voice is\nprocessed to translate it and is not stored.\nDo you agree?\n00:00\nPatient\nYes\nYes (consent given on screen)\n00:30\nPatient\nЗдравствуйте, доктор. У меня попа\nболит.\nHello, doctor. My bottom hurts.\n01:15\nPatient\nЯ посидел на холодной плитке и,\nнаверное, застудил попу.\nI sat on a cold tile and probably chilled my\nbutt.\n02:00\nPatient\nИ ещё на сердце как-то холодно,\nкажется, у меня совсем нет настроения.\nAnd also my heart feels somehow cold, I\nthink I have no mood at all.\n02:45\nClinician\nI think it should be your nose. I'm gonna\ngive you nasal sprays every day for the\nnext three weeks after lunch and after\ndinner.\nЯ думаю, это должно быть ваш нос. Я\nбуду давать вам назальные спреи\nкаждый день в течение следующих трёх\nнедель после обеда и после ужина.\n03:30\nPatient\nА зачем мне это? Мне что, в попу его\nбрызгать?\nAnd why do I need this? Do I have to spray\nit in my butt?\n04:15\nClinician\nYou are not cold, you are very hot and\nhave a really high temperature.\nВы не замерзаете, у вас очень жарко и\nтемпература действительно высокая.\nPage 3 of 3\n",
+     "fonts": [
+      "MPDFAA+NotoSans",
+      "MPDFAA+NotoSansBold",
+      "MPDFAA+NotoSansSemiBold"
+     ],
+     "png": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-092941-eov/png/coh-01-nasal-spray-butt_doctor_p1.png"
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [],
+    "stopped_meds": [],
+    "symptoms": [
+     "body_ache",
+     "low_mood"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {
+     "heat_exposure": true
+    },
+    "idiom_hits": [],
+    "questions_asked": [
+     "pain_radiation",
+     "exertional_pattern",
+     "sweating_breathlessness",
+     "pain_onset",
+     "pain_character",
+     "previous_episodes",
+     "allergies",
+     "current_medications",
+     "work_heat_exposure",
+     "fluid_intake",
+     "last_menstrual_period",
+     "vomiting_blood_black_stools",
+     "suicidal_thoughts",
+     "travel_history",
+     "headache_onset",
+     "syncope_circumstances",
+     "chemical_exposure",
+     "family_history_cardiac"
+    ]
+   },
+   "case": {
+    "chief_complaint": {
+     "text": "pain in the buttocks",
+     "evidence": [
+      {
+       "utt": "u003",
+       "t_min": 0.5,
+       "quote": "My bottom hurts."
+      }
+     ],
+     "t_min": 0.5
+    },
+    "history": [],
+    "working_diagnosis": [],
+    "differential": [],
+    "plan": [],
+    "exam_claims": [
+     {
+      "text": "patient has a really high temperature",
+      "evidence": [
+       {
+        "utt": "u008",
+        "t_min": 4.25,
+        "quote": "You are not cold, you are very hot and have a really high temperature."
+       }
+      ],
+      "t_min": 4.25
+     }
+    ],
+    "patient_understanding": [],
+    "patient_affect": []
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Red flag symptoms",
+     "body": "Need to rule out infection, fracture, or nerve problems that need urgent care.",
+     "ask_text": "Do you have any fever, recent injury, or numbness or weakness in your legs?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 0.5,
+     "dimension": "safety",
+     "confidence": 0.85,
+     "score": 0.51
+    },
+    {
+     "id": "c002",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about self-harm",
+     "body": "The patient reports feeling very low mood and a cold feeling in the heart, which may indicate depression; you should screen for suicidal thoughts now.",
+     "ask_text": "In the past few weeks, have you had thoughts of hurting yourself or that life isn’t worth living?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 2.0,
+     "dimension": "safety",
+     "confidence": 0.9,
+     "score": 0.51
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "resolved",
+     "title": "Plan mismatched to complaint",
+     "body": "Doctor prescribed a nasal spray for buttock pain despite no nasal symptoms or examination, which is inconsistent and may confuse the patient.",
+     "ask_text": null,
+     "grounding": "consistency",
+     "rule_ids": [],
+     "t_min": 2.75,
+     "dimension": "consistency",
+     "confidence": 0.8,
+     "score": 0.8
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Patient confused about spray location",
+     "body": "Patient wonders if the nasal spray should be applied to the butt, indicating the prescribed treatment does not match the complaint.",
+     "ask_text": null,
+     "grounding": "communication",
+     "rule_ids": [],
+     "t_min": 3.5,
+     "dimension": "communication",
+     "confidence": 0.9,
+     "score": 0.9
+    },
+    {
+     "id": "c005",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Temperature not measured",
+     "body": "Doctor states the patient has a very high temperature, but no temperature measurement is recorded in the visit.",
+     "ask_text": null,
+     "grounding": "consistency",
+     "rule_ids": [],
+     "t_min": 4.25,
+     "dimension": "consistency",
+     "confidence": 0.7,
+     "score": 0.7
+    }
+   ],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [
+      "c001"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [
+      "held back: score 0.36 < 0.40 (info x conf 0.75 x novelty 1.0 x recency 0.8)"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [
+      "c002"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [
+      "duplicate (merged into c002)",
+      "c003"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u007"
+     ],
+     "results": [
+      "c004"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u008"
+     ],
+     "results": [
+      "held back: one new card per turn (score 0.68)",
+      "c005"
+     ],
+     "skipped": null
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Red flag symptoms",
+     "reason": null,
+     "t_min": 0.5
+    },
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Red flag symptoms",
+     "reason": "superseded by a more useful next question",
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about self-harm",
+     "reason": null,
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Plan mismatched to complaint",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Plan mismatched to complaint",
+     "reason": "addressed in the conversation (copilot review)",
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Patient confused about spray location",
+     "reason": null,
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c005",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Temperature not measured",
+     "reason": null,
+     "t_min": 4.25
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state → +body_ache, complaint: pain in the buttocks",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 card: + info ask card c001: Red flag symptoms [safety]",
+    "0.50 card: curate: c001 shown (score 0.51: info x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "0.50 tool: final_answer([ask 'Red flag symptoms']) → c001",
+    "0.50 agent: copilot: 1 step(s), 1 tool call(s), 2.5s, 2754/705 tok ($0.0015)",
+    "1.25 tool: update_state → no new facts",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 card: curate: 'Ask about urinary/bowel control' held back: score 0.36 < 0.40 (info x conf 0.75 x novelty 1.0 x recency 0.8)",
+    "1.25 tool: final_answer([ask 'Ask about urinary/bowel control']) → held back: score 0.36 < 0.40 (info x conf 0.75 x novelty 1.0 x recenc…",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 1.5s, 2822/637 tok ($0.0015)",
+    "2.00 tool: update_state → +low_mood",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 card: ✓ retired c001: Red flag symptoms (superseded)",
+    "2.00 card: + info ask card c002: Ask about self-harm [safety]",
+    "2.00 card: curate: c002 shown (score 0.51: info x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "2.00 tool: final_answer([ask 'Ask about self-harm']) → c002",
+    "2.00 agent: copilot: 1 step(s), 1 tool call(s), 1.7s, 2879/689 tok ($0.0015)",
+    "2.75 tool: update_state → asked:pain_radiation, asked:exertional_pattern, asked:sweating_breathlessness, asked:pain_onset, asked:pain_character, asked:previous_episodes, asked:allergies, asked:current_medications, asked:work_heat_exposure, asked:fluid",
+    "2.75 tool: check_safety_rules → none",
+    "2.75 card: + caution observation card c003: Plan mismatched to complaint [consistency]",
+    "2.75 card: curate: c003 shown (score 0.80: caution x conf 0.8 x novelty 1.0 x recency 1.0)",
+    "2.75 tool: final_answer([ask 'Ask about self-harm', observation 'Plan mismatched to complaint']) → duplicate (merged into c002); c003",
+    "2.75 agent: copilot: 1 step(s), 1 tool call(s), 1.5s, 3008/830 tok ($0.0017)",
+    "3.50 tool: update_state → no new facts",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 card: ✓ resolved c003: Plan mismatched to complaint (addressed in the conversation (copilot review))",
+    "3.50 card: ✓ c003 addressed: Plan mismatched to complaint",
+    "3.50 card: + caution observation card c004: Patient confused about spray location [communication]",
+    "3.50 card: curate: c004 shown (score 0.90: caution x conf 0.9 x novelty 1.0 x recency 1.0)",
+    "3.50 tool: final_answer([observation 'Patient confused about spray location']) → c004",
+    "3.50 agent: copilot: 1 step(s), 1 tool call(s), 1.5s, 3069/1264 tok ($0.0020)",
+    "4.25 tool: update_state → heat_exposure=True, stated: patient has a really high temperature",
+    "4.25 tool: check_safety_rules → none",
+    "4.25 card: + caution observation card c005: Temperature not measured [consistency]",
+    "4.25 card: curate: c005 shown (score 0.70: caution x conf 0.7 x novelty 1.0 x recency 1.0)",
+    "4.25 card: curate: 'Nasal spray for butt pain' held back: one new card per turn (score 0.68)",
+    "4.25 tool: final_answer([observation 'Nasal spray for butt pain', observation 'Temperature not measured']) → held back: one new card per turn (score 0.68); c005",
+    "4.25 agent: copilot: 1 step(s), 1 tool call(s), 1.6s, 3120/1013 tok ($0.0019)",
+    "5.25 tool: care_plan_llm → 4 keys in 1.9s",
+    "5.25 tool: build_care_plan → 0 medicine(s), 0 avoid, 1 red flag(s), 0 excluded",
+    "5.25 tool: note_llm → 7 items (llm)",
+    "5.25 tool: draft_note → 34 lines",
+    "5.25 tool: check_care_plan → ok",
+    "5.25 tool: draft_outputs() → note drafted (llm): 4 sections, 34 lines; care plan: medicines none; …",
+    "5.25 tool: render_outputs → doctor_pdf, patient_pdf",
+    "5.25 tool: render_outputs() → rendered: doctor_pdf, patient_pdf, wa_link, sms_link; 0 warning(s).",
+    "5.25 agent: wrap-up agent: 3 step(s), 2 tool call(s), 7.6s, 1144/245 tok ($0.0006)",
+    "5.25 agent: wrap-up agent: ok=True steps=3",
+    "5.25 system: wrap-up done (agent) in 7.6s: 0 warning(s)"
+   ],
+   "stats": {
+    "runs": 6,
+    "latency_s": [
+     6.12,
+     4.12,
+     4.29,
+     10.85,
+     4.88,
+     6.52
+    ],
+    "extract_tokens": [
+     30463,
+     8475
+    ],
+    "agent_tokens": [
+     17652,
+     5138
+    ],
+    "cost_usd": 0.02705
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 6.12,
+     "extract_s": 3.5,
+     "agent_s": 2.52,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7675,
+     "output_tokens": 1388,
+     "extract_tokens": [
+      4921,
+      683
+     ],
+     "agent_tokens": [
+      2754,
+      705
+     ],
+     "cost_usd": 0.002743
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 4.12,
+     "extract_s": 2.61,
+     "agent_s": 1.51,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 1,
+     "fallback": 0,
+     "input_tokens": 7803,
+     "output_tokens": 1364,
+     "extract_tokens": [
+      4981,
+      727
+     ],
+     "agent_tokens": [
+      2822,
+      637
+     ],
+     "cost_usd": 0.002758
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 4.29,
+     "extract_s": 2.62,
+     "agent_s": 1.67,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7912,
+     "output_tokens": 1435,
+     "extract_tokens": [
+      5033,
+      746
+     ],
+     "agent_tokens": [
+      2879,
+      689
+     ],
+     "cost_usd": 0.002839
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 10.85,
+     "extract_s": 9.37,
+     "agent_s": 1.48,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 8084,
+     "output_tokens": 4527,
+     "extract_tokens": [
+      5076,
+      3697
+     ],
+     "agent_tokens": [
+      3008,
+      830
+     ],
+     "cost_usd": 0.005209
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 4.88,
+     "extract_s": 3.39,
+     "agent_s": 1.49,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 8281,
+     "output_tokens": 2262,
+     "extract_tokens": [
+      5212,
+      998
+     ],
+     "agent_tokens": [
+      3069,
+      1264
+     ],
+     "cost_usd": 0.003552
+    },
+    {
+     "t_min": 4.25,
+     "kind": "think",
+     "turns": [
+      "u008"
+     ],
+     "latency_s": 6.52,
+     "extract_s": 4.93,
+     "agent_s": 1.59,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 1,
+     "fallback": 0,
+     "input_tokens": 8360,
+     "output_tokens": 2637,
+     "extract_tokens": [
+      5240,
+      1624
+     ],
+     "agent_tokens": [
+      3120,
+      1013
+     ],
+     "cost_usd": 0.003856
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 0,
+     "wall": 1794032994.5488598,
+     "latency_s": 10.55,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Red flag symptoms",
+     "severity": "info"
+    },
+    "c002": {
+     "turn": 2,
+     "wall": 1794033007.177075,
+     "latency_s": 6.4,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about self-harm",
+     "severity": "info"
+    },
+    "c003": {
+     "turn": 3,
+     "wall": 1794033020.0904021,
+     "latency_s": 12.91,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Plan mismatched to complaint",
+     "severity": "caution"
+    },
+    "c004": {
+     "turn": 4,
+     "wall": 1794033027.182444,
+     "latency_s": 7.09,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Patient confused about spray location",
+     "severity": "caution"
+    },
+    "c005": {
+     "turn": 5,
+     "wall": 1794033035.707215,
+     "latency_s": 8.52,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Temperature not measured",
+     "severity": "caution"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 0,
+     "latency_s": 10.55,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Red flag symptoms"
+    },
+    {
+     "card": "c001",
+     "turn": 2,
+     "latency_s": 6.4,
+     "status": "resolved",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Red flag symptoms"
+    },
+    {
+     "card": "c002",
+     "turn": 2,
+     "latency_s": 6.4,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about self-harm"
+    },
+    {
+     "card": "c003",
+     "turn": 3,
+     "latency_s": 12.91,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Plan mismatched to complaint"
+    },
+    {
+     "card": "c003",
+     "turn": 4,
+     "latency_s": 7.09,
+     "status": "resolved",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Plan mismatched to complaint"
+    },
+    {
+     "card": "c004",
+     "turn": 4,
+     "latency_s": 7.09,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Patient confused about spray location"
+    },
+    {
+     "card": "c005",
+     "turn": 5,
+     "latency_s": 8.52,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Temperature not measured"
+    }
+   ],
+   "rules_seen": {},
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      9546,
+      2018,
+      8
+     ],
+     "openai/gpt-oss-120b|groq": [
+      30463,
+      8475,
+      6
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      17652,
+      5138,
+      6,
+      10.263330459594727,
+      0
+     ],
+     "wrap-up agent": [
+      1144,
+      245,
+      1,
+      7.58824896812439,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.01578,
+    "cost_agent_usd": 0.01062,
+    "cost_usd": 0.0264,
+    "llm_usage_delta": {
+     "calls": 23,
+     "prompt_tokens": 58805,
+     "completion_tokens": 15876
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 60.0,
+   "checks": [
+    {
+     "type": "no_flag",
+     "desc": "NOT card severity=critical source=agent",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[plan] treatment does not fit the complaint",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[consistency] 'Plan mismatched to complaint'; agent/observation[communication] 'Patient confused about spray location'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[plan] prescription incomplete (no drug name, strength or dose)",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/ask[safety] 'Red flag symptoms'; agent/ask[safety] 'Ask about self-harm'; agent/observation[consistency] 'Plan mismatched to complaint'; agent/observation[communication] 'Patient confused about spray location'; agent/observation[consistency] 'Temperature not measured'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[communication] patient confused about how / where to use it",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[consistency] 'Plan mismatched to complaint'; agent/observation[communication] 'Patient confused about spray location'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[consistency] temperature claim not backed by a measurement / contradicts the patient",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[consistency] 'Temperature not measured'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[communication] low mood said in passing, not followed up",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/ask[safety] 'Ask about self-harm'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-092941-eov/pdf/coh-01-nasal-spray-butt_patient.pdf pages=1 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF rendered (%PDF, pages, text)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "/Users/diyorbekibragimov/Desktop/projects/BayanAI/reports/sim/20261107-092941-eov/pdf/coh-01-nasal-spray-butt_doctor.pdf pages=3 err=None",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF has no tofu/'?' glyph runs",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF: every section printed",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "every character sent to the PDFs has a glyph in a bundled font",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF has cyrillic text",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "151 cyrillic chars",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient sheet labels exist for ru",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title label = 'Ваши лекарства и указания по уходу'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "patient PDF title names the language",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "title='Your medicines and care instructions (Russian)'",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "pdf",
+     "desc": "doctor PDF names the patient language (Russian)",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "wrap-up reached the review/sent screen",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "screen=sent agentic=agent",
+     "gap": false,
+     "note": "",
+     "auto": true
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  }
+ ]
+}

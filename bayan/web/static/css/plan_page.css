@@ -41,7 +41,6 @@ details.orig summary::after{content:" ›"}
 details.orig[open] summary::after{content:" ⌄"}
 details.orig section{border-top:none;padding-top:12px}
 .muted{color:var(--muted);font-size:17px;line-height:1.55}
-.foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--rule);color:var(--muted);font-size:13px;line-height:1.5}
 [lang=ne],[lang=hi]{font-family:'Noto Sans Devanagari','Instrument Sans',sans-serif}
 [lang=bn]{font-family:'Noto Sans Bengali','Instrument Sans',sans-serif}
 [lang=ml]{font-family:'Noto Sans Malayalam','Instrument Sans',sans-serif}
@@ -50,3 +49,19 @@ details.orig section{border-top:none;padding-top:12px}
 [lang=ja]{font-family:'Noto Sans JP','Instrument Sans',sans-serif}
 [lang=ka]{font-family:'Noto Sans Georgian','Instrument Sans',sans-serif}
 [lang=ur],[lang=ar]{font-family:'Noto Naskh Arabic',serif}
+/* Header hover, as in the app: the pearl brightens and a soft pearl sheen sweeps across بيان once; no box. */
+.top{width:max-content;cursor:default}
+.pearl{transition:filter .8s cubic-bezier(.2,.8,.2,1),box-shadow .8s cubic-bezier(.2,.8,.2,1)}
+.wm span{transition:color .7s cubic-bezier(.2,.8,.2,1)}
+@supports ((background-clip:text) or (-webkit-background-clip:text)){
+  .wm b{padding:6px 4px 10px;margin:-6px -4px -10px;color:transparent;-webkit-text-fill-color:transparent;background-color:#173430;
+    background-repeat:no-repeat;background-image:linear-gradient(100deg,rgba(255,255,255,0) 40%,rgba(150,214,201,.5) 46%,rgba(236,249,246,.68) 50%,rgba(180,204,246,.5) 54%,rgba(255,255,255,0) 60%);
+    background-size:300% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;transition:background-color .8s cubic-bezier(.2,.8,.2,1)}
+}
+@keyframes pp-sheen{from{background-position:100% 0}to{background-position:0 0}}
+@media (hover:hover){
+  .top:hover .pearl{filter:brightness(1.05) saturate(1.35);box-shadow:0 8px 18px -10px rgba(31,111,178,.45),0 0 14px 2px rgba(150,214,201,.6),inset 0 4px 8px rgba(255,255,255,.95)}
+  .top:hover .wm b{background-color:#22554D;animation:pp-sheen .9s cubic-bezier(.2,.8,.2,1) 1 both}
+  .top:hover .wm span{color:#3A4B48}
+}
+@media (prefers-reduced-motion: reduce){.top:hover .wm b{animation:none}.pearl,.wm b,.wm span{transition:none}}

@@ -1,264 +1,237 @@
----
-title: Bayan AI
-emoji: 🩺
-colorFrom: green
-colorTo: indigo
-sdk: gradio
-sdk_version: 5.49.1
-python_version: "3.10"
-app_file: app.py
-pinned: true
-license: apache-2.0
-short_description: Ambient medical interpreter & safety net for Qatar clinics
-suggested_hardware: cpu-upgrade
-tags:
-  - qai-hf-hackathon-2026
-  - medical
-  - healthcare
-  - speech-to-speech
-  - translation
-  - smolagents
-  - agents
-  - clinical-decision-support
-  - qatar
-  - nepali
-  - health-equity
-models:
-  - openai/gpt-oss-120b
-  - openai/whisper-large-v3-turbo
-  - speechbrain/lang-id-voxlingua107-ecapa
-  - ai4bharat/indic-conformer-600m-multilingual
-  - ai4bharat/indic-parler-tts
-  - hexgrad/Kokoro-82M
----
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/banner-dark.svg">
+    <img src="assets/readme/banner.svg" width="100%" alt="Bayan AI (بيان): a clinical AI system that interprets between doctors and patients in Qatar, reasons about the consultation, and flags what gets missed.">
+  </picture>
+</p>
 
-<div align="center">
+<p align="center">
+  <a href="https://huggingface.co/spaces/dullgrey/team-qh-129-bayan-app"><picture><source media="(prefers-color-scheme: dark)" srcset="https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg-dark.svg"><img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg.svg" alt="Open in Hugging Face Spaces"></picture></a>
+</p>
 
-# بيان · Bayan AI
+<p align="center">
+  <a href="https://dullgrey-team-qh-129-bayan-app.hf.space"><img src="https://img.shields.io/badge/Live_app-hf.space-0E8A6F?style=flat&logo=huggingface&logoColor=white&labelColor=173430" alt="Live app"></a>
+  <a href="assets/readme/demo.mp4"><img src="https://img.shields.io/badge/Demo_video-87_s-0E8A6F?style=flat&labelColor=173430" alt="Demo video"></a>
+  <a href="docs/pitch/Bayan-pitch.pdf"><img src="https://img.shields.io/badge/Pitch_deck-PDF-0E8A6F?style=flat&labelColor=173430" alt="Pitch deck (PDF)"></a>
+  <a href="#team"><img src="https://img.shields.io/badge/Built_for-Qai_%C3%97_Hugging_Face_Hackathon-FFD21E?style=flat&logo=huggingface&logoColor=white&labelColor=173430" alt="Built for the Qai × Hugging Face Hackathon"></a>
+</p>
 
-**An ambient interpreter and clinical safety net for the patients Qatar's clinics struggle to hear.**
+<p align="center">
+  <a href="#license"><img src="https://img.shields.io/badge/License-Apache--2.0-1F6FB2?style=flat&labelColor=173430" alt="License: Apache-2.0"></a>
+  <img src="https://img.shields.io/badge/Python-3.10-1F6FB2?style=flat&logo=python&logoColor=white&labelColor=173430" alt="Python 3.10">
+  <img src="https://img.shields.io/badge/Gradio-5.49.1-1F6FB2?style=flat&labelColor=173430" alt="Gradio 5.49.1">
+  <img src="https://img.shields.io/badge/smolagents-1.26.0-1F6FB2?style=flat&labelColor=173430" alt="smolagents 1.26.0">
+</p>
 
-*Bayan* (بيان) is the Arabic word for clarity, eloquence and illumination.
+<p align="center">
+  <a href="#what-it-does">What it does</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#results">Results</a> ·
+  <a href="#quickstart">Quickstart</a> ·
+  <a href="#documentation">Docs</a>
+</p>
 
-Qai × Hugging Face Hackathon O1 · Team **QH-129** · Doha, 5–7 Nov 2026
+<p align="center">
+  <img src="assets/readme/demo.gif" width="100%" alt="Bayan on the live Space: Nepali consent, the patient's Nepali translated for the doctor, an idiom note for 'gyastrik', the copilot's suggested question asked in Nepali, and amoxicillin held after a reported penicillin allergy.">
+  <br>
+  <sub>Scripted Nepali consultation on the live Space, sped up. <a href="assets/readme/demo.mp4">Full video (MP4)</a>.</sub>
+</p>
 
-[▶️ Try the Space](https://huggingface.co/spaces/dullgrey/team-qh-129-bayan-app) · [🎬 Demo video](#links) (pending) · [📖 Docs](#documentation)
+About 94% of Qatar's workforce is not Qatari. Many patients speak Nepali, Hindi, Urdu, Bengali, Malayalam or Tagalog; their doctors mostly speak English or Arabic, and the gap is often filled by a roommate or no one. Bayan sits on the consultation desk between them. *Bayan* (بيان) is Arabic for clarity.
 
-</div>
+## What it does
 
----
+| Interprets | Reasons | Flags | Suggests |
+|---|---|---|---|
+| 37 patient languages. The doctor speaks English or Arabic. Tap the pearl, speak, tap again. | Keeps a running case summary and reviews it after every turn with a smolagents agent. | Allergies, doses, interactions, missed workup, plans that don't fit the complaint, patient confusion. A dangerous instruction is held before the patient hears it. | One next question at a time, asked in the patient's language with one tap. |
 
-## In 30 seconds
+<table>
+  <tr>
+    <td width="50%"><img src="assets/readme/screen-live.webp" alt="Live screen: the patient's Nepali, the English for the doctor, an idiom note for gyastrik, and the Notes panel with two suggested questions"></td>
+    <td width="50%"><img src="assets/readme/screen-held.webp" alt="Sentence held: the patient reported a penicillin allergy; amoxicillin is a penicillin"></td>
+  </tr>
+  <tr>
+    <td><sub><b>Live.</b> The patient's words, the English, an idiom note (<i>gyastrik</i> can hide cardiac pain) and the copilot's Notes. Cards appear on the doctor's screen only.</sub></td>
+    <td><sub><b>Held.</b> Rule <code>ALG-PEN-01</code> stops the amoxicillin instruction in about 3 ms, with no language model in the path. "Speak it anyway" is logged.</sub></td>
+  </tr>
+</table>
 
-Roughly **9 in 10 people living in Qatar are not Qatari** (an estimate; no official nationality breakdown is published). Much of the migrant workforce speaks Nepali, Hindi, Urdu, Bengali, Malayalam or Filipino. Their doctors mostly speak English and Arabic.
+At the end of the visit a wrap-up agent writes the doctor's note and a care plan in the patient's language and script, re-checks every medicine against the rules, and hands the patient a QR code to a phone page that expires after 24 hours.
 
-**Bayan AI is one tablet on the consultation desk that listens, talks and thinks.**
-
-- 🎧 **Listens.** No push-to-talk. Voice activity detection cuts each utterance; a language-ID model decides whether the doctor or the patient spoke.
-- 🗣️ **Talks.** It speaks the doctor's words to the patient in Nepali (also Hindi, Urdu, Bengali, Malayalam) and shows the patient's words to the doctor in English.
-- 🧠 **Thinks.** Beside the conversation, a deterministic safety spine (81 cited rules, a 59-entry idiom lexicon) and a **smolagents** copilot on `gpt-oss-120b` put cards on the doctor's screen only:
-  - an idiom note, e.g. a Nepali worker's *"gyastrik"* (ग्यास्ट्रिक, "gastric") chest burning, which can hide cardiac pain;
-  - a held sentence: the doctor prescribes amoxicillin after the patient reported a penicillin allergy, and Bayan does not speak it until the doctor chooses;
-  - missing workup, e.g. chest pain with no ECG or troponin before discharge;
-  - the next question worth asking, spoken to the patient with one tap.
-
-When the consultation ends:
-- **For the doctor:** a "Consultation note" PDF plus a plain-text copy for the hospital record (EMR).
-- **For the patient:** a medicine and care sheet in their own language (English beneath) as a PDF, an on-screen QR code to an expiring web page with the same plan and a PDF download, and a prefilled WhatsApp link. (Reading the plan aloud as audio is built but off by default.)
-
-What is deployed, what is integrated locally but not yet deployed, and what is only designed: [Live today vs designed](#live-today-vs-designed).
-
-> Most medical AI saves the doctor time. **Bayan AI protects the patient**: their safety, their understanding and their dignity.
-
----
-
-## Why Qatar needs this
-
-| | Evidence |
-|---|---|
-| 🇶🇦 **The state has already named the languages** | The MoPH **Patients' Bill of Rights** is published in **Arabic, English, Bengali, Filipino, Hindi, Malayalam, Nepali and Urdu**. It says patients should get information they can understand, that an interpreter can be provided when needed, and that consent should be in an understandable language. [MoPH](https://dhp.moph.gov.qa/en/Pages/FTPDownloads.aspx) |
-| 🏥 **Interpreters exist, but not in every room** | HMC offers professional interpreters on request ([HMC](https://hamad.qa/EN/Patient-Information/Interpreter-Services/)) and Sidra Medicine runs a 24/7 phone and video line in 66 languages ([Sidra](https://www.sidra.org/patients-visitors/your-visit/during-your-visit-2/medical-interpreters/)). The gap is the workers' health centres, the ambulance and the many visits where whoever is around interprets. |
-| 🗣️ **Language barriers are documented at Hamad** | In a study of 84 outpatients at Hamad General Hospital, most had experienced or witnessed language barriers and relied on incidental interpreters. Hindi and Urdu speakers met barriers more often. [J Health Commun, 2017](https://doi.org/10.1080/10810730.2017.1296507) |
-| 🚑 **…and on the ambulance** | Among 312 HMC Ambulance Service staff, **65%** face language-related communication difficulties at least occasionally. Only **37%** say the information they get from patients is sufficient. [Qatar Med J, 2025](https://pmc.ncbi.nlm.nih.gov/articles/PMC12127531/) |
-| ⚠️ **Ad hoc interpretation causes harm** | A mean of **31 interpreter errors per encounter**, 63% of them with potential clinical consequences. Errors by ad hoc interpreters were consequential **77%** of the time. [Flores et al., Pediatrics 2003](https://pubmed.ncbi.nlm.nih.gov/12509547/) |
-| 🫀 **"Gastric" can be a heart attack** | In a Nepali study of STEMI patients, **87.9%** had typical chest pain but only **23.8%** thought it was cardiac. Bayan's lexicon flags *gyastrik* for exactly this. [Prajapati et al., JNHRC 2022](https://jnhrc.com.np/index.php/jnhrc/article/view/1217) |
-| 📈 **The scale is real** | Qatar Red Crescent's Workers' Health Centres logged **1,460,696 visits in 2025**. [Qatar Tribune](https://www.qatar-tribune.com/article/247543/nation/qrcs-medical-affairs-division-getsaccreditation-canada-diamond-tag) |
-
-Full evidence, personas and competitor comparison: [01 · Problem & Impact](docs/01-problem-and-impact.md).
-
----
-
-## The golden path
-
-Ram, a 29-year-old construction worker (an illustrative persona), sees an English-speaking doctor.
-
-1. **Consent.** Bayan explains itself in Nepali and asks for consent.
-2. **Allergy.** The doctor asks about allergies; Ram says his body swelled up after a penicillin injection. The allergy goes into the clinical state with his words as evidence.
-3. **Idiom.** Ram says his chest burns "like *gyastrik*" and it gets worse at work. The doctor sees the English, the idiom note (usually dyspepsia; can mask cardiac pain) and an "Ask next" card. One tap and Bayan asks about spread to the arm or jaw, in Nepali.
-4. **Held sentence.** The doctor says "Amoxicillin 500 three times a day, and you can go home." The prescription gate (rule `ALG-PEN-01`, no LLM) holds the sentence. The doctor picks **Say something else** or **Speak it anyway** (logged). A chest-pain workup card (`WORK-CHEST-01…04`) flags discharge with no ECG or troponin.
-5. **Correction.** The doctor switches to paracetamol and orders an ECG and a blood test. The cards resolve themselves.
-6. **"End consultation."** The wrap-up agent drafts the note and the Nepali care plan, re-checks every medicine against the rules and renders the PDFs.
-
-Steps 2–6 run on the clinical brain, which is now wired into the Space code; `scripts/smoke_e2e.py` passes 17/17 live on the merged code. This state is not yet deployed (see [Live today vs designed](#live-today-vs-designed)).
-
-Script, shot list and judge Q&A: [09 · Pitch & Demo](docs/09-pitch-and-demo.md).
-
----
+<p align="center">
+  <img src="assets/readme/screen-phone.webp" width="260" alt="Care plan page on a phone, in Nepali with English beneath: medicines, daily schedule and a PDF download">
+  <br>
+  <sub>The patient's care plan on a phone, in Nepali with English beneath.</sub>
+</p>
 
 ## How it works
 
-```mermaid
-flowchart LR
-    MIC["🎙️ Tablet mic<br/>WebRTC (FastRTC)"] --> VAD["Silero VAD<br/>on the Space"]
-    VAD --> HEAR["GPU voice worker /hear<br/>VoxLingua107: doctor or patient?<br/>Whisper (doctor) · IndicConformer (patient)"]
-    HEAR --> TR["Talk loop<br/>gpt-oss-120b on Cerebras<br/>translation + drugs / allergies / tests"]
-    TR --> GATE{"Prescription gate<br/>rules only, ~3 ms"}
-    GATE -->|clear| TTS["/speak_stream<br/>Indic Parler-TTS"] --> SPK["🔊 Patient hears it"]
-    GATE -->|critical| HOLD["Held: doctor decides"]
-    TR --> THINK
-    subgraph THINK["Think loop (background)"]
-        ID["idiom lexicon"] --> EX["extraction<br/>gpt-oss-120b on Groq"] --> ST[("state + quoted evidence")] --> RU["81 rules"] --> AG["smolagents copilot<br/>only when something is new"]
-    end
-    THINK --> CARDS["🔕 Cards on the doctor's screen<br/>never spoken"]
-    CARDS -->|"doctor taps Ask"| TTS
-    END["End consultation"] --> WRAP["smolagents wrap-up agent<br/>draft_outputs · render_outputs"] --> OUT["📄 Consultation note · patient sheet<br/>audio · WhatsApp / SMS links · QR page"]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/readme/architecture-dark.svg">
+  <img src="assets/readme/architecture.svg" width="100%" alt="Architecture: each turn is heard, transcribed, translated and checked by the prescription gate; in the background a clinical review agent reads the case summary, calls tools, and an attention filter sends one question or flag to the doctor; at the end a wrap-up agent writes the care plan.">
+</picture>
 
-**Code map.** The UI shell (`app.py`, `bayan/ui.py` screens, `bayan/consult.py` state machine, `bayan/talk.py` voice and translation) drives the product. Clinical logic lives in `bayan/brain/` (rules, idioms, extraction, state merge, checklist, cards, the two smolagents agents, wrap-up) and `bayan/outputs/` (PDFs, delivery links, retention). `bayan/copilot.py` adapts brain cards to the Notes panel; `bayan/careplan.py` serves the care plan page. Speech models run on a separate GPU Space (`voice_worker/`).
+| Loop | Runs | What happens |
+|---|---|---|
+| Interpretation | Every turn | Language ID decides who spoke, speech-to-text, translation and extraction with `gpt-oss-120b`, the prescription gate (83 rules, no LLM), then speech in the listener's language. |
+| Reasoning | Every substantive turn, in the background | A smolagents agent reviews the case summary across safety, history, plan, communication and consistency, calls its tools, and proposes concerns that must quote the transcript. An attention filter ranks them by severity, confidence and novelty. |
+| Wrap-up | Once, at the end | A second agent drafts the note and the care plan, re-checks medicines against the rules, and renders the PDFs and the phone page. |
 
-**Why a cascade, not one speech-to-speech model?** No open end-to-end model speaks Nepali or Malayalam, and the text in the middle is what makes the safety checks, idiom notes, audit trail and notes possible.
+Rules are the authority. Only the rule engine can raise a critical alert or hold a sentence; agent cards are capped at caution and must cite the transcript. If an agent fails or times out, deterministic cards take over.
 
-| Loop | When it runs | What runs | Measured |
-|---|---|---|---|
-| **Talk** | Every utterance | `/hear` → translation (reasoning low) → prescription gate → streaming TTS | Worker TTS first audio ~2.2–3.1 s (from Doha). End-to-end target ≤ 3 s, **not yet measured** |
-| **Think** | Background, debounced ~1.2 s, one run in flight | Idioms → extraction → merge → 81 rules → copilot agent (reasoning medium) | Extraction ~1.1 s; agent ~1.2–1.6 s, 1 step |
-| **Wrap-up** | "End consultation" | Wrap-up agent: note + care plan in parallel, rule re-check, render | ~6–8 s |
+<h2 id="hugging-face-stack"><img src="docs/pitch/assets/brand/huggingface_logo-noborder.svg" height="28" alt=""> Hugging Face stack</h2>
 
-Deep dive: [03 · Architecture](docs/03-architecture.md) · [11 · Copilot Agent](docs/11-clinical-copilot-agent.md) · [04 · Models](docs/04-models-and-languages.md).
+| Component | Role | Runs on |
+|---|---|---|
+| [dullgrey/team-qh-129-bayan-app](https://huggingface.co/spaces/dullgrey/team-qh-129-bayan-app) | The app: Gradio and FastAPI, rule engine, both agents, PDFs | Space, CPU upgrade |
+| dullgrey/team-qh-129-bayan-voice ([source](voice_worker)) | Speech models, called with `gradio_client` | Private Space, NVIDIA L4 |
+| [openai/gpt-oss-120b](https://huggingface.co/openai/gpt-oss-120b) | Translation, extraction, clinical review agent, wrap-up agent | Inference Providers (Cerebras; Groq for extraction) |
+| [speechbrain/lang-id-voxlingua107-ecapa](https://huggingface.co/speechbrain/lang-id-voxlingua107-ecapa) | Who is speaking (language ID) | Voice worker |
+| [openai/whisper-large-v3-turbo](https://huggingface.co/openai/whisper-large-v3-turbo) | Doctor speech; patient languages without an Indic model | Voice worker |
+| [ai4bharat/indic-conformer-600m-multilingual](https://huggingface.co/ai4bharat/indic-conformer-600m-multilingual) | Patient speech in South Asian languages | Voice worker |
+| [facebook/mms-1b-all](https://huggingface.co/facebook/mms-1b-all) | Patient speech in Georgian | Voice worker |
+| [ai4bharat/indic-parler-tts](https://huggingface.co/ai4bharat/indic-parler-tts) | Voice for South Asian languages, streamed | Voice worker |
+| [facebook/mms-tts-tgl](https://huggingface.co/facebook/mms-tts-tgl), [-swh](https://huggingface.co/facebook/mms-tts-swh), [-ara](https://huggingface.co/facebook/mms-tts-ara) | Voice for Filipino, Swahili, Arabic | Voice worker |
+| [Supertone/supertonic-3](https://huggingface.co/Supertone/supertonic-3) | Voice for Korean and most other languages | Voice worker |
+| [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) | Voice for Georgian | Voice worker |
+| [smolagents](https://github.com/huggingface/smolagents) | `ToolCallingAgent` for the clinical review and wrap-up agents | Library |
 
----
+No closed model is in the runtime path.
 
-## Built with Hugging Face
+## Results
 
-| Layer | What we use today |
-|---|---|
-| App | **Gradio Space** `dullgrey/team-qh-129-bayan-app` with FastRTC (WebRTC, Silero VAD) and a FastAPI route for the care plan page |
-| LLM | `openai/gpt-oss-120b` via **Inference Providers**: Cerebras for translation and both agents, Groq for background extraction (same model, cheaper input) |
-| Agents | **smolagents** 1.26.0 `ToolCallingAgent`, twice: the clinical copilot (`lookup_idiom`, `lookup_drug`, `check_safety_rules`, `final_answer(cards)`) and the wrap-up agent (`draft_outputs`, `render_outputs`) |
-| GPU voice worker | A private **L4 GPU Space** (`voice_worker/`) called with `gradio_client`: `openai/whisper-large-v3-turbo` (doctor ASR), `speechbrain/lang-id-voxlingua107-ecapa` (who is speaking), `ai4bharat/indic-conformer-600m-multilingual` (patient ASR), `ai4bharat/indic-parler-tts` (streaming patient-language speech) |
-| Doctor voice (optional) | `hexgrad/Kokoro-82M` via Inference Providers, off by default |
+Scripted consultations played as text through the real engine with `gpt-oss-120b`. Model outputs vary between runs; these are single runs, not a clinical validation.
 
-No closed frontier model sits in the runtime path. A coding assistant (Claude Code) helped write code and docs during the build, as the commit trailers show.
+| 99% | 0 of 44 | 477 of 477 | 8 of 12 | 0 |
+|:---:|:---:|:---:|:---:|:---:|
+| of 727 rule checks passed | false-alarm traps tripped | PDF checks: native script, held drug never on the patient sheet | expected clinical concerns flagged, one run | false caution alerts on 6 quiet visits |
 
-**Roadmap, not in the runtime:** `QCRI/Fanar` for Arabic grounding, `Voxtral-Mini-4B-Realtime-Arabic` for Gulf Arabic ASR, MMS-TTS / Chatterbox / OmniVoice for more voices, omniASR for long-tail languages, pyannote for same-language diarization, a LoRA fine-tune on HF Jobs ([06](docs/06-fine-tuning-plan.md); not trained), and the idiom lexicon as a Hub dataset (not published yet).
-
----
+- **Safety rules:** 38 consultations in 14 languages ([summary](reports/sim/gptoss120b-full/summary.md)).
+- **Clinical review:** 16 consultations in 9 languages: 7 with a plan that doesn't fit, 6 quiet visits, 3 repeats of rule cases ([summary](reports/sim/coherence-r2/summary.md)). Smaller reruns caught 4 of 7 and 2 of 5.
+- **Speed and cost:** translation and gate 0.9 s per turn (median); agent cards about 6 to 7 s after the turn; wrap-up 6 to 8 s; LLM cost about $0.011 to $0.014 per consultation.
 
 ## Languages
 
-| | Today | Notes |
-|---|---|---|
-| **Nepali** | Voice in and out | The demo language and the most tested |
-| **Hindi · Urdu · Bengali · Malayalam** | Voice in and out | Same models; less tested |
-| **Filipino (Tagalog)** | Speech in (Whisper), text out | No voice yet |
-| **Doctor side** | English or Arabic speech in | Patient replies are shown in English; no Arabic voice yet |
+**37 patient languages.** Nepali, Malayalam, Bengali, Hindi and Urdu on the start screen; Filipino, Tamil, Swahili and 29 more (including Korean, Japanese, Georgian, Russian, Turkish, Indonesian, Vietnamese, Spanish and French) under *More*. **The doctor speaks English or Arabic**, and the whole interface also runs right to left in Arabic. Accuracy varies by language; Nepali is the most tested.
 
-More languages (Tamil, Telugu, Sinhala, Swahili, Amharic and others) are mapped in [04 · Models & Languages](docs/04-models-and-languages.md), with the model and licence for every cell.
+## Quickstart
 
----
-
-## Efficiency
-
-Measured live on the 9-turn golden path (text turns through `scripts/smoke_e2e.py`, 2026-11-07):
-
-| Step | Latency | Cost for the consultation |
-|---|---|---|
-| Background extraction (Groq) | ~1.1 s per call | ≈ $0.015 together |
-| Copilot agent (Cerebras) | ~1.2–1.6 s per run, 1 step (p50 ~1.8 s on the merged code) | |
-| Wrap-up: note, care plan, PDFs | ~6–8 s | ≈ $0.004 |
-
-A 40-turn consultation is **estimated** at ≈ $0.06. These numbers exclude the talk-loop translation calls and the GPU worker's hours.
-
-What keeps it cheap: extraction runs on Groq (input $0.15/1M vs $0.35 on Cerebras), a doctor's plain question is batched with the patient's answer into one extraction call, courtesy turns skip extraction, and the agent runs only when the deterministic steps found something new and usually finishes in one step. Rules run on CPU at no cost. Two things we measured and dropped: reasoning "high" (empty replies, ~12 s) and agent tool calling on Groq (the model called a tool that does not exist), so both agents run on Cerebras.
-
-Budget and provider routing: [07 · Compute Budget](docs/07-compute-budget-and-efficiency.md).
-
----
-
-## Safety, privacy & honesty
-
-- **Decision support, not diagnosis.** Bayan never prescribes or diagnoses. The doctor decides, acts on each card and approves the care plan before it goes to the patient.
-- **Rules are the authority.** 81 deterministic rules (37 critical, 35 caution, 9 info), each citing an FDA label or a guideline (NICE, AHA/ACC, ESC, WMS and others). Only the rule engine can raise a critical alert; agent cards are capped at caution and must cite real utterances and an existing rule, idiom or checklist id. If the agent fails or times out, deterministic fallback cards take over.
-- **The note stays the doctor's.** The Assessment section holds only the clinician's own words; a code-level guard drops diagnostic claims nobody stated. Every care-plan medicine is re-checked against the rules.
-- **Privacy.** Outputs live in a per-consultation temp folder, deleted on reset and swept after 24 h; the care plan page lives in memory and expires after 24 h; PDFs are served only under an unguessable token with whitelisted file names; phone numbers are never stored. The voice worker deletes each uploaded utterance right after loading it, and the consent line says the voice is processed, not stored. The Space sits behind an access code. Tests make no paid calls (`tests/conftest.py`). Synthetic consultations only; no real patient data.
-- **Known gaps:**
-  - **Nepali → English translation quality is unverified.** In a live check, `gpt-oss-120b` turned "जिउ सुन्निएको थियो" ("my body swelled") into "my tongue swelled". The patient's own words are always shown next to the English, a native-speaker review is needed before any real use, and a dedicated MT model (e.g. AI4Bharat IndicTrans2) is a roadmap option.
-  - The idiom lexicon (59 entries) and the rules are literature-sourced, **not yet clinician-reviewed**.
-  - Nepali lines (including the consent line) are machine drafts; **no native-speaker review yet**.
-  - Copying Nepali text out of the PDF gives broken characters (the printed page is correct).
-
-Details: [05 · Clinical Safety & Cultural Intelligence](docs/05-clinical-safety-and-cultural-intelligence.md).
-
----
-
-## Live today vs designed
-
-| | Status |
-|---|---|
-| Ambient talk loop (WebRTC, VAD, doctor/patient ID, ASR, translation, streaming Nepali voice), spoken consent, held sentence, idiom "Ask next", no-mic demo, care plan page by QR | **Deployed** in the Space (earlier UI shell) |
-| Clinical brain wired into that UI: intent-aware rule-engine prescription gate ("Say something else" withdraws the turn and rolls the state back, "Speak it anyway" is audited), idiom, rule and copilot cards in the Notes panel, wrap-up agent, review with an editable "Doctor's note" tab, both PDFs at `/files/<token>/`, `/plan/<id>` with PDF download, WhatsApp link | **Done in the local code** (269 offline tests, live smoke run 17/17); **not yet deployed** to the Space |
-| Care-plan audio (WAV) | Built, off by default (`BAYAN_PLAN_AUDIO=1`) |
-| Voices for Filipino and Arabic, more languages, Fanar / Voxtral, fine-tune, Hub dataset, automatic WhatsApp / SMS sending, EMR integration | **Designed, not built** |
-
----
-
-## Run the checks
+Requires Python 3.10 and a Hugging Face token with Inference Providers access.
 
 ```bash
-pip install -r requirements.txt gradio==5.49.1 pytest   # requirements.txt pins smolagents, fpdf2, uharfbuzz, rapidfuzz, segno
-pytest tests                              # 269 offline tests with fake models; paid calls are blocked
-python scripts/smoke_e2e.py --offline     # golden path with scripted models, free
-HF_TOKEN=hf_... python scripts/smoke_e2e.py   # live golden path: 17 checks, about $0.02
+git clone https://github.com/diyorbekibragimov/BayanAI.git && cd BayanAI
+python3.10 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt gradio==5.49.1
+
+export HF_TOKEN=hf_...
+python app.py            # http://localhost:7860
 ```
 
-**Running the Space.** Set the `HF_TOKEN` and `BAYAN_ACCESS_CODE` secrets. If the access code is unset, the app logs a warning at startup and nobody can get past the gate, so judges need the code from the team. Locally, `python app.py` serves on port 7860 with the code `local`.
+Open `http://localhost:7860/?demo=1` for the scripted Nepali consultation.
 
-What this does not prove: fake models test our logic, not model quality; the live check is one scenario; PDF layout is checked by eye.
+Speech runs on the voice worker, a separate GPU Space. To use your own, deploy [`voice_worker/`](voice_worker) and set `BAYAN_WORKER`.
 
----
+| Variable | Default | Purpose |
+|---|---|---|
+| `HF_TOKEN` | none | Inference Providers and the voice worker |
+| `BAYAN_WORKER` / `BAYAN_WORKER_URL` | `dullgrey/team-qh-129-bayan-voice` | Voice worker Space (or its URL) |
+| `BAYAN_LLM`, `BAYAN_LLM_PROVIDER` | `openai/gpt-oss-120b`, `cerebras` | Translation model |
+| `BAYAN_EXTRACT_PROVIDER` | `groq` | Background extraction |
+| `BAYAN_AGENT_PROVIDER` | `cerebras` | Both agents |
+| `BAYAN_BRAIN_LLM`, `BAYAN_BRAIN_PROVIDER` | unset | Swap the model for extraction and both agents |
+| `BAYAN_CLINIC_NAME` | unset | Clinic name on the PDFs |
+| `BAYAN_PLAN_AUDIO` | off | Read the care plan aloud as audio |
+
+**Tests and simulation**
+
+```bash
+pip install pytest pyyaml pymupdf
+pytest tests                             # offline, paid calls blocked
+python scripts/smoke_e2e.py --offline    # golden path, scripted models
+python scripts/simulate.py --list        # simulation suite (live)
+python scripts/simulate.py --only alg-01 # about $0.015 per consultation
+```
+
+Results land in `reports/sim/<run-id>/`. Scenario format: [`scenarios/README.md`](scenarios/README.md).
+
+## Deploy
+
+Two Spaces. The app Space's card (title, SDK, hardware, tags including `qai-hf-hackathon-2026`) lives in [`space/README.md`](space/README.md), because this README carries no Space front-matter.
+
+```bash
+# App Space: code, then the Space card as README.md
+hf upload dullgrey/team-qh-129-bayan-app . . --repo-type space \
+  --include "app.py" --include "requirements.txt" \
+  --include "bayan/*" --include "data/*" --include "assets/fonts/*" \
+  --exclude "*__pycache__*" --exclude "*.pyc"
+hf upload dullgrey/team-qh-129-bayan-app space/README.md README.md --repo-type space
+
+# Voice worker Space (its README.md carries its own card)
+hf upload dullgrey/team-qh-129-bayan-voice voice_worker . --repo-type space \
+  --exclude "*__pycache__*"
+```
+
+Set `HF_TOKEN` as a secret in both Spaces.
+
+## Repository layout
+
+```
+app.py                 Space entry point: Gradio + FastAPI (/plan, /files)
+bayan/
+  consult.py           consultation state machine and talk loop
+  talk.py              voice worker client and translation
+  ui.py, web/          the stage UI (HTML, CSS, JS)
+  brain/               rules, idioms, extraction, clinical review agent, wrap-up agent
+  outputs/             PDFs, delivery links, retention
+  careplan.py          the patient's phone page
+voice_worker/          GPU Space: language ID, speech-to-text, text-to-speech
+data/                  safety_rules.json (83 rules), idiom_lexicon.json (98 idioms)
+scenarios/, scripts/   simulation suite and smoke tests
+reports/sim/           simulation summaries
+tests/                 offline tests
+docs/                  design docs, pitch deck and script
+space/README.md        Hugging Face Space card
+```
 
 ## Documentation
 
-| # | Doc | What's inside |
-|---|---|---|
-| 01 | [Problem & Impact](docs/01-problem-and-impact.md) | Qatar evidence, personas, competitor comparison, impact KPIs |
-| 02 | [Product Spec](docs/02-product-spec.md) | Behaviour, screens, outputs as built, MVP status |
-| 03 | [Architecture](docs/03-architecture.md) | Module map, call flow, deployment, privacy |
-| 04 | [Models & Languages](docs/04-models-and-languages.md) | Models used vs alternatives, coverage matrix, licences, latency |
-| 05 | [Clinical Safety & Cultural Intelligence](docs/05-clinical-safety-and-cultural-intelligence.md) | Idioms, the 81-rule engine, rule changes, cards, guardrails |
-| 06 | [Fine-Tuning Plan](docs/06-fine-tuning-plan.md) | Roadmap only: not trained for the hackathon |
-| 07 | [Compute Budget & Efficiency](docs/07-compute-budget-and-efficiency.md) | Measured cost, provider routing, cost levers |
-| 08 | [Build Plan](docs/08-build-plan.md) | Roles, repo layout, what is done and what is not |
-| 09 | [Pitch & Demo](docs/09-pitch-and-demo.md) | 3-minute pitch, demo script, judge Q&A |
-| 10 | [Submission Checklist](docs/10-submission-checklist.md) | Hackathon rules mapped to proof and status |
-| 11 | [Clinical Copilot Agent](docs/11-clinical-copilot-agent.md) | Deterministic spine + smolagents agents: tools, cards, guardrails, measured cost |
-
-Data: [`data/idiom_lexicon.json`](data/idiom_lexicon.json) · [`data/safety_rules.json`](data/safety_rules.json) (see each rule's `change_note`)
-
----
-
-## Links
-
-| | |
+| Document | Contents |
 |---|---|
-| Space | https://huggingface.co/spaces/dullgrey/team-qh-129-bayan-app |
-| Demo video (2–3 min) | ⟨pending⟩ |
-| Blog post (optional) | ⟨pending⟩ |
+| [Problem and impact](docs/01-problem-and-impact.md) | Qatar evidence, personas, competitors |
+| [Product spec](docs/02-product-spec.md) | Behaviour, screens, outputs |
+| [Architecture](docs/03-architecture.md) | Modules, call flow, deployment, privacy |
+| [Models and languages](docs/04-models-and-languages.md) | Models used and alternatives, licences, coverage |
+| [Clinical safety](docs/05-clinical-safety-and-cultural-intelligence.md) | Rules, idioms, cards, guardrails |
+| [Compute budget](docs/07-compute-budget-and-efficiency.md) | Measured cost and provider routing |
+| [Clinical copilot agent](docs/11-clinical-copilot-agent.md) | Agent tools, cards, guardrails |
+| [Pitch deck](docs/pitch/Bayan-pitch.pdf) and [script](docs/pitch/script.md) | The 3-minute pitch |
 
-## Team QH-129
+## Limitations
 
-⟨Names and roles; see [08 · Build Plan](docs/08-build-plan.md)⟩
+- Machine translation is not certified interpreting. Bayan is for the visits that today get an ad hoc interpreter or none, not for consent to procedures or breaking bad news.
+- The 83 rules and 98 idioms are cited from the literature but not yet reviewed by clinicians.
+- Accuracy varies by language. Patient-facing strings are machine drafts without native-speaker review. The patient's own words are always shown beside the English.
+- Decision support, not a medical device. Not clinically validated. Tested on synthetic consultations only.
 
----
+## Team
 
-<sub>Bayan AI is a hackathon prototype built during the Qai × Hugging Face Hackathon O1 (Doha, 5–7 Nov 2026). It is not a medical device and has not been clinically validated. The runtime models are Apache-2.0 or MIT licensed; the two ai4bharat models are gated on the Hub. See [04](docs/04-models-and-languages.md).</sub>
+Team QH-129, Qai × Hugging Face Hackathon O1, Doha, 5–7 November 2026.
+
+<!-- Members and roles: add names here. -->
+
+## License
+
+Apache License 2.0. Model weights keep their own licences (see [Models and languages](docs/04-models-and-languages.md)); the two `ai4bharat` models are gated on the Hub. Bundled Noto fonts are under the SIL Open Font License ([`assets/fonts/OFL.txt`](assets/fonts/OFL.txt)).
+
+## Citation
+
+```bibtex
+@software{bayan_ai_2026,
+  title  = {Bayan AI: a clinical AI system that interprets between doctors and patients in Qatar},
+  author = {{Team QH-129}},
+  year   = {2026},
+  month  = nov,
+  url    = {https://github.com/diyorbekibragimov/BayanAI},
+  note   = {Qai x Hugging Face Hackathon O1, Doha}
+}
+```

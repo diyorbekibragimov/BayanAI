@@ -3,6 +3,7 @@
 One utterance:  audio ─► voice worker /hear (who spoke? + ASR)
                       ─► gpt-oss-120b (translate + drugs with intent / allergies / tests, JSON schema)
                       ─► bayan.brain prescription gate (rule engine, in bayan.consult)
+                      ─► bayan.brain coherence check (doctor plans / diagnoses / claims: one fast gpt-oss call)
                       ─► TTS in the listener's language (worker /speak_stream: patient and doctor voices)
 """
 
@@ -132,8 +133,15 @@ Return ONLY a JSON object with these keys:
      regular plus the maximum extra doses (4 + 1 = 5), dose as said.
      Leave out dose_mg, frequency_per_day or dose when they were not said; never guess.
   "allergies": allergies or bad reactions to medicines the speaker reports: [{"substance": "<lowercase drug or class>", "reaction": "<as said>"}],
-  "tests": tests or investigations the doctor orders or reports today, as short English names: ["ECG", "troponin blood test"]
-Use [] when there are none."""
+  "tests": tests or investigations the doctor orders or reports today, as short English names: ["ECG", "troponin blood test"],
+  "statement": what the speaker's utterance does; when it does several things, the FIRST of these that applies to
+     any part of it (a finding followed by a question is "claim", a plan followed by a question is "plan"):
+     "plan": gives or changes a treatment, medicine, test, referral, advice or follow-up;
+     "diagnosis": says what the problem is or what caused it;
+     "claim": states a clinical fact about the patient (a finding, measurement or test result, "you have a fever");
+     "question": only asks something;
+     "other": greeting, thanks, acknowledgement, small talk, anything else. Always "other" for the patient.
+Use [] for drugs, allergies and tests when there are none."""
 
 # Without a schema gpt-oss sometimes answers with fenced or invalid JSON (measured live).
 TRANSLATE_SCHEMA = {
@@ -150,10 +158,12 @@ TRANSLATE_SCHEMA = {
         "allergies": {"type": "array", "items": {"type": "object", "properties": {
             "substance": {"type": "string"}, "reaction": {"type": "string"}}, "required": ["substance"]}},
         "tests": {"type": "array", "items": {"type": "string"}},
+        "statement": {"type": "string", "enum": ["plan", "diagnosis", "claim", "question", "other"]},
     },
-    "required": ["translation", "english", "drugs", "allergies", "tests"],
+    "required": ["translation", "english", "drugs", "allergies", "tests", "statement"],
 }
 INTENTS = ("prescribe", "stop", "mention")
+STATEMENTS = ("plan", "diagnosis", "claim", "question", "other")
 
 
 def _clean_drugs(items) -> list[dict]:
@@ -171,7 +181,8 @@ def _clean_drugs(items) -> list[dict]:
 
 def translate(text: str, role: str, src: str, tgt: str, context: list[str] | None = None, hint: str = "") -> dict:
     """One schema'd gpt-oss-120b call: {"translation", "english", "drugs" (with intent / dose_mg /
-    frequency_per_day), "allergies", "tests"}. `context` = a few earlier transcript lines (English);
+    frequency_per_day), "allergies", "tests", "statement" (plan | diagnosis | claim | question | other; always
+    "other" for the patient)}. `context` = a few earlier transcript lines (English);
     `hint` = a note for the interpreter (e.g. a cultural idiom to keep as said)."""
     ctx = "\n".join(c for c in (context or []) if c)
     user = (
@@ -197,6 +208,8 @@ def translate(text: str, role: str, src: str, tgt: str, context: list[str] | Non
     except Exception as e:  # noqa: BLE001 - the talk loop must never break on the safety net
         print(f"[translate] drug-name repair failed: {type(e).__name__}: {e}", flush=True)
     data["allergies"] = [a for a in data["allergies"] if isinstance(a, dict) and str(a.get("substance") or "").strip()]
+    st = str(data.get("statement") or "").strip().lower()   # what the doctor's sentence does (coherence check routing)
+    data["statement"] = st if role == "doctor" and st in STATEMENTS else "other"
     return data
 
 

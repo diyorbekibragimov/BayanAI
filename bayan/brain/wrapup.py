@@ -319,10 +319,17 @@ def _compress_ids(ids: list[str]) -> str:
     return ", ".join(out)
 
 
-_TAG_TEXT = {"acs": "cardiac pain", "gi_bleed": "GI bleeding", "stroke": "stroke", "sepsis": "sepsis",
-             "heat_illness": "heat illness", "dehydration": "dehydration", "suicide_risk": "suicidal thoughts",
-             "pe": "pulmonary embolism", "meningitis": "meningitis", "ectopic": "ectopic pregnancy",
-             "dka": "diabetic ketoacidosis", "malaria": "malaria"}
+# Keys = the lexicon's red_flag_tags vocabulary (data/idiom_lexicon.json); legacy short keys kept as aliases.
+_TAG_TEXT = {"acs": "cardiac pain", "gi_bleed": "GI bleeding", "stroke": "stroke",
+             "sepsis_infection": "sepsis or serious infection", "heat_illness": "heat illness",
+             "dehydration": "dehydration", "suicidality": "suicidal thoughts", "pe": "pulmonary embolism",
+             "meningitis": "meningitis", "ectopic_pregnancy": "ectopic pregnancy",
+             "metabolic": "a metabolic emergency (DKA or hypoglycaemia)", "malaria": "malaria",
+             "neuro_psych_emergency": "a neurological or psychiatric emergency",
+             "arrhythmia_syncope": "arrhythmia or syncope", "respiratory": "respiratory illness",
+             "postpartum": "a postpartum complication",
+             "sepsis": "sepsis", "suicide_risk": "suicidal thoughts", "ectopic": "ectopic pregnancy",
+             "dka": "diabetic ketoacidosis"}
 
 
 def _idiom_alert(consult: Consultation, card: dict) -> str:
@@ -443,6 +450,93 @@ def decision_log(consult: Consultation) -> list[dict]:
     return rows
 
 
+# The copilot's concerns as the doctor saw them, for the record (doctor PDF "Copilot concerns").
+CONCERN_SOURCES = ("agent", "fallback", "rules")
+_RETIRED = re.compile(r"\b(retired|superseded)\b", re.I)
+_RULE_PREFIX = re.compile(r"^[A-Z]{2,}(?:-[A-Z0-9]+)+:\s*")
+# status -> (order group, label): open first, then asked / addressed / acknowledged, then dismissed / overridden
+CONCERN_STATUS = {"open": (0, "Open"), "asked": (1, "Asked"), "addressed": (1, "Addressed"),
+                  "accepted": (1, "Accepted"), "acknowledged": (1, "Acknowledged"),
+                  "dismissed": (2, "Dismissed by clinician"), "overridden": (2, "Overridden by clinician")}
+
+
+def _words(text: str | None) -> str:
+    return " ".join(re.findall(r"\w+", (text or "").lower()))
+
+
+def _resolved_reason(card: dict, audit: list[dict]) -> str:
+    if card.get("resolved_reason"):
+        return str(card["resolved_reason"])
+    for e in reversed(audit):
+        if _card_id(e) == card.get("id") and e.get("action") == "resolved":
+            return str(e.get("reason") or "")
+    return ""
+
+
+def _one_line(text: str, limit: int = 180) -> str:
+    """First line, first sentence, rule-id prefix dropped; never more than `limit` characters."""
+    first = next((ln for ln in str(text or "").splitlines() if ln.strip()), "")
+    first = _RULE_PREFIX.sub("", first.strip())
+    sent = (_sentences(first) or [first])[0].strip()
+    out = " ".join(sent.split())
+    return out if len(out) <= limit else out[:limit - 1].rstrip(" ,;:") + "…"
+
+
+def copilot_concerns(consult: Consultation) -> list[dict]:
+    """Every agent and rule card raised during the visit, for the record: [{"id","title","body","dimension","status",
+    "label","reason","quote","time","severity","source","t_min"}]. Cards retired by the copilot itself (a question
+    superseded by a better one, or a duplicate pushed off screen) are left out; everything else is listed with what
+    happened to it: open (never addressed), asked (the doctor asked the suggested question), addressed (the
+    conversation dealt with it / the rule stopped firing), accepted / acknowledged, dismissed or overridden by the
+    clinician. Ordered open first, then asked / addressed, then dismissed; by time within each group."""
+    audit = [e for e in _audit(consult) if isinstance(e, dict)]
+    turns = {t.id: t for t in consult.turns}
+    rows = []
+    for c in _cards(consult):
+        if c.get("source") not in CONCERN_SOURCES:
+            continue
+        status = str(c.get("status") or "open")
+        reason = ""
+        if status == "resolved":
+            why = _resolved_reason(c, audit)
+            if _RETIRED.search(why):
+                continue
+            status = "asked" if why.startswith("the doctor asked") else "addressed"
+        elif status == "accepted" and c.get("kind") == "ask":
+            status = "asked"
+        if status in ("dismissed", "overridden", "acknowledged", "accepted"):
+            acts = [a for a in (c.get("actions") or []) if isinstance(a, dict)] or \
+                [e for e in audit if _card_id(e) == c.get("id") and e.get("action") and e.get("user") not in _SYSTEM_USERS]
+            reason = next((str(a.get("reason")) for a in reversed(acts) if a.get("reason")), "")
+        if status not in CONCERN_STATUS:
+            status = "open"
+        ev = next((e for e in (c.get("evidence") or []) if isinstance(e, dict) and e.get("utt")), None)
+        quote, t_min = "", c.get("t_min")
+        if ev is not None:
+            turn = turns.get(ev.get("utt"))
+            quote = " ".join(str(ev.get("quote") or (_english(turn) if turn else "")).split())
+            if len(quote) > 160:
+                quote = quote[:159].rstrip(" ,;:") + "…"
+            t_min = ev.get("t_min") if ev.get("t_min") is not None else getattr(turn, "t_min", t_min)
+        dim = str(c.get("dimension") or "")
+        if not dim:
+            g = str(c.get("grounding") or "")
+            dim = g if g in ("safety", "history", "plan", "communication", "consistency") else \
+                ("safety" if c.get("source") == "rules" and c.get("kind") == "safety" else
+                 "workup" if c.get("source") == "rules" else str(c.get("kind") or ""))
+        title = str(c.get("title") or "").strip()
+        if c.get("kind") == "ask" and c.get("ask_text") and _words(c["ask_text"]) != _words(title):
+            title = f"{title}: “{str(c['ask_text']).strip()}”" if title else str(c["ask_text"])
+        group, label = CONCERN_STATUS[status]
+        rows.append({"id": c.get("id"), "title": dedash(title), "body": dedash(_one_line(c.get("body") or "")),
+                     "dimension": dim.replace("_", " "), "status": status, "label": label, "group": group,
+                     "reason": dedash(reason), "quote": dedash(quote), "time": fmt_t(t_min) if quote else "",
+                     "severity": c.get("severity") or "info", "source": c.get("source"),
+                     "t_min": float(c.get("t_min") or 0)})
+    rows.sort(key=lambda r: (r["group"], r["t_min"]))
+    return rows
+
+
 def dedash(text: str) -> str:
     """No em or en dashes in the documents: number ranges keep a hyphen, other dashes become commas."""
     if not text:
@@ -456,9 +550,14 @@ def dedash(text: str) -> str:
 
 
 _TAG_PLAIN = {"acs": "heart pain", "gi_bleed": "bleeding in the stomach or gut", "stroke": "a stroke",
-              "sepsis": "a serious infection", "heat_illness": "heat illness", "dehydration": "dehydration",
-              "suicide_risk": "thoughts of self-harm", "pe": "a blood clot in the lung", "meningitis": "meningitis",
-              "ectopic": "an ectopic pregnancy", "dka": "a diabetic emergency", "malaria": "malaria"}
+              "sepsis_infection": "a serious infection", "heat_illness": "heat illness", "dehydration": "dehydration",
+              "suicidality": "thoughts of self-harm", "pe": "a blood clot in the lung", "meningitis": "meningitis",
+              "ectopic_pregnancy": "an ectopic pregnancy", "metabolic": "a sugar or salt emergency",
+              "malaria": "malaria", "neuro_psych_emergency": "a brain or mental-health emergency",
+              "arrhythmia_syncope": "a heart rhythm problem or fainting", "respiratory": "a breathing problem",
+              "postpartum": "a problem after childbirth",
+              "sepsis": "a serious infection", "suicide_risk": "thoughts of self-harm",
+              "ectopic": "an ectopic pregnancy", "dka": "a diabetic emergency"}
 
 
 def _gap_names(items: list[dict]) -> list[str]:
@@ -578,12 +677,22 @@ def safety_alerts(consult: Consultation) -> list[str]:
 
 
 # ====================================================================== structured record (tables of the note)
+_AGREE = re.compile(r"\b(yes|agree[ds]?|ok(?:ay)?|sure|of course)\b", re.IGNORECASE)
+_REFUSE = re.compile(r"\b(no|not|don'?t|do not|never|refuse[ds]?)\b", re.IGNORECASE)
+
+
 def _consent(consult: Consultation) -> str:
+    """One word for the record's panel: "Agreed" or "Not agreed". The exact consent sentence (what the patient heard
+    and the doctor's screen showed) stays in the transcript's consent row, not repeated here."""
+    rec = (consult.outputs or {}).get("consent") if isinstance(getattr(consult, "outputs", None), dict) else None
+    if isinstance(rec, dict) and rec.get("en"):
+        return "Agreed"
     for t in consult.turns:
         if t.role == "bayan" and "consent" in (t.english + t.text + t.kind).lower():
             ans = next((u for u in consult.turns if u.role == "patient" and u.t_min >= t.t_min), None)
-            return "Recorded (patient agreed)" if ans else "Asked; no answer recorded"
-    return "Not recorded"
+            said = (ans.english or ans.text or "") if ans is not None else ""
+            return "Agreed" if _AGREE.search(said) and not _REFUSE.search(said) else "Not agreed"
+    return "Not agreed"
 
 
 def _freq_clinical(m: dict) -> str:
@@ -705,20 +814,34 @@ style of a hospital clinic letter. Inputs: the structured clinical record (autho
 plan/assessment utterances verbatim, and either the full English transcript or per-chunk fact summaries covering ALL
 of it. Each input line starts with an utterance id (uNNN): put the ids an item comes from in "utts" (used only for
 checking). NEVER write utterance ids, rule ids or timestamps in "text".
-Sections (short clinical phrases, one fact per item, no fact repeated in two sections):
+Sections (short clinical phrases, one fact per item, no fact repeated in two sections). Write every item in the
+third person as a clinician would, never as the speaker's own first- or second-person sentence: "Cough for 2 weeks,
+worse at night", not "I have been coughing for two weeks". Keep the speaker's meaning and words for symptoms; add
+nothing.
 - presenting_complaint: ONE item, the main complaint in a few words (patient's own term in quotes if notable).
 - history: symptoms with onset/duration, relevant history, exposures/occupation, current medicines. NOT allergies,
   vitals or test results (added from the record).
-- examination: findings the clinician stated aloud other than vitals and tests; usually empty.
+- examination: findings the clinician stated aloud other than vitals and tests, written as findings ("Chest clear",
+  not "Your chest is clear"); usually empty.
 - assessment: ONLY statements from "assessment_candidates" (the clinician's own assessment sentences), each
   copied with at most a light change to third person ("Your throat looks viral." -> "Throat looks viral.").
   Never combine, infer, generalise or add a conclusion; never write a negation or exclusion ("no cardiac cause",
   "ruled out", "unlikely") unless those exact words were said. A held or superseded impression may only appear
   labelled, e.g. "Initial impression 'probably gastric', later revised".
 Do not use dashes (no em or en dashes); use commas, colons or full stops.
-- plan: tests ordered, management decisions, disposition, follow-up, in the clinician's words. Do NOT list
-  medicines, doses or stopped medicines (a medication table is added from the record).
-- information_given: advice and safety-net instructions the clinician gave the patient.
+- plan: tests ordered, management decisions, disposition, follow-up, in the clinician's words. Do NOT list named
+  medicines, doses or stopped medicines (a medication table is added from the record); a medicine or treatment
+  given WITHOUT a drug name ("a nasal spray", "something for the pain") is not in that table and goes here.
+- information_given: advice and safety-net instructions the clinician gave the patient, and a misunderstanding of
+  the patient's that the clinician corrected (in the clinician's words).
+"case_summary" is the live copilot's running summary of the visit (chief complaint, history positives and
+negatives, working diagnosis and differential, plan including medicines given without a name, findings stated
+aloud, the patient's understanding and affect), each line ending with the ids it came from. Use it as a MAP so
+nothing discussed is missed: relevant negatives the patient gave (history: "No fever"), a medicine or treatment the
+clinician gave without naming it (plan, in their words, e.g. "Nasal spray after lunch and dinner for 3 weeks"), a
+finding the clinician stated aloud (examination). It is NOT a source and NOT a conclusion: every item must be
+supported by the utterances it cites (never cite the summary), and never turn the summary's working diagnosis,
+differential or the patient's affect into an assessment or a finding unless the clinician said it.
 Never add anything that was not said. Held turns were never interpreted to the patient.
 Return JSON: {"presenting_complaint": [{"text","utts"}], "history": [...], "examination": [...], "assessment": [...],
 "plan": [...], "information_given": [...]}."""
@@ -772,6 +895,45 @@ def _compact_state(st: dict) -> dict:
             return [trim(i) for i in x]
         return x
     return trim(st)
+
+
+_CASE_LABELS = (("history", "history"), ("working_diagnosis", "working_diagnosis"), ("differential", "differential"),
+                ("plan", "plan"), ("exam_claims", "stated_findings"), ("patient_understanding", "patient_understanding"),
+                ("patient_affect", "patient_affect"))
+CASE_ITEM_CHARS = 220
+
+
+def case_context(case: dict | None) -> dict:
+    """The running case summary (state["case"]) as compact context for the note writer: one line per item, ending with
+    the utterance ids it came from ("No fever (u004)"); history split into positives and negatives; plan items keep
+    their type ("medicine: nasal spray after lunch and dinner (u006)"). Empty lists are left out."""
+    if not isinstance(case, dict):
+        return {}
+
+    def line(x: dict, prefix: str = "") -> str:
+        text = " ".join(str(x.get("text") or "").split())[:CASE_ITEM_CHARS]
+        ids = list(dict.fromkeys(str(e.get("utt")) for e in (x.get("evidence") or [])
+                                 if isinstance(e, dict) and e.get("utt")))
+        return f"{prefix}{text}" + (f" ({', '.join(ids[:4])})" if ids else "") if text else ""
+
+    out: dict = {}
+    cc = case.get("chief_complaint")
+    if isinstance(cc, dict) and line(cc):
+        out["chief_complaint"] = line(cc)
+    for key, label in _CASE_LABELS:
+        items = [x for x in (case.get(key) or []) if isinstance(x, dict)]
+        if key == "history":
+            pos = [line(x) for x in items if x.get("present") is not False]
+            neg = [line(x) for x in items if x.get("present") is False]
+            if any(pos):
+                out["history_positives"] = [x for x in pos if x]
+            if any(neg):
+                out["history_negatives"] = [x for x in neg if x]
+            continue
+        lines = [line(x, f"{x.get('type')}: " if key == "plan" and x.get("type") else "") for x in items]
+        if any(lines):
+            out[label] = [x for x in lines if x]
+    return out
 
 
 def chunk_lines(lines: list[str], max_tokens: int = CHUNK_TOKENS) -> list[list[str]]:
@@ -1098,11 +1260,13 @@ def draft_note_llm(consult: Consultation) -> tuple[dict | None, dict]:
         st = copy.deepcopy(consult.state)
         turns = list(consult.turns)
     info: dict = {"source": "fallback", "calls": 0, "chunks": 0, "warnings": []}
+    case = case_context(st.pop("case", None))   # the running case summary: context for the writer, not a source
     state_js = _compact_state(st)
     plan_lines = _doctor_plan_lines(consult)
     transcript = [_turn_line(t) for t in turns]
-    base = est_tokens(json.dumps(state_js, ensure_ascii=False)) + sum(est_tokens(x) for x in plan_lines) + 400
-    payload: dict = {"record": state_js, "clinician_utterances": plan_lines,
+    base = est_tokens(json.dumps(state_js, ensure_ascii=False)) + sum(est_tokens(x) for x in plan_lines) + 400 \
+        + est_tokens(json.dumps(case, ensure_ascii=False))
+    payload: dict = {"record": state_js, "case_summary": case, "clinician_utterances": plan_lines,
                      "assessment_candidates": [f"{c['utt']}{' (HELD, superseded)' if c['superseded'] else ''}: "
                                                f"{c['text']}" for c in assessment_candidates(consult)]}
     if base + sum(est_tokens(x) for x in transcript) <= NOTE_INPUT_BUDGET:

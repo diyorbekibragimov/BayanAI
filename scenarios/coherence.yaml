@@ -13,9 +13,13 @@
     - {role: patient, text: "Я посидел на холодной плитке и, наверное, застудил попу."}
     - {role: patient, text: "И ещё на сердце как-то холодно, кажется, у меня совсем нет настроения."}
     - {role: doctor, text: "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner."}
+    - {action: held_anyway}   # live, this sentence was spoken: when it is held, the doctor says it anyway
     - {role: patient, text: "А зачем мне это? Мне что, в попу его брызгать?"}
     - {role: doctor, text: "You are not cold, you are very hot and have a really high temperature."}
   expect:
+    must_hold:
+      - {rule: COHERENCE, turn: 3, note: "nasal spray for a sore bottom: the plan does not fit the complaint"}
+      - {rule: COHERENCE, turn: 6, note: "high temperature never measured; the patient said they feel cold"}
     themes:
       - name: treatment does not fit the complaint
         dimension: plan
@@ -64,6 +68,7 @@
     - {role: doctor, text: "Your blood pressure is fine, it's just stress. Take paracetamol 1 g up to three times a day if needed."}
     - {role: patient, text: "আচ্ছা, ধন্যবাদ।"}
   expect:
+    must_hold: [{rule: COHERENCE, turn: 4, note: "blood pressure called fine, never measured"}]
     themes:
       - name: blood pressure stated but never measured
         dimension: consistency

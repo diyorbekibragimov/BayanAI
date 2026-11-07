@@ -21,8 +21,9 @@ it dirty -> exactly one rerun; it never delays speech):
   7. fallback           agent off / failed / timed out / no valid card: at most one deterministic "ask" card from
                         the idiom's clarifying questions or the open checklist (source "fallback")
 Steps 1-4 never depend on the LLM, so safety alerts cannot be skipped by the agent; rule cards stay the only source
-of critical alerts and held sentences. Every step is logged to consult.trace as "tool"/"agent"/"card" lines (the
-activity feed); per-run latency, tokens and cost go to consult.outputs["metrics"].
+of critical alerts. Held sentences come from the prescription gate's critical rules and, before speech, from the
+coherence check (bayan.brain.coherence: one fast call on doctor plans / diagnoses / claims, caution card). Every
+step is logged to consult.trace as "tool"/"agent"/"card" lines (the activity feed); per-run latency, tokens and cost go to consult.outputs["metrics"].
 
 Talk-loop hooks: prescription_gate() (sync, no LLM) on doctor turns with drugs, record_allergies() (sync) on
 patient turns with allergies, post_idioms() (sync lexicon idiom + "ask" card) on patient turns, on_turn() after every

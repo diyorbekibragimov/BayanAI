@@ -6,8 +6,9 @@ picks whose turn it is) and sends 16 kHz PCM; every reply is streamed to the pag
 The doctor works in English or Arabic (s.doc_lang); the whole doctor-facing text follows it.
 
 The clinical engine underneath is bayan.brain: every interpreted turn goes into the Consult's
-brain Consultation (`s.brain`); doctor prescriptions pass the rule engine's prescription gate
-(held sentences), patient turns feed the idiom lexicon and the background copilot (cards ->
+brain Consultation (`s.brain`); doctor prescriptions pass the rule engine's prescription gate and doctor
+plans / diagnoses / clinical claims a fast coherence check (bayan.brain.coherence), either of which can hold the
+sentence before it is spoken (held sentences); patient turns feed the idiom lexicon and the background copilot (cards ->
 suggestions / notes via bayan.copilot), and the end of the visit runs the wrap-up agent (note,
 structured care plan, PDFs) that bayan.careplan serves to the patient.
 """
@@ -32,8 +33,10 @@ import numpy as np
 
 from . import careplan, copilot, talk, ui
 from .langs import MORE
+from .brain import coherence
 from .brain import copilot as brain
 from .brain import llm as brain_llm
+from .brain.cards import _qnorm
 from .brain.idioms import default_index as idiom_index
 from .brain import wrapup
 from .brain.state import Consultation, empty_state
@@ -74,10 +77,10 @@ CONSENT_EN = ui.t("en", "consent_doc")
 _CONSENT = {
     # Says what CONSENT_EN says (processed to translate it, not stored), sentence by sentence.
     "ne": "नमस्ते, म बयान हुँ। म तपाईं र डाक्टरबीच अनुवाद गर्छु। तपाईंको आवाज अनुवाद गर्नका लागि मात्र प्रशोधन गरिन्छ, "
-          "भण्डारण गरिँदैन। के तपाईं सहमत हुनुहुन्छ?",
+          "भण्डारण गरिँदैन। के तपाईं सहमति दिनुहुन्छ?",
     # gpt-oss drafts, hand-corrected (Swahili, Korean); native check pending.
-    "ta": "வணக்கம், நான் பயான். நான் உங்களுக்கும் மருத்துவருக்கும் இடையில் மொழிபெயர்க்கிறேன். உங்கள் குரல் மொழிபெயர்ப்புக்காக மட்டுமே செயலாக்கப்படுகிறது, சேமிக்கப்படாது. நீங்கள் ஒப்புக்கொள்கிறீர்களா?",
-    "sw": "Habari, mimi ni Bayan. Ninatafsiri kati yako na daktari. Sauti yako inachakatwa ili kutafsiriwa tu, na haihifadhiwi. Je, unakubali?",
+    "ta": "வணக்கம், நான் பயான். நான் உங்களுக்கும் மருத்துவருக்கும் இடையில் மொழிபெயர்க்கிறேன். உங்கள் குரல் மொழிபெயர்ப்புக்காக மட்டுமே செயலாக்கப்படுகிறது, சேமிக்கப்படாது. நீங்கள் சம்மதம் தருகிறீர்களா?",
+    "sw": "Habari, mimi ni Bayan. Ninatafsiri kati yako na daktari. Sauti yako inachakatwa ili kutafsiriwa tu, na haihifadhiwi. Je, unatoa idhini yako?",
     **{code: v["consent"] for code, v in MORE.items()},
 }
 _CONSENT_LOCK = threading.Lock()
@@ -193,6 +196,8 @@ class Consult:
     steps: list = field(default_factory=list)
     review: dict = field(default_factory=dict)
     open_notes: int = 0
+    notified: set = field(default_factory=set)   # card / suggestion ids the doctor has already been shown
+    notify_turn: int = -1                        # the turn the notes panel last opened itself on
     close_notes: int = 0
     auto_end: int = 0
     stop_mic: int = 0
@@ -346,6 +351,14 @@ def _sync_cards(s: Consult) -> None:
             x["status"] = "asking"
     s.suggestions = sugs
     s.card_notes = copilot.notes(b, hide=set((s.held or {}).get("cards") or []))
+    # A new concern or a new "Ask next" opens the (existing) notes panel by itself, at most once per turn and
+    # never over the held screen; otherwise copilot cards sat behind a closed panel and a small badge.
+    ids = {x["id"] for x in sugs if x.get("status") == "open"} | {n["id"] for n in s.card_notes if n.get("id")}
+    fresh = ids - s.notified
+    s.notified |= ids
+    if fresh and s.screen == "live" and not s.held and s.notify_turn != s.turn_seq:
+        s.open_notes += 1
+        s.notify_turn = s.turn_seq
     pv = s.patient_view
     if pv.get("utt") and not pv.get("pending"):
         pv["idiom"], pv["note"] = copilot.idiom_for(b, pv["utt"], pv.get("native", ""))
@@ -619,6 +632,33 @@ def _held_payload(s: Consult, hits: list[dict], drugs: list[dict], english: str,
             "translation": translation, "utt": utt, "cards": brain.held_card_ids(s.brain, hits)}
 
 
+def _coherence_hold(s: Consult, turn, statement: str, text: str, translation: str) -> dict | None:
+    """The coherence check (bayan.brain.coherence) on a doctor's plan / diagnosis / claim: a held-screen payload of the
+    same shape as the prescription gate's (headline = the reason, the patient's conflicting words, the doctor's
+    sentence), with the concern posted as a caution card; None when the sentence may be spoken."""
+    res = coherence.check(s.brain, turn, statement)
+    if not res or not res.get("hold"):
+        return None
+    cid = coherence.post_card(s.brain, turn, res)
+    head = _cap(res["reason"].strip())
+    head = head if head[-1:] in ".!?…" else head + "."
+    pq = ""
+    for e in res.get("evidence") or []:
+        t = s.brain.turn_by_id(e.get("utt") or "")
+        if t is not None and t.role == "patient":
+            q = e.get("quote") or ""
+            if s.doc_lang != "en":                # the patient's words as the doctor saw them
+                pq = s.shown.get(t.id) or q
+            else:                                 # in English (a quote of the original words -> the English line)
+                pq = q if q and _qnorm(q) in _qnorm(t.english) else (t.english or q)
+            break
+    if s.doc_lang != "en":
+        head = loc(s, [head])[0]
+    return {"headline": head, "pq": pq, "drug": "", "rule": coherence.RULE_ID, "kind": res.get("kind", "other"),
+            "confidence": res.get("confidence"), "dq": text, "translation": translation, "utt": turn.id,
+            "cards": [cid] if cid else []}
+
+
 def _context(s: Consult) -> list[str]:
     with s.brain.lock:
         turns = [t for t in s.brain.turns if t.kind != "system"][-CONTEXT_TURNS:]
@@ -802,9 +842,16 @@ def process_text(s: Consult, role: str, text: str, src: str | None = None):
         reason = _held_payload(s, hits, drugs, english, tr["translation"], turn.id) if hits else None
         if reason:
             reason["dq"] = text  # the doctor's own words
+        elif coherence.checked(tr.get("statement")):
+            # a plan / diagnosis / clinical claim the rules let through: one fast "does this add up?" check before
+            # the patient hears it (errors and slow replies speak the sentence unchecked)
+            reason = _coherence_hold(s, turn, tr["statement"], text, tr["translation"])
+            if not alive(s):
+                return
         en_notes = [("test", f"{_cap(_join(tests))} ordered")] if tests else []
         if reason:
-            en_notes.append(("held", f"{_cap(reason['drug'])}: held, not said to the patient"))
+            en_notes.append(("held", f"{_cap(reason['drug'])}: held, not said to the patient" if reason.get("drug")
+                             else "Sentence held, not said to the patient"))
         else:
             for d in drugs:
                 name = (d.get("name") or "").strip()
@@ -935,7 +982,8 @@ def held_anyway(s: Consult):
         s.held = None
     brain.override_turn(s.brain, h.get("utt", ""), h.get("cards") or [], "spoken anyway by clinician")
     with s.lock:
-        add_note(s, "override", loc(s, [f"{_cap(h['drug'])} spoken anyway"])[0])
+        add_note(s, "override", loc(s, [f"{_cap(h['drug'])} spoken anyway" if h.get("drug")
+                                        else "Held sentence spoken anyway"])[0])
         print(f"[audit] override {h['rule']} sid={s.sid[:6]} drug={h['drug']}", flush=True)
         s.live, s.tint = "doctor", "d"
         if not queue_speech(s, Speech(h["translation"], s.lang, "patient", True, h["dq"], kind="override"), source=h["dq"]):

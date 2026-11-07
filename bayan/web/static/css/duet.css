@@ -43,13 +43,56 @@ footer,.gradio-container footer,.toast-wrap{display:none !important}
 .bz-frame .mlang{display:flex;width:100%;align-items:baseline;justify-content:space-between;gap:10px;min-height:40px;padding:8px 10px;border:none;border-radius:11px;background:transparent;color:#173430;text-align:start}
 .bz-frame .mlang .n{font-size:15px;font-weight:500}.bz-frame .mlang .e{font-size:12px;color:#5B6B69}
 .bz-frame .mlang.sel{background:#F1F8F7;box-shadow:inset 0 0 0 2px #0E8A6F}
-.bz-frame #bz-wordmark{border:none;background:none;padding:6px 10px;margin:-6px -10px;border-radius:999px;color:#173430;cursor:pointer}
+/* Home wordmark (small pearl + بيان + Bayan). No capsule: hover/focus brightens the pearl and drifts its highlight, sends one
+   pearl-tinted sheen across بيان from the pearl's side, and darkens "Bayan" (no box, no scale, no layout shift).
+   line-height:1 pins the line boxes (Gradio's .prose sets 1.4); the uneven padding centres the ink, not the line boxes,
+   inside the focus ring (Reem Kufi's dots hang ~2px below its em box, its alef starts ~1.5px inside it): 5px over, 8.5px
+   under puts ~6.6px of space above and below the ink. margin-top:0 with padding-top:5px keeps the glyphs where they sat
+   under Gradio's 1.4 line-height; the side margins cancel the side padding. */
+.bz-frame #bz-wordmark{border:none;background:none;line-height:1;padding:5px 12px 8.5px;margin:0 -12px -8.5px;border-radius:16px;color:#173430;cursor:pointer}
+.bz-frame #bz-wordmark .wm-pearl{flex:none;align-self:center;position:relative;top:1.5px;width:12px;height:12px;border-radius:50%;overflow:hidden;margin-inline-end:-2px;
+  background:radial-gradient(circle at 34% 28%,#FFFFFF 0%,#F4FBFA 20%,#D4F1EC 46%,#CFE2FB 70%,#E4DEFA 100%);
+  box-shadow:0 3px 6px -3px rgba(31,111,178,.45),inset 0 -2px 4px rgba(14,138,111,.16);
+  transition:filter .8s cubic-bezier(.2,.8,.2,1),box-shadow .8s cubic-bezier(.2,.8,.2,1)}
+.bz-frame #bz-wordmark .wm-pearl::after{content:"";position:absolute;left:12%;top:8%;width:52%;height:38%;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0));opacity:.85;
+  transition:transform .85s cubic-bezier(.2,.8,.2,1),opacity .85s cubic-bezier(.2,.8,.2,1)}
+.bz-frame #bz-wordmark .wm-en{color:#5B6B69;transition:color .7s cubic-bezier(.2,.8,.2,1)}
+@supports ((background-clip:text) or (-webkit-background-clip:text)){
+  /* the text is painted by its background, which only covers the span's box: pad it so the dots below (and any
+     overhang) stay inside, and cancel the padding with margins so nothing moves */
+  .bz-frame #bz-wordmark .wm-ar{padding:6px 4px 10px;margin:-6px -4px -10px;
+    color:transparent;-webkit-text-fill-color:transparent;background-color:#173430;background-repeat:no-repeat;
+    background-image:linear-gradient(100deg,rgba(255,255,255,0) 40%,rgba(150,214,201,.5) 46%,rgba(236,249,246,.68) 50%,rgba(180,204,246,.5) 54%,rgba(255,255,255,0) 60%);
+    background-size:300% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;
+    transition:background-color .8s cubic-bezier(.2,.8,.2,1)}
+}
+@keyframes wm-sheen{from{background-position:100% 0}to{background-position:0 0}}
+@keyframes wm-sheen-rtl{from{background-position:0 0}to{background-position:100% 0}}
+@media (hover:hover){
+  .bz-frame #bz-wordmark:hover .wm-pearl{filter:brightness(1.05) saturate(1.35);box-shadow:0 3px 6px -3px rgba(31,111,178,.45),0 0 10px 1px rgba(150,214,201,.6),inset 0 -2px 4px rgba(14,138,111,.16)}
+  .bz-frame #bz-wordmark:hover .wm-pearl::after{opacity:1;transform:translate(22%,18%)}
+  .bz-frame #bz-wordmark:hover .wm-ar{background-color:#22554D;animation:wm-sheen .9s cubic-bezier(.3,.5,.4,1) 1}
+  .bz-frame[dir=rtl] #bz-wordmark:hover .wm-ar{animation-name:wm-sheen-rtl}
+  .bz-frame #bz-wordmark:hover .wm-en{color:#3A4B48}
+}
+.bz-frame #bz-wordmark:focus-visible{outline:2px solid #1F6FB2;outline-offset:3px}
+.bz-frame #bz-wordmark:focus-visible .wm-pearl{filter:brightness(1.05) saturate(1.35);box-shadow:0 3px 6px -3px rgba(31,111,178,.45),0 0 10px 1px rgba(150,214,201,.6),inset 0 -2px 4px rgba(14,138,111,.16)}
+.bz-frame #bz-wordmark:focus-visible .wm-pearl::after{opacity:1;transform:translate(22%,18%)}
+.bz-frame #bz-wordmark:focus-visible .wm-ar{background-color:#22554D;animation:wm-sheen .9s cubic-bezier(.3,.5,.4,1) 1}
+.bz-frame[dir=rtl] #bz-wordmark:focus-visible .wm-ar{animation-name:wm-sheen-rtl}
+.bz-frame #bz-wordmark:focus-visible .wm-en{color:#3A4B48}
+.bz-frame #bz-wordmark:active .wm-pearl{filter:brightness(.97) saturate(1.2);transition-duration:.08s}
+.bz-frame #bz-wordmark:active .wm-ar{background-color:#132B28;transition-duration:.08s}
+.bz-frame #bz-wordmark:active .wm-en{color:#2E3D3B;transition-duration:.08s}
+@media (prefers-reduced-motion: reduce){.bz-frame #bz-wordmark .wm-ar{animation:none !important;transition:none}
+  .bz-frame #bz-wordmark .wm-pearl,.bz-frame #bz-wordmark .wm-en{transition:none}.bz-frame #bz-wordmark .wm-pearl::after{transition:none;transform:none !important}}
 /* Hover: calm and slow. Tints only (Deep Gulf at ~5%), never a transform, outline or hard shadow. */
 .bz-frame button{transition:background-color .7s cubic-bezier(.2,.8,.2,1),color .7s cubic-bezier(.2,.8,.2,1),border-color .7s cubic-bezier(.2,.8,.2,1),box-shadow .7s cubic-bezier(.2,.8,.2,1)}
 .bz-frame button:disabled{cursor:default}
 /* Press feedback everywhere (tint only, quick), hover tint on every button without its own hover (inset tint keeps
    inline backgrounds: light buttons get ~5% Deep Gulf, green/dark ones a slightly deeper shade). */
-.bz-frame button:not(:disabled):not(#bz-pearl-wrap):not(.pill):active{box-shadow:inset 0 0 0 999px rgba(23,52,48,.10) !important;transition-duration:.08s}
+.bz-frame button:not(:disabled):not(#bz-pearl-wrap):not(.pill):not(#bz-wordmark):active{box-shadow:inset 0 0 0 999px rgba(23,52,48,.10) !important;transition-duration:.08s}
 .bz-frame .pill:not(:disabled):active{background-color:rgba(23,52,48,.08) !important;transition-duration:.08s}
 .bz-frame #bz-pearl-wrap:not(:disabled):active .pearl{filter:brightness(.97);transition-duration:.08s}
 .bz-frame a.link{text-decoration-color:#C9D4D2;border-radius:6px;transition:color .7s cubic-bezier(.2,.8,.2,1),text-decoration-color .7s cubic-bezier(.2,.8,.2,1)}
@@ -61,7 +104,7 @@ footer,.gradio-container footer,.toast-wrap{display:none !important}
 .bz-frame button:focus-visible,.bz-frame a:focus-visible{outline:2px solid #1F6FB2;outline-offset:3px}
 @media (hover:hover){
   .bz-frame button:not(:disabled):not(#bz-pearl-wrap):not(.pill):not(.chip):not(.seg):not(#bz-wordmark):not(.btn-dark):not(#bz-notebtn):not(#bz-approve):hover{box-shadow:inset 0 0 0 999px rgba(23,52,48,.05)}
-  .bz-frame #bz-wordmark:hover,.bz-frame .chip:not(.sel):hover,.bz-frame .segs .seg:not([aria-checked=true]):hover,.bz-frame .pill:hover,
+  .bz-frame .chip:not(.sel):hover,.bz-frame .segs .seg:not([aria-checked=true]):hover,.bz-frame .pill:hover,
   .bz-frame #bz-hright [data-act=end]:hover,.bz-frame #bz-notebtn:hover{background-color:rgba(23,52,48,.05) !important}
   .bz-frame .chip.sel:hover{background-color:#EAF5F2 !important}
   .bz-frame .btn-dark:hover{background-color:#1F423D !important}
@@ -81,7 +124,8 @@ footer,.gradio-container footer,.toast-wrap{display:none !important}
 .bz-frame #bz-spk{margin-inline:auto}
 .bz-frame #bz-spk .seg[aria-checked=true][data-id=doctor]{color:#1F6FB2}
 .bz-frame #bz-spk .seg[aria-checked=true][data-id=patient]{color:#0B6E59}
-.bz-frame .segs .seg{height:38px;padding:0 16px;border:none;border-radius:999px;background:transparent;color:#5B6B69;font-size:15px;font-weight:500;transition:background .25s,color .25s,box-shadow .25s}
+/* margin:0 beats Gradio's '.prose button{margin-bottom:4px}', which pushed the pill 4px taller below the segments. */
+.bz-frame .segs .seg{height:38px;margin:0;padding:0 16px;border:none;border-radius:999px;background:transparent;color:#5B6B69;font-size:15px;font-weight:500;transition:background .25s,color .25s,box-shadow .25s}
 .bz-frame .segs .seg[lang=ar]{font-family:'Noto Naskh Arabic',serif;font-size:16px}
 .bz-frame .segs .seg[aria-checked=true]{background:#FFFFFF;color:#173430;box-shadow:0 2px 8px -4px rgba(23,52,48,.35)}
 @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
@@ -126,3 +170,14 @@ footer,.gradio-container footer,.toast-wrap{display:none !important}
 .bz-frame #bz-warn li{position:relative;padding-inline-start:18px;font-size:15px;line-height:1.5;color:#173430}
 .bz-frame #bz-warn li::before{content:"";position:absolute;inset-inline-start:3px;top:calc(.75em - 3px);width:6px;height:6px;border-radius:50%;background:#C2410C}
 .bz-frame #bz-warn li.strong{font-weight:600}
+/* Review: the editable care plan (careplan.plan_text: heading, its patient-language line, "- " items with the
+   patient-language line indented two spaces). The app face with Noto per script; every line takes its own direction
+   (an Arabic line right to left, a Nepali line beneath it left to right);
+   no horizontal scroll. !important: the textarea's inline style in stage.html sets the old metrics. */
+.bz-frame #careplan{font-family:'Instrument Sans','Noto Sans Devanagari','Noto Sans Bengali','Noto Sans Malayalam','Noto Sans Tamil','Noto Sans Georgian','Noto Sans JP','Noto Sans KR','Noto Naskh Arabic','Noto Sans',system-ui,sans-serif !important;
+  font-size:16.5px !important;line-height:1.65 !important;color:#173430;padding:2px 14px 20px 4px !important;margin:0;
+  white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable;
+  tab-size:2;-moz-tab-size:2;text-indent:0;text-align:start;unicode-bidi:plaintext;
+  font-kerning:normal;font-variant-ligatures:common-ligatures;caret-color:#0E8A6F}
+.bz-frame #careplan::placeholder{color:#8A9997}
+.bz-frame[dir=rtl] #careplan{direction:rtl;padding:2px 4px 20px 14px !important;font-size:17px !important;line-height:1.75 !important}

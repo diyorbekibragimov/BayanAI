@@ -8,3 +8,4 @@ reports/sim/*/pdf/
 reports/sim/*/png/
 reports/sim/*/out/
 reports/sim/*/raw.jsonl
+*.swp

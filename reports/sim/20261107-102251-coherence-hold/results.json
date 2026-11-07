@@ -1,0 +1,2609 @@
+{
+ "meta": {
+  "run_id": "20261107-102251-coherence-hold",
+  "models": {
+   "llm": "openai/gpt-oss-120b",
+   "llm_provider": "cerebras",
+   "agent": "openai/gpt-oss-120b",
+   "agent_provider": "cerebras",
+   "brain": "openai/gpt-oss-120b",
+   "brain_provider": "default",
+   "extract_provider": "groq"
+  },
+  "wall_s": 38.09478402137756,
+  "n": 4,
+  "git": "c8efad0",
+  "dirty_app_files": 12,
+  "created": "2026-11-07T10:23:31"
+ },
+ "results": [
+  {
+   "id": "coh-01-nasal-spray-butt",
+   "title": "The user's live test: buttock pain after cold tiles and low mood; doctor prescribes nasal spray, patient asks if it goes in the butt, doctor claims a high temperature never measured",
+   "category": "coherence",
+   "patient_lang": "ru",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "patient",
+     "action": null,
+     "process_s": 3.23,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 3.23
+     },
+     "utt": "u003",
+     "english": "Hello, doctor. My butt hurts.",
+     "translation": "",
+     "wait_s": 5.22,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.88,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 0.88
+     },
+     "utt": "u004",
+     "english": "I sat on a cold tile and, probably, chilled my butt.",
+     "translation": "",
+     "wait_s": 4.56,
+     "open_cards": []
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.94,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 0.94
+     },
+     "utt": "u005",
+     "english": "And also my chest feels kind of cold, I think I have no mood at all.",
+     "translation": "",
+     "wait_s": 3.98,
+     "open_cards": []
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "doctor",
+     "action": null,
+     "process_s": 2.56,
+     "coherence": [
+      "coherence check u006 (plan) → HOLD plan_mismatch 0.96: Nasal spray unrelated to butt pain, chest cold, mood · 1.61 s"
+     ],
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "plan",
+      "s": 0.94
+     },
+     "utt": "u006",
+     "english": "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner.",
+     "translation": "Я думаю, это ваш нос. Я буду давать вам назальные спреи каждый день в течение следующих трёх недель после обеда и после ужина.",
+     "held": {
+      "turn": 3,
+      "rule": "COHERENCE",
+      "drug": "",
+      "headline": "Nasal spray unrelated to butt pain, chest cold, mood.",
+      "kind": "plan_mismatch",
+      "pq": "My butt hurts",
+      "rule_ids": [],
+      "drug_norm": "",
+      "resolution": "overridden"
+     },
+     "wait_s": 0.0,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": null,
+     "action": "held_anyway",
+     "had_held": true,
+     "process_s": 0.0,
+     "wait_s": 9.42,
+     "open_cards": [
+      "c002"
+     ]
+    },
+    {
+     "i": 5,
+     "t_min": 4.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.83,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 0.83
+     },
+     "utt": "u007",
+     "english": "And why do I need this? Do I have to spray it in my butt?",
+     "translation": "",
+     "wait_s": 3.98,
+     "open_cards": [
+      "c002"
+     ]
+    },
+    {
+     "i": 6,
+     "t_min": 5.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 1.87,
+     "coherence": [
+      "coherence check u008 (claim) → HOLD unsupported_claim 0.92: No temperature measured; claim of high fever unsupported · 0.83 s"
+     ],
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "claim",
+      "s": 1.04
+     },
+     "utt": "u008",
+     "english": "You are not cold, you are very hot and have a really high temperature.",
+     "translation": "Вы не замерзли, у вас очень высокая температура.",
+     "held": {
+      "turn": 6,
+      "rule": "COHERENCE",
+      "drug": "",
+      "headline": "No temperature measured; claim of high fever unsupported.",
+      "kind": "unsupported_claim",
+      "pq": "chest feels kind of cold",
+      "rule_ids": [],
+      "drug_norm": "",
+      "resolution": "discarded (visit ended)"
+     },
+     "wait_s": 0.0,
+     "open_cards": [
+      "c003",
+      "c002"
+     ]
+    }
+   ],
+   "holds": [
+    {
+     "turn": 3,
+     "rule": "COHERENCE",
+     "drug": "",
+     "headline": "Nasal spray unrelated to butt pain, chest cold, mood.",
+     "kind": "plan_mismatch",
+     "pq": "My butt hurts",
+     "rule_ids": [],
+     "drug_norm": "",
+     "resolution": "overridden"
+    },
+    {
+     "turn": 6,
+     "rule": "COHERENCE",
+     "drug": "",
+     "headline": "No temperature measured; claim of high fever unsupported.",
+     "kind": "unsupported_claim",
+     "pq": "chest feels kind of cold",
+     "rule_ids": [],
+     "drug_norm": "",
+     "resolution": "discarded (visit ended)"
+    }
+   ],
+   "errors": [],
+   "started": "2026-11-07T10:22:54",
+   "wrapup": false,
+   "cards_live": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "overridden",
+     "title": "Nasal spray unrelated to butt pain, chest cold, mood",
+     "body": "Nasal spray unrelated to butt pain, chest cold, mood The sentence was held before the patient heard it.",
+     "ask_text": null,
+     "dimension": "plan",
+     "score": null
+    },
+    {
+     "id": "c002",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "caution",
+     "status": "open",
+     "title": "Allergy history not taken · ALG-ASK-01",
+     "body": "Nasal spray prescribed, but the patient has not been asked about allergies. Ask before it is given.",
+     "ask_text": null,
+     "dimension": null,
+     "score": null
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "No temperature measured; claim of high fever unsupported",
+     "body": "No temperature measured; claim of high fever unsupported The sentence was held before the patient heard it.",
+     "ask_text": null,
+     "dimension": "consistency",
+     "score": null
+    }
+   ],
+   "screen": "live",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {},
+   "agentic": null,
+   "care_plan": {
+    "lang": null,
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {}
+   },
+   "note_md": "",
+   "pdf": {
+    "patient": {
+     "path": null,
+     "exists": false
+    },
+    "doctor": {
+     "path": null,
+     "exists": false
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "nasal spray",
+      "dose_mg": null,
+      "frequency_per_day": 2,
+      "daily_dose_mg": null,
+      "dose_raw": null,
+      "as_needed": null,
+      "route": "nasal"
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [
+     "body_ache",
+     "low_mood"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": []
+   },
+   "case": {
+    "chief_complaint": {
+     "text": "butt pain",
+     "evidence": [
+      {
+       "utt": "u003",
+       "t_min": 0.5,
+       "quote": "My butt hurts."
+      }
+     ],
+     "t_min": 0.5
+    },
+    "history": [],
+    "working_diagnosis": [
+     {
+      "text": "n",
+      "evidence": [
+       {
+        "utt": "u006",
+        "t_min": 2.75,
+        "quote": "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner."
+       }
+      ],
+      "t_min": 2.75
+     },
+     {
+      "text": "o",
+      "evidence": [
+       {
+        "utt": "u006",
+        "t_min": 2.75,
+        "quote": "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner."
+       }
+      ],
+      "t_min": 2.75
+     },
+     {
+      "text": "s",
+      "evidence": [
+       {
+        "utt": "u006",
+        "t_min": 2.75,
+        "quote": "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner."
+       }
+      ],
+      "t_min": 2.75
+     },
+     {
+      "text": "e",
+      "evidence": [
+       {
+        "utt": "u006",
+        "t_min": 2.75,
+        "quote": "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner."
+       }
+      ],
+      "t_min": 2.75
+     }
+    ],
+    "differential": [],
+    "plan": [
+     {
+      "text": "prescribe nasal spray twice daily after lunch and dinner for three weeks",
+      "evidence": [
+       {
+        "utt": "u006",
+        "t_min": 2.75,
+        "quote": "I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner."
+       }
+      ],
+      "t_min": 2.75,
+      "type": "advice"
+     }
+    ],
+    "exam_claims": [],
+    "patient_understanding": [],
+    "patient_affect": []
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "overridden",
+     "title": "Nasal spray unrelated to butt pain, chest cold, mood",
+     "body": "Nasal spray unrelated to butt pain, chest cold, mood The sentence was held before the patient heard it.",
+     "ask_text": null,
+     "grounding": "plan",
+     "rule_ids": [],
+     "t_min": 2.75,
+     "dimension": "plan",
+     "confidence": 0.96,
+     "score": null
+    },
+    {
+     "id": "c002",
+     "source": "rules",
+     "kind": "safety",
+     "severity": "caution",
+     "status": "open",
+     "title": "Allergy history not taken · ALG-ASK-01",
+     "body": "Nasal spray prescribed, but the patient has not been asked about allergies. Ask before it is given.",
+     "ask_text": null,
+     "grounding": "ALG-ASK-01",
+     "rule_ids": [
+      "ALG-ASK-01"
+     ],
+     "t_min": 3.5,
+     "dimension": null,
+     "confidence": null,
+     "score": null
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "No temperature measured; claim of high fever unsupported",
+     "body": "No temperature measured; claim of high fever unsupported The sentence was held before the patient heard it.",
+     "ask_text": null,
+     "grounding": "consistency",
+     "rule_ids": [],
+     "t_min": 5.0,
+     "dimension": "consistency",
+     "confidence": 0.92,
+     "score": null
+    }
+   ],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u007"
+     ],
+     "results": [],
+     "skipped": null
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Nasal spray unrelated to butt pain, chest cold, mood",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "override",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Nasal spray unrelated to butt pain, chest cold, mood",
+     "reason": "spoken anyway by clinician",
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c002",
+     "rule_id": "ALG-ASK-01",
+     "action": "shown",
+     "severity": "caution",
+     "kind": "safety",
+     "source": "rules",
+     "title": "Allergy history not taken · ALG-ASK-01",
+     "reason": null,
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "No temperature measured; claim of high fever unsupported",
+     "reason": null,
+     "t_min": 5.0
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state → +body_ache, complaint: butt pain",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: fallback (agent off): 0 ask card(s)",
+    "1.25 tool: update_state → no new facts",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 agent: fallback (agent off): 0 ask card(s)",
+    "2.00 tool: update_state → +low_mood",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 agent: fallback (agent off): 0 ask card(s)",
+    "2.75 tool: coherence check u006 (plan) → HOLD plan_mismatch 0.96: Nasal spray unrelated to butt pain, chest cold, mood · 1.61 s",
+    "2.75 card: + caution observation card c001: Nasal spray unrelated to butt pain, chest cold, mood [plan]",
+    "3.50 card: doctor override c001: Nasal spray unrelated to butt pain, chest cold, mood (spoken anyway by clinician)",
+    "3.50 tool: override u006 (spoken anyway by clinician)",
+    "3.50 tool: update_state → +rx nasal spray x2/day, dx: n, dx: o, dx: s, dx: e, plan: prescribe nasal spray twice daily after lunch an",
+    "3.50 tool: check_safety_rules → ALG-ASK-01",
+    "3.50 card: + caution safety card c002: Allergy history not taken · ALG-ASK-01 [ALG-ASK-01]",
+    "3.50 agent: fallback (agent off): 0 ask card(s)",
+    "4.25 tool: update_state → no new facts",
+    "4.25 tool: check_safety_rules → ALG-ASK-01",
+    "4.25 agent: fallback (agent off): 0 ask card(s)",
+    "5.00 tool: coherence check u008 (claim) → HOLD unsupported_claim 0.92: No temperature measured; claim of high fever unsupported · 0.83 s",
+    "5.00 card: + caution observation card c003: No temperature measured; claim of high fever unsupported [consistency]"
+   ],
+   "stats": {
+    "runs": 5,
+    "latency_s": [
+     4.0,
+     3.34,
+     2.76,
+     8.21,
+     2.78
+    ],
+    "extract_tokens": [
+     22321,
+     4468
+    ],
+    "agent_tokens": [
+     0,
+     0
+    ],
+    "cost_usd": 0.011163349999999999
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 4.0,
+     "extract_s": 4.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 4921,
+     "output_tokens": 675,
+     "extract_tokens": [
+      4921,
+      675
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001244
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 3.34,
+     "extract_s": 3.34,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 4980,
+     "output_tokens": 1027,
+     "extract_tokens": [
+      4980,
+      1027
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001517
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 2.76,
+     "extract_s": 2.76,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 5033,
+     "output_tokens": 739,
+     "extract_tokens": [
+      5033,
+      739
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001309
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 8.21,
+     "extract_s": 8.2,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 2203,
+     "output_tokens": 1282,
+     "extract_tokens": [
+      2203,
+      1282
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001292
+    },
+    {
+     "t_min": 4.25,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 2.78,
+     "extract_s": 2.77,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 5184,
+     "output_tokens": 745,
+     "extract_tokens": [
+      5184,
+      745
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001336
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 3,
+     "wall": 1794036195.754412,
+     "latency_s": 2.56,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Nasal spray unrelated to butt pain, chest cold, mood",
+     "severity": "caution"
+    },
+    "c002": {
+     "turn": 4,
+     "wall": 1794036205.170551,
+     "latency_s": 9.42,
+     "source": "rules",
+     "kind": "safety",
+     "title": "Allergy history not taken · ALG-ASK-01",
+     "severity": "caution"
+    },
+    "c003": {
+     "turn": 6,
+     "wall": 1794036211.8571022,
+     "latency_s": 1.87,
+     "source": "agent",
+     "kind": "observation",
+     "title": "No temperature measured; claim of high fever unsupported",
+     "severity": "caution"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 3,
+     "latency_s": 2.56,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Nasal spray unrelated to butt pain, chest cold, mood"
+    },
+    {
+     "card": "c001",
+     "turn": 4,
+     "latency_s": 0.0,
+     "status": "overridden",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Nasal spray unrelated to butt pain, chest cold, mood"
+    },
+    {
+     "card": "c002",
+     "turn": 4,
+     "latency_s": 9.42,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [
+      "ALG-ASK-01"
+     ],
+     "title": "Allergy history not taken · ALG-ASK-01"
+    },
+    {
+     "card": "c003",
+     "turn": 6,
+     "latency_s": 1.87,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "No temperature measured; claim of high fever unsupported"
+    }
+   ],
+   "rules_seen": {
+    "ALG-ASK-01": {
+     "turn": 4,
+     "latency_s": 9.42,
+     "card": "c002",
+     "severity": "caution",
+     "family": "allergy_history",
+     "message": "Nasal spray prescribed, but the patient has not been asked about allergies. Ask before it is given."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      9977,
+      1092,
+      8
+     ],
+     "openai/gpt-oss-120b|groq": [
+      22321,
+      4468,
+      5
+     ]
+    },
+    "agent_by_label": {},
+    "cost_chat_usd": 0.01101,
+    "cost_agent_usd": 0,
+    "cost_usd": 0.01101,
+    "llm_usage_delta": {
+     "calls": 13,
+     "prompt_tokens": 32298,
+     "completion_tokens": 5560
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 37.5,
+   "checks": [
+    {
+     "type": "hold",
+     "desc": "held:  COHERENCE at turn 3",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "t3  COHERENCE []; t6  COHERENCE []",
+     "gap": false,
+     "note": "nasal spray for a sore bottom: the plan does not fit the complaint",
+     "auto": false
+    },
+    {
+     "type": "hold",
+     "desc": "held:  COHERENCE at turn 6",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "t3  COHERENCE []; t6  COHERENCE []",
+     "gap": false,
+     "note": "high temperature never measured; the patient said they feel cold",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT card severity=critical source=agent",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[plan] treatment does not fit the complaint",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[plan] 'Nasal spray unrelated to butt pain, chest cold, mood'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[plan] prescription incomplete (no drug name, strength or dose)",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/observation[plan] 'Nasal spray unrelated to butt pain, chest cold, mo'; agent/observation[consistency] 'No temperature measured; claim of high fever unsup'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[communication] patient confused about how / where to use it",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/observation[plan] 'Nasal spray unrelated to butt pain, chest cold, mo'; agent/observation[consistency] 'No temperature measured; claim of high fever unsup'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[consistency] temperature claim not backed by a measurement / contradicts the patient",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[consistency] 'No temperature measured; claim of high fever unsupported'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[communication] low mood said in passing, not followed up",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[plan] 'Nasal spray unrelated to butt pain, chest cold, mood'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "coh-03-bp-fine-not-measured",
+   "title": "Headache and dizziness; doctor says \"your blood pressure is fine\" though no blood pressure was taken",
+   "category": "coherence",
+   "patient_lang": "bn",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.85,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "question",
+      "s": 0.85
+     },
+     "utt": "u003",
+     "english": "What brings you in?",
+     "translation": "আপনাকে কী নিয়ে এসেছেন?",
+     "wait_s": 1.23,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.06,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 1.05
+     },
+     "utt": "u004",
+     "english": "Doctor sir, I have had a headache for three days, and sometimes I feel dizzy.",
+     "translation": "",
+     "wait_s": 6.07,
+     "open_cards": []
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.77,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "question",
+      "s": 0.77
+     },
+     "utt": "u005",
+     "english": "Do you take any medicines? Any allergies?",
+     "translation": "আপনি কি কোনো ওষুধ নেন? কোনো অ্যালার্জি আছে কি?",
+     "wait_s": 4.79,
+     "open_cards": []
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.08,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 1.08
+     },
+     "utt": "u006",
+     "english": "No, I don’t take any medicine. No allergies either.",
+     "translation": "",
+     "wait_s": 4.16,
+     "open_cards": []
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 2.74,
+     "coherence": [
+      "coherence check u007 (plan) → HOLD unsupported_claim 0.92: No blood pressure measurement was taken · 1.87 s"
+     ],
+     "talk": {
+      "drugs": [
+       {
+        "name": "paracetamol",
+        "intent": "prescribe",
+        "dose_mg": 1000,
+        "frequency_per_day": 3,
+        "dose": "1 g"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "statement": "plan",
+      "s": 0.86
+     },
+     "utt": "u007",
+     "english": "Your blood pressure is fine, it's just stress. Take paracetamol 1 g up to three times a day if needed.",
+     "translation": "আপনার রক্তচাপ ঠিক আছে, এটা শুধু স্ট্রেসের কারণে। প্রয়োজন হলে দিনে তিনবার পর্যন্ত প্যারাসিটামল ১ গ্রাম নিন।",
+     "held": {
+      "turn": 4,
+      "rule": "COHERENCE",
+      "drug": "",
+      "headline": "No blood pressure measurement was taken.",
+      "kind": "unsupported_claim",
+      "pq": "",
+      "rule_ids": [],
+      "drug_norm": "",
+      "resolution": "discarded (conversation moved on)"
+     },
+     "wait_s": 0.0,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 5,
+     "t_min": 4.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.89,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 0.89
+     },
+     "utt": "u008",
+     "english": "Okay, thank you.",
+     "translation": "",
+     "wait_s": 1.21,
+     "open_cards": []
+    }
+   ],
+   "holds": [
+    {
+     "turn": 4,
+     "rule": "COHERENCE",
+     "drug": "",
+     "headline": "No blood pressure measurement was taken.",
+     "kind": "unsupported_claim",
+     "pq": "",
+     "rule_ids": [],
+     "drug_norm": "",
+     "resolution": "discarded (conversation moved on)"
+    }
+   ],
+   "errors": [],
+   "started": "2026-11-07T10:22:54",
+   "wrapup": false,
+   "cards_live": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "acknowledged",
+     "title": "No blood pressure measurement was taken",
+     "body": "No blood pressure measurement was taken The sentence was held before the patient heard it.",
+     "ask_text": null,
+     "dimension": "consistency",
+     "score": null
+    }
+   ],
+   "screen": "live",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {},
+   "agentic": null,
+   "care_plan": {
+    "lang": null,
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {}
+   },
+   "note_md": "",
+   "pdf": {
+    "patient": {
+     "path": null,
+     "exists": false
+    },
+    "doctor": {
+     "path": null,
+     "exists": false
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [],
+    "stopped_meds": [],
+    "symptoms": [
+     "headache",
+     "dizziness"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": [
+     "current_medications",
+     "allergies"
+    ]
+   },
+   "case": {
+    "chief_complaint": {
+     "text": "headache",
+     "evidence": [
+      {
+       "utt": "u004",
+       "t_min": 1.25,
+       "quote": "I have had a headache for three days"
+      }
+     ],
+     "t_min": 1.25
+    },
+    "history": [],
+    "working_diagnosis": [],
+    "differential": [],
+    "plan": [],
+    "exam_claims": [],
+    "patient_understanding": [],
+    "patient_affect": []
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "acknowledged",
+     "title": "No blood pressure measurement was taken",
+     "body": "No blood pressure measurement was taken The sentence was held before the patient heard it.",
+     "ask_text": null,
+     "grounding": "consistency",
+     "rule_ids": [],
+     "t_min": 3.5,
+     "dimension": "consistency",
+     "confidence": 0.92,
+     "score": null
+    }
+   ],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u008"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "No blood pressure measurement was taken",
+     "reason": null,
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "acknowledge",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "No blood pressure measurement was taken",
+     "reason": "not spoken: the conversation moved on",
+     "t_min": 4.25
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state → +dizziness, +headache, complaint: headache",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 agent: fallback (agent off): 0 ask card(s)",
+    "2.00 tool: update_state → asked:current_medications, asked:allergies",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 agent: fallback (agent off): 0 ask card(s)",
+    "2.75 tool: update_state → no new facts",
+    "2.75 tool: check_safety_rules → none",
+    "2.75 agent: fallback (agent off): 0 ask card(s)",
+    "3.50 tool: update_state (prescription gate) → +rx paracetamol 1000 mg x3/day",
+    "3.50 tool: check_prescription(paracetamol) → no on_prescribe rule fires",
+    "3.50 tool: coherence check u007 (plan) → HOLD unsupported_claim 0.92: No blood pressure measurement was taken · 1.87 s",
+    "3.50 card: + caution observation card c001: No blood pressure measurement was taken [consistency]",
+    "4.25 card: doctor acknowledge c001: No blood pressure measurement was taken (not spoken: the conversation moved on)",
+    "4.25 tool: withdraw u007 (not spoken: the conversation moved on) → -rx paracetamol",
+    "4.25 tool: check_safety_rules → none",
+    "4.25 agent: copilot skipped: nothing new in u008"
+   ],
+   "stats": {
+    "runs": 5,
+    "latency_s": [
+     0.0,
+     4.85,
+     3.59,
+     2.95,
+     0.0
+    ],
+    "extract_tokens": [
+     14994,
+     2803
+    ],
+    "agent_tokens": [
+     0,
+     0
+    ],
+    "cost_usd": 0.00735015
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 4.85,
+     "extract_s": 4.85,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 4960,
+     "output_tokens": 1146,
+     "extract_tokens": [
+      4960,
+      1146
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001604
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 3.59,
+     "extract_s": 3.58,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 4989,
+     "output_tokens": 827,
+     "extract_tokens": [
+      4989,
+      827
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001369
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 2.95,
+     "extract_s": 2.95,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 5045,
+     "output_tokens": 830,
+     "extract_tokens": [
+      5045,
+      830
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001379
+    },
+    {
+     "t_min": 4.25,
+     "kind": "think",
+     "turns": [
+      "u008"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 4,
+     "wall": 1794036200.449717,
+     "latency_s": 2.74,
+     "source": "agent",
+     "kind": "observation",
+     "title": "No blood pressure measurement was taken",
+     "severity": "caution"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 4,
+     "latency_s": 2.74,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "No blood pressure measurement was taken"
+    },
+    {
+     "card": "c001",
+     "turn": 5,
+     "latency_s": 0.02,
+     "status": "acknowledged",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "No blood pressure measurement was taken"
+    }
+   ],
+   "rules_seen": {},
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      10084,
+      1044,
+      8
+     ],
+     "openai/gpt-oss-120b|groq": [
+      14994,
+      2803,
+      3
+     ]
+    },
+    "agent_by_label": {},
+    "cost_chat_usd": 0.00866,
+    "cost_agent_usd": 0,
+    "cost_usd": 0.00866,
+    "llm_usage_delta": {
+     "calls": 11,
+     "prompt_tokens": 25078,
+     "completion_tokens": 3847
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 28.2,
+   "checks": [
+    {
+     "type": "hold",
+     "desc": "held:  COHERENCE at turn 4",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "t4  COHERENCE []",
+     "gap": false,
+     "note": "blood pressure called fine, never measured",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[consistency] blood pressure stated but never measured",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[consistency] 'No blood pressure measurement was taken'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "quiet-01-cold-paracetamol",
+   "title": "Common cold after allergies asked; paracetamol 1 g TDS",
+   "category": "quiet",
+   "patient_lang": "ne",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 3.3,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "question",
+      "s": 3.3
+     },
+     "utt": "u003",
+     "english": "Hello. What brings you in?",
+     "translation": "नमस्ते। तपाईंलाई यहाँ किन ल्यायो?",
+     "wait_s": 1.22,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.89,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 0.88
+     },
+     "utt": "u004",
+     "english": "I have had a cold for two days, my nose is running, and my throat is a little scratchy.",
+     "translation": "",
+     "wait_s": 6.34,
+     "open_cards": []
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.84,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "question",
+      "s": 0.84
+     },
+     "utt": "u005",
+     "english": "Any fever? Any allergies to medicines?",
+     "translation": "के तपाईंलाई ज्वरो छ? के तपाईंलाई कुनै औषधिहरूको एलर्जी छ?",
+     "wait_s": 1.21,
+     "open_cards": []
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.89,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 0.89
+     },
+     "utt": "u006",
+     "english": "No fever. No allergies either.",
+     "translation": "",
+     "wait_s": 4.88,
+     "open_cards": []
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 2.75,
+     "coherence": [
+      "coherence check u007 (plan) → no hold · 1.77 s"
+     ],
+     "talk": {
+      "drugs": [
+       {
+        "name": "paracetamol",
+        "intent": "prescribe",
+        "dose_mg": 1000,
+        "frequency_per_day": 3,
+        "dose": "1 g three times a day"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "statement": "plan",
+      "s": 0.97
+     },
+     "utt": "u007",
+     "english": "It's a common cold. Paracetamol 1 g three times a day for three days if needed, warm salt-water gargles and plenty of fluids.",
+     "translation": "यो साधारण ज्वरो हो। यदि आवश्यक परेमा, तीन दिनसम्म दिनमा तीन पटक १ ग्राम प्यारेसेटामोल लिनुहोस्, नुन पानीले गार्गल गर्नुहोस् र धेरै तरल पदार्थहरू पिउनुहोस्।",
+     "wait_s": 12.26,
+     "open_cards": []
+    },
+    {
+     "i": 5,
+     "t_min": 4.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.07,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 1.07
+     },
+     "utt": "u008",
+     "english": "Thank you doctor sir.",
+     "translation": "",
+     "wait_s": 1.22,
+     "open_cards": []
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T10:22:54",
+   "wrapup": false,
+   "cards_live": [],
+   "screen": "live",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {},
+   "agentic": null,
+   "care_plan": {
+    "lang": null,
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {}
+   },
+   "note_md": "",
+   "pdf": {
+    "patient": {
+     "path": null,
+     "exists": false
+    },
+    "doctor": {
+     "path": null,
+     "exists": false
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "paracetamol",
+      "dose_mg": 1000,
+      "frequency_per_day": 3,
+      "daily_dose_mg": 3000,
+      "dose_raw": null,
+      "as_needed": true,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [
+     "sore_throat"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": [
+     "allergies",
+     "pain_radiation",
+     "exertional_pattern",
+     "sweating_breathlessness",
+     "pain_onset",
+     "pain_character",
+     "previous_episodes",
+     "current_medications",
+     "work_heat_exposure",
+     "fluid_intake",
+     "last_menstrual_period",
+     "vomiting_blood_black_stools",
+     "suicidal_thoughts",
+     "travel_history",
+     "headache_onset",
+     "syncope_circumstances",
+     "chemical_exposure",
+     "family_history_cardiac"
+    ]
+   },
+   "case": {
+    "chief_complaint": {
+     "text": "cold with runny nose and sore throat",
+     "evidence": [
+      {
+       "utt": "u004",
+       "t_min": 1.25,
+       "quote": "I have had a cold for two days, my nose is running, and my throat is a little scratchy."
+      }
+     ],
+     "t_min": 1.25
+    },
+    "history": [],
+    "working_diagnosis": [
+     {
+      "text": "common cold",
+      "evidence": [
+       {
+        "utt": "u007",
+        "t_min": 3.5,
+        "quote": "It's a common cold."
+       }
+      ],
+      "t_min": 3.5
+     }
+    ],
+    "differential": [],
+    "plan": [],
+    "exam_claims": [],
+    "patient_understanding": [],
+    "patient_affect": []
+   },
+   "cards": [],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u007"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u008"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    }
+   ],
+   "audit": [],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state → +sore_throat, complaint: cold with runny nose and sore throat",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 agent: fallback (agent off): 0 ask card(s)",
+    "2.00 tool: update_state deferred: u005 (question, batched with the answer)",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 agent: copilot skipped: nothing new in u005",
+    "2.75 tool: update_state → asked:allergies",
+    "2.75 tool: check_safety_rules → none",
+    "2.75 agent: fallback (agent off): 0 ask card(s)",
+    "3.50 tool: update_state (prescription gate) → +rx paracetamol 1000 mg x3/day",
+    "3.50 tool: check_prescription(paracetamol) → no on_prescribe rule fires",
+    "3.50 tool: coherence check u007 (plan) → no hold · 1.77 s",
+    "3.50 tool: update_state → asked:pain_radiation, asked:exertional_pattern, asked:sweating_breathlessness, asked:pain_onset, asked:pain_character, asked:previous_episodes, asked:current_medications, asked:work_heat_exposure, asked:fluid_intake, asked:la",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 agent: fallback (agent off): 0 ask card(s)",
+    "4.25 tool: check_safety_rules → none",
+    "4.25 agent: copilot skipped: nothing new in u008"
+   ],
+   "stats": {
+    "runs": 6,
+    "latency_s": [
+     0.0,
+     5.12,
+     0.0,
+     3.66,
+     11.05,
+     0.0
+    ],
+    "extract_tokens": [
+     15128,
+     6507
+    ],
+    "agent_tokens": [
+     0,
+     0
+    ],
+    "cost_usd": 0.01017505
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 5.12,
+     "extract_s": 5.12,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 4975,
+     "output_tokens": 1355,
+     "extract_tokens": [
+      4975,
+      1355
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001762
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 3.66,
+     "extract_s": 3.65,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 5044,
+     "output_tokens": 1203,
+     "extract_tokens": [
+      5044,
+      1203
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001659
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 11.05,
+     "extract_s": 11.05,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 5109,
+     "output_tokens": 3949,
+     "extract_tokens": [
+      5109,
+      3949
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.003728
+    },
+    {
+     "t_min": 4.25,
+     "kind": "think",
+     "turns": [
+      "u008"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    }
+   ],
+   "card_first_seen": {},
+   "card_events": [],
+   "rules_seen": {},
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      8860,
+      1032,
+      7
+     ],
+     "openai/gpt-oss-120b|groq": [
+      15128,
+      6507,
+      3
+     ]
+    },
+    "agent_by_label": {},
+    "cost_chat_usd": 0.01102,
+    "cost_agent_usd": 0,
+    "cost_usd": 0.01102,
+    "llm_usage_delta": {
+     "calls": 10,
+     "prompt_tokens": 23988,
+     "completion_tokens": 7539
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 36.9,
+   "checks": [
+    {
+     "type": "no_hold",
+     "desc": "not held: *",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT card severity=caution",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT card source=rules",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "budget",
+     "desc": "at most 1 agent card(s) shown",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "quiet-02-bp-followup",
+   "title": "Hypertension follow-up, BP controlled, continue amlodipine 5 mg",
+   "category": "quiet",
+   "patient_lang": "hi",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.96,
+     "talk": {
+      "drugs": [
+       {
+        "name": "amlodipine",
+        "intent": "mention"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "statement": "question",
+      "s": 0.96
+     },
+     "utt": "u003",
+     "english": "Good morning. How are you feeling on the amlodipine?",
+     "translation": "सुप्रभात। अम्लोडिपिन पर आपका महसूस कैसा है?",
+     "wait_s": 1.21,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.23,
+     "talk": {
+      "drugs": [
+       {
+        "name": "amlodipine",
+        "intent": "mention"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 1.22
+     },
+     "utt": "u004",
+     "english": "I am fine doctor, no problem. I take one pill every morning.",
+     "translation": "",
+     "wait_s": 5.7,
+     "open_cards": []
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.79,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "question",
+      "s": 0.79
+     },
+     "utt": "u005",
+     "english": "Your blood pressure today is 128 over 82, that's good. Any allergies to medicines?",
+     "translation": "आपका रक्तचाप आज 128 पर 82 है, यह अच्छा है। दवाओं से कोई एलर्जी है?",
+     "wait_s": 4.25,
+     "open_cards": []
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.85,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "statement": "other",
+      "s": 0.85
+     },
+     "utt": "u006",
+     "english": "No, no allergies.",
+     "translation": "",
+     "wait_s": 3.49,
+     "open_cards": []
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 2.38,
+     "coherence": [
+      "coherence check u007 (plan) → no hold · 1.55 s"
+     ],
+     "talk": {
+      "drugs": [
+       {
+        "name": "amlodipine",
+        "intent": "prescribe",
+        "dose_mg": 5,
+        "frequency_per_day": 1,
+        "dose": "5 mg"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "statement": "plan",
+      "s": 0.82
+     },
+     "utt": "u007",
+     "english": "Continue amlodipine 5 mg once every morning. See you in three months.",
+     "translation": "एम्लोडिपिन 5 मि.ग्रा. रोज़ सुबह एक बार जारी रखें। तीन महीने में मिलते हैं।",
+     "wait_s": 5.52,
+     "open_cards": []
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T10:22:54",
+   "wrapup": false,
+   "cards_live": [],
+   "screen": "live",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {},
+   "agentic": null,
+   "care_plan": {
+    "lang": null,
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {}
+   },
+   "note_md": "",
+   "pdf": {
+    "patient": {
+     "path": null,
+     "exists": false
+    },
+    "doctor": {
+     "path": null,
+     "exists": false
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [
+     {
+      "drug": "amlodipine",
+      "dose_mg": null,
+      "frequency_per_day": 1,
+      "daily_dose_mg": null
+     }
+    ],
+    "prescribed_meds": [
+     {
+      "drug": "amlodipine",
+      "dose_mg": 5,
+      "frequency_per_day": 1,
+      "daily_dose_mg": 5,
+      "dose_raw": null,
+      "as_needed": null,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": [
+     "current_medications",
+     "allergies"
+    ]
+   },
+   "case": {
+    "chief_complaint": null,
+    "history": [],
+    "working_diagnosis": [],
+    "differential": [],
+    "plan": [
+     {
+      "text": "see you in three months",
+      "evidence": [
+       {
+        "utt": "u007",
+        "t_min": 3.5,
+        "quote": "See you in three months."
+       }
+      ],
+      "t_min": 3.5,
+      "type": "follow_up"
+     }
+    ],
+    "exam_claims": [],
+    "patient_understanding": [],
+    "patient_affect": [
+     {
+      "text": "feels fine",
+      "evidence": [
+       {
+        "utt": "u004",
+        "t_min": 1.25,
+        "quote": "I am fine doctor, no problem"
+       }
+      ],
+      "t_min": 1.25
+     }
+    ]
+   },
+   "cards": [],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u007"
+     ],
+     "results": [],
+     "skipped": null
+    }
+   ],
+   "audit": [],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state → +med amlodipine, asked:current_medications, affect: feels fine",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 agent: fallback (agent off): 0 ask card(s)",
+    "2.00 tool: update_state → bp_sys=128, bp_dia=82, asked:allergies",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 agent: fallback (agent off): 0 ask card(s)",
+    "2.75 tool: update_state → no new facts",
+    "2.75 tool: check_safety_rules → none",
+    "2.75 agent: fallback (agent off): 0 ask card(s)",
+    "3.50 tool: update_state (prescription gate) → +rx amlodipine 5 mg x1/day",
+    "3.50 tool: check_prescription(amlodipine) → no on_prescribe rule fires",
+    "3.50 tool: coherence check u007 (plan) → no hold · 1.55 s",
+    "3.50 tool: update_state → plan: see you in three months",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 agent: fallback (agent off): 0 ask card(s)"
+   ],
+   "stats": {
+    "runs": 5,
+    "latency_s": [
+     0.0,
+     4.47,
+     3.04,
+     2.27,
+     4.32
+    ],
+    "extract_tokens": [
+     20237,
+     3891
+    ],
+    "agent_tokens": [
+     0,
+     0
+    ],
+    "cost_usd": 0.0100012
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 4.47,
+     "extract_s": 4.47,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 4964,
+     "output_tokens": 1062,
+     "extract_tokens": [
+      4964,
+      1062
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001541
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 3.04,
+     "extract_s": 3.04,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 5021,
+     "output_tokens": 796,
+     "extract_tokens": [
+      5021,
+      796
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.00135
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 2.27,
+     "extract_s": 2.27,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 5103,
+     "output_tokens": 597,
+     "extract_tokens": [
+      5103,
+      597
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001213
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 4.32,
+     "extract_s": 4.32,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 5149,
+     "output_tokens": 1436,
+     "extract_tokens": [
+      5149,
+      1436
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.001849
+    }
+   ],
+   "card_first_seen": {},
+   "card_events": [],
+   "rules_seen": {},
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      8851,
+      1030,
+      7
+     ],
+     "openai/gpt-oss-120b|groq": [
+      20237,
+      3891,
+      4
+     ]
+    },
+    "agent_by_label": {},
+    "cost_chat_usd": 0.00982,
+    "cost_agent_usd": 0,
+    "cost_usd": 0.00982,
+    "llm_usage_delta": {
+     "calls": 11,
+     "prompt_tokens": 29088,
+     "completion_tokens": 4921
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 29.6,
+   "checks": [
+    {
+     "type": "no_hold",
+     "desc": "not held: *",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT card severity=caution",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT card source=rules",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "budget",
+     "desc": "at most 1 agent card(s) shown",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  }
+ ]
+}

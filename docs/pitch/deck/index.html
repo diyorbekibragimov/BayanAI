@@ -61,14 +61,16 @@ h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-heigh
 .figs{position:absolute;left:128px;top:420px;display:grid;grid-template-columns:repeat(3,456px);column-gap:96px}
 .figs .v{font-size:150px;line-height:1;font-weight:600;letter-spacing:-.03em}
 .figs .l{margin-top:26px;font-size:30px;line-height:1.4;color:var(--muted)}
-.s-proof .figs{top:356px}
-.s-proof .figs .v{font-size:112px}
-.s-proof .figs .l{margin-top:18px;font-size:27px}
+.evals{position:absolute;left:128px;top:356px;width:1664px;display:grid;grid-template-columns:800px 800px;column-gap:64px}
+.eg{border-top:1px solid var(--rule);padding-top:26px}
+.eh{font-size:36px;font-weight:600}
+.es{margin-top:8px;font-size:22px;line-height:1.4;color:var(--muted);min-height:62px}
+.er{display:grid;grid-template-columns:250px 1fr;align-items:baseline;column-gap:24px;margin-top:22px}
+.er .v{font-size:64px;font-weight:600;line-height:1.05;letter-spacing:-.02em}
+.er .l{font-size:25px;line-height:1.35;color:var(--muted)}
+.evfoot{position:absolute;left:128px;top:880px;font-size:24px;color:var(--ink)}
 
 /* 2b qatar: four figures */
-.s-qatar .figs{grid-template-columns:repeat(4,380px);column-gap:48px}
-.s-qatar .figs .v{font-size:132px}
-.s-qatar .figs .l{font-size:27px}
 
 /* 3 what bayan does */
 .s-does .lede{position:absolute;left:128px;top:262px;font-size:32px;color:var(--muted)}
@@ -77,8 +79,23 @@ h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-heigh
 .four .k{font-size:44px;font-weight:600;letter-spacing:-.01em}
 .four .d{margin-top:18px;font-size:28px;line-height:1.42;color:var(--muted)}
 
-/* 3 harm */
+/* 3 harm (benchmark rows) */
 .chartwrap.harm{position:absolute;left:128px;top:350px}
+.aa{position:absolute;left:128px;top:340px;width:1664px}
+.aaleg{display:flex;align-items:center;gap:14px;font-size:22px;color:var(--muted);margin-bottom:34px}
+.aaleg .sw{display:inline-block;width:18px;height:18px;border-radius:4px}
+.aaleg .sw.eng{margin-left:28px}
+.sw.lep,.b.lep{background:#C2410C}
+.sw.eng,.b.eng{background:#83948F}
+.aa .base{position:absolute;left:538px;top:72px;bottom:0;width:2px;background:#9FB0AD}
+.aarow{display:grid;grid-template-columns:520px 1000px 104px;column-gap:20px;align-items:center;height:150px}
+.aarow .lbl{font-size:28px;line-height:1.3;font-weight:500;padding-right:24px}
+.aarow .bars{display:flex;flex-direction:column;gap:8px}
+.aarow .bl{display:flex;align-items:center;gap:18px;height:40px}
+.aarow .b{display:block;height:40px;border-radius:0 6px 6px 0}
+.aarow .val{font-size:34px;font-weight:600;color:var(--ink);font-variant-numeric:normal}
+.aarow .mult{font-size:30px;font-weight:500;color:var(--muted);text-align:right}
+.bridge{position:absolute;left:128px;top:880px;width:1500px;font-size:30px;line-height:1.4;font-weight:500}
 
 /* 4 demo */
 .screen{position:absolute;overflow:hidden;background:var(--bg);border-radius:22px;box-shadow:0 0 0 1px var(--rule),0 50px 90px -60px rgba(23,52,48,.45)}
@@ -109,6 +126,7 @@ body.still .screen .poster{display:block}
 /* 7 architecture */
 .archwrap{position:absolute;left:128px;top:262px}
 .archwrap svg{display:block}
+.archwrap.ov{top:250px}
 
 /* 8 hugging face */
 h2.hfh{display:flex;align-items:center;gap:22px}
@@ -213,16 +231,51 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
   <span class="pg">2</span>
 </section>
 
-<section class="slide s-qatar" data-title="Qatar">
+<section class="slide" data-title="Qatar">
   <div class="brand"><span class="pearl sm"></span><b lang="ar">بيان</b><span>Bayan</span></div>
   <h2>Language barriers in Qatar</h2>
   <div class="figs">
     <div><p class="v">65%</p><p class="l">of HMC ambulance staff face language barriers at work</p></div>
     <div><p class="v">71%</p><p class="l">are comfortable letting family members interpret</p></div>
     <div><p class="v">9</p><p class="l">languages with face-to-face interpreters at Sidra; Nepali, Malayalam, Bengali and Tagalog are not among them</p></div>
-    <div><p class="v">49%</p><p class="l">of adverse events in patients with limited English caused physical harm, against 30% for English speakers (US study)</p></div>
   </div>
   <span class="pg">3</span>
+</section>
+
+<section class="slide s-harm" data-title="Adverse events">
+  <div class="brand"><span class="pearl sm"></span><b lang="ar">بيان</b><span>Bayan</span></div>
+  <h2>Adverse events and language</h2>
+  <p class="lede">Many patients in Qatar don’t share a language with their doctor. US hospitals that measured the effect found this.</p>
+  <div class="aa">
+    <p class="aaleg"><span class="sw lep"></span>Patients with limited English<span class="sw eng"></span>English-speaking patients</p>
+    <span class="base"></span>
+    <div class="aarow">
+      <p class="lbl">Adverse events that caused physical harm</p>
+      <div class="bars">
+        <div class="bl"><span class="b lep" style="width:736px"></span><span class="val">49%</span></div>
+        <div class="bl"><span class="b eng" style="width:442px"></span><span class="val">30%</span></div>
+      </div>
+      <p class="mult">1.7×</p>
+    </div>
+    <div class="aarow">
+      <p class="lbl">Harmful events rated moderate harm or worse, up to death</p>
+      <div class="bars">
+        <div class="bl"><span class="b lep" style="width:702px"></span><span class="val">47%</span></div>
+        <div class="bl"><span class="b eng" style="width:366px"></span><span class="val">24%</span></div>
+      </div>
+      <p class="mult">1.9×</p>
+    </div>
+    <div class="aarow">
+      <p class="lbl">Adverse events caused by communication errors</p>
+      <div class="bars">
+        <div class="bl"><span class="b lep" style="width:786px"></span><span class="val">52%</span></div>
+        <div class="bl"><span class="b eng" style="width:538px"></span><span class="val">36%</span></div>
+      </div>
+      <p class="mult">1.5×</p>
+    </div>
+  </div>
+  <p class="bridge">Bayan is built to close this gap: it interprets, reasons about the consultation and flags what gets missed.</p>
+  <span class="pg">4</span>
 </section>
 
 <section class="slide s-does" data-title="What Bayan does">
@@ -235,7 +288,7 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
     <div><p class="k">Flags</p><p class="d">Allergies, doses, interactions, missed workup, plans that don’t fit the complaint, patient confusion, mood cues.</p></div>
     <div><p class="k">Suggests</p><p class="d">One next question at a time, asked in the patient’s language with one tap.</p></div>
   </div>
-  <span class="pg">4</span>
+  <span class="pg">5</span>
 </section>
 
 <section class="slide s-demo" data-title="Demo">
@@ -247,7 +300,7 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
     <p class="t">Doctor and patient take turns tapping the pearl. Bayan translates, speaks, and checks.</p>
     <p class="s">Recorded on the live Space: scripted Nepali consultation, live translation and voices. Played at 1.5× speed.</p>
   </div>
-  <span class="pg">5</span>
+  <span class="pg">6</span>
 </section>
 
 <section class="slide s-held" data-title="Held">
@@ -266,14 +319,21 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
     <figure class="page doc"><div class="img"><img src="../assets/screens/14-doctor-report-pdf.png" alt="Doctor's consultation note PDF"></div>
       <figcaption>Doctor’s note: the held amoxicillin, on the record</figcaption></figure>
   </div>
-  <span class="pg">7</span>
+  <span class="pg">8</span>
+</section>
+
+<section class="slide s-arch" data-title="Architecture overview">
+  <div class="brand"><span class="pearl sm"></span><b lang="ar">بيان</b><span>Bayan</span></div>
+  <h2>Architecture (overview)</h2>
+  <div class="archwrap ov"><svg class="arch" viewBox="0 0 1664 790" width="1664" height="790" role="img" aria-label="Bayan architecture overview: hear, interpret, safety gate and speak on each turn; a background loop of case summary, clinical review agent, attention filter and the doctor's screen; wrap-up at the end."><defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#173430"/></marker><marker id="ahv2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C2410C"/></marker></defs><rect x="100" y="178" width="400" height="482" rx="24" fill="#F4F7F7" stroke="#C9D4D2" stroke-width="1.6"/><text x="48.0" y="560.0" font-size="32" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >N×</text><text x="48.0" y="586.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >each</text><text x="48.0" y="606.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >turn</text><rect x="110" y="552" width="380" height="96" rx="14" fill="#EEF2F1" stroke="#173430" stroke-width="1.8"/><text x="300.0" y="586.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Hear</text><text x="300.0" y="616.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >speaker check, speech-to-text</text><text x="300.0" y="639.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Whisper, IndicConformer, MMS</text><polyline points="300,552 300,530" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><rect x="110" y="432" width="380" height="96" rx="14" fill="#EEF2F1" stroke="#173430" stroke-width="1.8"/><text x="300.0" y="478.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Interpret</text><text x="300.0" y="508.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >translate with gpt-oss-120b</text><polyline points="300,432 300,410" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><rect x="110" y="312" width="380" height="96" rx="14" fill="#FCE5DA" stroke="#C2410C" stroke-width="2.6"/><text x="300.0" y="358.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Safety gate</text><text x="300.0" y="388.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >83 rules</text><polyline points="300,312 300,290" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><rect x="110" y="192" width="380" height="96" rx="14" fill="#EEF2F1" stroke="#173430" stroke-width="1.8"/><text x="300.0" y="238.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Speak</text><text x="300.0" y="268.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >voice in the listener&#x27;s language</text><polyline points="300,192 300,120" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><text x="300.0" y="100.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Spoken translation</text><rect x="108" y="712" width="184" height="58" rx="14" fill="#DCEBF8" stroke="#173430" stroke-width="1.8"/><text x="200.0" y="749.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Doctor speech</text><polyline points="200,712 200,650" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><rect x="308" y="712" width="184" height="58" rx="14" fill="#D8F0E8" stroke="#173430" stroke-width="1.8"/><text x="400.0" y="749.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Patient speech</text><polyline points="400,712 400,650" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><polyline points="490,360 524,360" fill="none" stroke="#C2410C" stroke-width="2.6" marker-end="url(#ahv2)"/><text x="532.0" y="356.0" font-size="21" font-weight="600" fill="#C2410C" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >held,</text><text x="532.0" y="380.0" font-size="21" font-weight="600" fill="#C2410C" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >not spoken</text><rect x="750" y="178" width="480" height="482" rx="26" fill="#F4F7F7" stroke="#173430" stroke-width="2"/><text x="1290.0" y="560.0" font-size="32" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >N×</text><text x="1290.0" y="586.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >each turn,</text><text x="1290.0" y="606.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >background</text><rect x="770" y="560" width="440" height="88" rx="14" fill="#DCEBF8" stroke="#173430" stroke-width="1.8"/><text x="990.0" y="602.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Case summary</text><text x="990.0" y="632.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >what the doctor and patient have said</text><rect x="770" y="430" width="440" height="100" rx="14" fill="#DCEBF8" stroke="#173430" stroke-width="2.6"/><text x="990.0" y="466.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Clinical review agent</text><text x="990.0" y="496.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >smolagents + gpt-oss-120b</text><text x="990.0" y="519.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >tools: rules, idioms, drug check</text><rect x="770" y="316" width="440" height="88" rx="14" fill="#DCEBF8" stroke="#173430" stroke-width="1.8"/><text x="990.0" y="358.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Attention filter</text><text x="990.0" y="388.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >what is worth showing now</text><rect x="770" y="200" width="440" height="88" rx="14" fill="#DCEBF8" stroke="#173430" stroke-width="1.8"/><text x="990.0" y="242.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Doctor&#x27;s screen</text><text x="990.0" y="272.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >one Ask next + flags</text><polyline points="990,560 990,532" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><polyline points="990,430 990,406" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><polyline points="990,316 990,290" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><polyline points="770,244 728,244 728,604 768,604" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><text x="714" y="424" font-size="19" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" transform="rotate(-90 714 424)">next turn</text><polyline points="490,480 600,480 600,696 990,696 990,650" fill="none" stroke="#173430" stroke-width="1.8" marker-end="url(#ah2)"/><text x="800.0" y="688.0" font-size="18" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >each turn&#x27;s text</text><rect x="1365" y="345" width="270" height="150" rx="14" fill="#D8F0E8" stroke="#173430" stroke-width="1.8"/><text x="1500.0" y="406.0" font-size="28" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Wrap-up</text><text x="1500.0" y="436.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >at the end:</text><text x="1500.0" y="459.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >care plan, PDFs, QR</text><polyline points="1500,600 1500,497" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><text x="1500.0" y="628.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >full record</text><polyline points="1500,345 1500,262" fill="none" stroke="#173430" stroke-width="2.2" marker-end="url(#ah2)"/><text x="1500.0" y="244.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Care plan for the patient</text></svg></div>
+  <span class="pg">9</span>
 </section>
 
 <section class="slide s-arch" data-title="Architecture">
   <div class="brand"><span class="pearl sm"></span><b lang="ar">بيان</b><span>Bayan</span></div>
   <h2>Architecture</h2>
   <div class="archwrap"><svg class="arch" viewBox="0 0 1664 770" width="1664" height="770" role="img" aria-label="Bayan architecture: each turn is heard, transcribed, translated and checked by the prescription gate; in the background a clinical review agent reads the case summary, calls tools, and an attention filter sends one question or flag to the doctor, then loops on the next turn; at the end a wrap-up agent writes the care plan."><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#173430"/></marker><marker id="ahv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C2410C"/></marker></defs><rect x="72" y="128" width="320" height="532" rx="22" fill="#F4F7F7" stroke="#C9D4D2" stroke-width="1.6"/><text x="36.0" y="552.0" font-size="30" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >N×</text><text x="36.0" y="578.0" font-size="16" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >each</text><text x="36.0" y="598.0" font-size="16" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >turn</text><rect x="82" y="578" width="300" height="68" rx="12" fill="#EEF2F1" stroke="#173430" stroke-width="1.6"/><text x="232.0" y="609.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Speaker check</text><text x="232.0" y="633.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >VoxLingua107</text><polyline points="232,578 232,544" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><rect x="82" y="474" width="300" height="68" rx="12" fill="#EEF2F1" stroke="#173430" stroke-width="1.6"/><text x="232.0" y="505.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Speech-to-text</text><text x="232.0" y="529.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Whisper, IndicConformer, MMS</text><polyline points="232,474 232,440" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><rect x="82" y="370" width="300" height="68" rx="12" fill="#EEF2F1" stroke="#173430" stroke-width="1.6"/><text x="232.0" y="401.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Translate + extract</text><text x="232.0" y="425.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >gpt-oss-120b</text><polyline points="232,370 232,336" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><rect x="82" y="266" width="300" height="68" rx="12" fill="#FCE5DA" stroke="#C2410C" stroke-width="2.4"/><text x="232.0" y="297.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Prescription gate</text><text x="232.0" y="321.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >83 rules, no LLM</text><polyline points="232,266 232,232" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><rect x="82" y="162" width="300" height="68" rx="12" fill="#EEF2F1" stroke="#173430" stroke-width="1.6"/><text x="232.0" y="193.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Text-to-speech</text><text x="232.0" y="217.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Parler, MMS, Supertonic, Piper</text><polyline points="232,162 232,96" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><text x="232.0" y="80.0" font-size="24" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Spoken translation</text><rect x="79" y="702" width="150" height="48" rx="12" fill="#DCEBF8" stroke="#173430" stroke-width="1.6"/><text x="154.0" y="733.0" font-size="18" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Doctor speech</text><polyline points="154,702 154,648" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><rect x="237" y="702" width="150" height="48" rx="12" fill="#D8F0E8" stroke="#173430" stroke-width="1.6"/><text x="312.0" y="733.0" font-size="18" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Patient speech</text><polyline points="312,702 312,648" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><polyline points="382,300 404,300" fill="none" stroke="#C2410C" stroke-width="2.4" marker-end="url(#ahv)"/><text x="410.0" y="296.0" font-size="18" font-weight="600" fill="#C2410C" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Held,</text><text x="410.0" y="318.0" font-size="18" font-weight="600" fill="#C2410C" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >not spoken</text><rect x="598" y="206" width="464" height="454" rx="26" fill="#F4F7F7" stroke="#173430" stroke-width="1.8"/><text x="522.0" y="552.0" font-size="30" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >N×</text><text x="522.0" y="578.0" font-size="16" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >each turn</text><text x="522.0" y="598.0" font-size="16" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >background</text><rect x="618" y="552" width="424" height="88" rx="12" fill="#DCEBF8" stroke="#173430" stroke-width="1.6"/><text x="830.0" y="573.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Case summary</text><text x="830.0" y="597.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >complaint, history, diagnosis,</text><text x="830.0" y="617.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >plan, understanding, mood</text><rect x="618" y="434" width="424" height="88" rx="12" fill="#DCEBF8" stroke="#173430" stroke-width="2.4"/><text x="830.0" y="455.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Clinical review agent</text><text x="830.0" y="479.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >smolagents + gpt-oss-120b, five checks: safety,</text><text x="830.0" y="499.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >history, plan, communication, consistency</text><rect x="618" y="334" width="424" height="68" rx="12" fill="#DCEBF8" stroke="#173430" stroke-width="1.6"/><text x="830.0" y="365.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Candidate concerns</text><text x="830.0" y="389.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >each quotes the transcript</text><rect x="618" y="236" width="424" height="68" rx="12" fill="#DCEBF8" stroke="#173430" stroke-width="1.6"/><text x="830.0" y="267.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Attention filter</text><text x="830.0" y="291.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >severity × confidence × novelty</text><rect x="618" y="116" width="424" height="68" rx="12" fill="#DCEBF8" stroke="#173430" stroke-width="1.6"/><text x="830.0" y="147.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Doctor&#x27;s screen</text><text x="830.0" y="171.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >one Ask next + flags</text><polyline points="830,552 830,524" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><polyline points="830,434 830,404" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><polyline points="830,334 830,306" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><polyline points="830,236 830,186" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><polyline points="618,150 580,150 580,596 616,596" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><text x="568" y="333" font-size="17" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" transform="rotate(-90 568 333)">next turn</text><polyline points="382,404 470,404 470,700 830,700 830,642" fill="none" stroke="#173430" stroke-width="1.6" marker-end="url(#ah)"/><text x="650.0" y="692.0" font-size="16" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >updates the case summary</text><rect x="1118" y="330" width="206" height="296" rx="18" fill="#FFFFFF" stroke="#C9D4D2" stroke-width="1.6"/><text x="1221.0" y="360.0" font-size="19" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Agent tools</text><rect x="1132" y="380" width="178" height="48" rx="10" fill="#EEF2F1" stroke="#173430" stroke-width="1.4"/><text x="1221.0" y="411.0" font-size="18" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Safety rules (83)</text><rect x="1132" y="440" width="178" height="48" rx="10" fill="#EEF2F1" stroke="#173430" stroke-width="1.4"/><text x="1221.0" y="471.0" font-size="18" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Idiom lexicon (98)</text><rect x="1132" y="500" width="178" height="48" rx="10" fill="#EEF2F1" stroke="#173430" stroke-width="1.4"/><text x="1221.0" y="531.0" font-size="18" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Drug check</text><rect x="1132" y="560" width="178" height="48" rx="10" fill="#EEF2F1" stroke="#173430" stroke-width="1.4"/><text x="1221.0" y="591.0" font-size="18" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Case lookup</text><line x1="1044.0" y1="478" x2="1116" y2="478" stroke="#173430" stroke-width="2" marker-start="url(#ah)" marker-end="url(#ah)"/><text x="1080.0" y="462.0" font-size="16" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >calls</text><rect x="1352" y="232" width="252" height="428" rx="22" fill="#F4F7F7" stroke="#C9D4D2" stroke-width="1.6"/><text x="1634.0" y="552.0" font-size="30" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >1×</text><text x="1634.0" y="578.0" font-size="16" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >at End</text><rect x="1363" y="578" width="230" height="68" rx="12" fill="#D8F0E8" stroke="#173430" stroke-width="1.6"/><text x="1478.0" y="609.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Wrap-up agent</text><text x="1478.0" y="633.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >smolagents</text><polyline points="1478,578 1478,544" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><rect x="1363" y="474" width="230" height="68" rx="12" fill="#D8F0E8" stroke="#173430" stroke-width="1.6"/><text x="1478.0" y="505.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Rule re-check</text><text x="1478.0" y="529.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >83 rules</text><polyline points="1478,474 1478,440" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><rect x="1363" y="370" width="230" height="68" rx="12" fill="#D8F0E8" stroke="#173430" stroke-width="1.6"/><text x="1478.0" y="401.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >PDFs</text><text x="1478.0" y="425.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >patient&#x27;s script</text><polyline points="1478,370 1478,336" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><rect x="1363" y="266" width="230" height="68" rx="12" fill="#D8F0E8" stroke="#173430" stroke-width="1.6"/><text x="1478.0" y="297.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >QR code</text><text x="1478.0" y="321.0" font-size="17" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >phone page</text><polyline points="1478,266 1478,210" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><text x="1478.0" y="194.0" font-size="22" font-weight="600" fill="#173430" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Care plan, PDF, QR</text><polyline points="1478,712 1478,648" fill="none" stroke="#173430" stroke-width="2" marker-end="url(#ah)"/><text x="1478.0" y="738.0" font-size="18" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >full record</text></svg></div>
-  <span class="pg">8</span>
+  <span class="pg">10</span>
 </section>
 
 <section class="slide s-hf" data-title="Hugging Face">
@@ -293,23 +353,31 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
       <div class="hfgrid one"><div class="hfbox"><img src="../assets/brand/huggingface_logo-noborder.svg" alt=""><p><span>openai</span><b>gpt-oss-120b</b></p></div></div>
     </div>
   </div>
-  <span class="pg">9</span>
+  <span class="pg">11</span>
 </section>
 
 <section class="slide s-proof" data-title="Proof">
   <div class="brand"><span class="pearl sm"></span><b lang="ar">بيان</b><span>Bayan</span></div>
   <h2>Simulation results</h2>
-  <p class="lede">38 scripted consultations in 14 languages, run through the real engine as text</p>
-  <div class="figs three">
-    <div><p class="v">99%</p><p class="l">of 727 checks passed</p></div>
-    <div><p class="v">0 of 44</p><p class="l">false-alarm traps tripped</p></div>
-    <div><p class="v">100%</p><p class="l">of 477 PDF checks: native script, no missing glyphs, no held drug on the patient sheet</p></div>
+  <p class="lede">Scripted consultations run through the real engine as text, with gpt-oss-120b. Results vary between runs.</p>
+  <div class="evals">
+    <div class="eg">
+      <p class="eh">Safety rules</p>
+      <p class="es">38 consultations, 14 languages</p>
+      <div class="er"><p class="v">99%</p><p class="l">of 727 checks passed</p></div>
+      <div class="er"><p class="v">0 of 44</p><p class="l">false-alarm traps tripped</p></div>
+      <div class="er"><p class="v">100%</p><p class="l">of 477 PDF checks: native script, held drug never on the patient sheet</p></div>
+    </div>
+    <div class="eg">
+      <p class="eh">Clinical review</p>
+      <p class="es">16 consultations, 9 languages: 7 with a plan that doesn’t fit, 6 quiet visits, 3 repeats of rule cases</p>
+      <div class="er"><p class="v">8 of 12</p><p class="l">expected concerns flagged</p></div>
+      <div class="er"><p class="v">0</p><p class="l">false caution alerts on the 6 quiet visits</p></div>
+      <div class="er"><p class="v">30 of 30</p><p class="l">rule checks still passed, 0 of 22 traps tripped</p></div>
+    </div>
   </div>
-  <div class="lat">
-    <p class="ct">Median seconds from the turn to the result</p>
-    <svg class="chart" viewBox="0 0 1100 280" width="1100" height="280" role="img" aria-label="Median seconds from the turn to the result"><text x="0.0" y="24.0" font-size="25" font-weight="400" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Translation and prescription gate, per turn</text><path d="M0.0,36.0 H113.0 Q117.0,36.0 117.0,40.0 V54.0 Q117.0,58.0 113.0,58.0 H0.0 Z" fill="#0E8A6F"/><text x="131.0" y="55.0" font-size="25" font-weight="600" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >0.9 s</text><text x="0.0" y="94.0" font-size="25" font-weight="400" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Rule alert on the doctor&#x27;s screen</text><path d="M0.0,106.0 H113.0 Q117.0,106.0 117.0,110.0 V124.0 Q117.0,128.0 113.0,128.0 H0.0 Z" fill="#0E8A6F"/><text x="131.0" y="125.0" font-size="25" font-weight="600" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >0.9 s</text><text x="0.0" y="164.0" font-size="25" font-weight="400" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Copilot agent card</text><path d="M0.0,176.0 H737.0 Q741.0,176.0 741.0,180.0 V194.0 Q741.0,198.0 737.0,198.0 H0.0 Z" fill="#0E8A6F"/><text x="755.0" y="195.0" font-size="25" font-weight="600" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >5.7 s</text><text x="0.0" y="234.0" font-size="25" font-weight="400" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >Care plan and note, after End</text><path d="M0.0,246.0 H815.0 Q819.0,246.0 819.0,250.0 V264.0 Q819.0,268.0 815.0,268.0 H0.0 Z" fill="#0E8A6F"/><text x="833.0" y="265.0" font-size="25" font-weight="600" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >6.3 s</text></svg>
-  </div>
-  <span class="pg">10</span>
+  <p class="evfoot">Translation and gate: 0.9 s per turn. Agent card: about 7 s after the turn. LLM cost: about $0.014 per consultation.</p>
+  <span class="pg">12</span>
 </section>
 
 <section class="slide s-buy" data-title="Buyers">
@@ -321,7 +389,7 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
     <div><p class="v">5.17 M</p><p class="l">visits to PHCC's 31 health centres in 2024</p></div>
   </div>
   <p class="price">Pricing to test: QAR 2–3 per consultation. A phone interpreter costs about QAR 40–60 per visit.</p>
-  <span class="pg">11</span>
+  <span class="pg">13</span>
 </section>
 
 <section class="slide s-deploy" data-title="Deployment">
@@ -340,7 +408,7 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
     <div class="tc human">None</div><div class="tc human">$13,680–18,900</div><div class="tg"></div>
     <svg class="tierchart" viewBox="0 0 600 548" width="600" height="548" role="img" aria-label="US dollars per consultation by deployment, log scale"><line x1="148.4" y1="60" x2="148.4" y2="548" stroke="#E3EAE9" stroke-width="1.5"/><text x="148.4" y="50.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$0.10</text><line x1="298.4" y1="60" x2="298.4" y2="548" stroke="#E3EAE9" stroke-width="1.5"/><text x="298.4" y="50.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$1</text><line x1="448.4" y1="60" x2="448.4" y2="548" stroke="#E3EAE9" stroke-width="1.5"/><text x="448.4" y="50.0" font-size="19" font-weight="400" fill="#5B6B69" text-anchor="middle" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$10</text><rect x="132.9" y="100" width="91.2" height="16" rx="8" fill="#0E8A6F"/><text x="122.9" y="116.0" font-size="24" font-weight="600" fill="#173430" text-anchor="end" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$0.09</text><text x="234.1" y="116.0" font-size="24" font-weight="600" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$0.28</text><rect x="155.7" y="220" width="106.3" height="16" rx="8" fill="#0E8A6F"/><text x="145.7" y="236.0" font-size="24" font-weight="600" fill="#173430" text-anchor="end" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$0.13</text><text x="272.1" y="236.0" font-size="24" font-weight="600" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$0.51</text><rect x="173.1" y="340" width="166.0" height="16" rx="8" fill="#0E8A6F"/><text x="163.1" y="356.0" font-size="24" font-weight="600" fill="#173430" text-anchor="end" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$0.16</text><text x="349.0" y="356.0" font-size="24" font-weight="600" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$1.65</text><rect x="449.0" y="460" width="37.1" height="16" rx="8" fill="#A3B3B0"/><text x="439.0" y="476.0" font-size="24" font-weight="600" fill="#173430" text-anchor="end" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$11.40</text><text x="496.0" y="476.0" font-size="24" font-weight="600" fill="#173430" text-anchor="start" font-family="'Instrument Sans','Noto Sans',system-ui,sans-serif" >$15.75</text></svg>
   </div>
-  <span class="pg">12</span>
+  <span class="pg">14</span>
 </section>
 
 <section class="slide s-comp" data-title="Competition">
@@ -356,7 +424,7 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
       <tr><th>Ambient AI scribes</th><td>No, English notes</td><td>No, documentation</td><td>No</td><td>No</td><td>$150–600 per doctor-month</td></tr>
     </tbody>
   </table>
-  <span class="pg">13</span>
+  <span class="pg">15</span>
 </section>
 
 <section class="slide s-close" data-title="Close">
@@ -371,7 +439,7 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
     </ul>
     <p class="team">Team QH-129<br><span>huggingface.co/spaces/dullgrey/team-qh-129-bayan-app</span></p>
   </div>
-  <span class="pg">14</span>
+  <span class="pg">16</span>
 </section>
 </main>
 <script>

@@ -921,7 +921,8 @@ def render_doctor_report(consult, note_md: str, path, care_plan: dict | None = N
     header; a light panel (no borders) with 8 identification fields in a 4 x 2 grid; one 0.4 pt light rule under
     each section heading; tables with a 0.6 pt rule under the header row and 0.3 pt light rules between rows;
     sign-off lines; "Page X of Y". Colour only on the Bayan AI wordmark. Text sections come from note_md (the doctor
-    may have edited it); the panel and tables come from the structured record. Transcript on a new page. Every block
+    may have edited it); the panel and tables come from the structured record; "Copilot concerns" lists every agent
+    and rule card of the visit with what happened to it (wrapup.copilot_concerns). Transcript on a new page. Every block
     renders independently: a failing block becomes a placeholder, never a missing PDF."""
     from bayan.brain import wrapup as WU
     from bayan.brain.state import fmt_t
@@ -1041,6 +1042,24 @@ def render_doctor_report(consult, note_md: str, path, care_plan: dict | None = N
         table(pdf, [30, 17, 18, 45, 22, Wd - 132], ["Medicine", "Dose", "Route", "Frequency", "Duration", "Status"],
               out)
 
+    def concerns():
+        rows = WU.copilot_concerns(consult)
+        if not rows:
+            return
+        _doc_heading(pdf, "Copilot concerns", need=30)
+        pdf.set_y(pdf.para(X0, pdf.get_y(), Wd, "Raised live by the copilot and the safety rules during the visit, with "
+                           "what happened to each. Decision support, not findings.", "sans", "", 8, GREY, "L", 3.9) + 1.5)
+        out = []
+        for r in rows:
+            out.append([
+                Cell((r["title"], "semi", "", 9, BLACK, _lh(9, 1.3)), (r["body"], "sans", "", 8.5, GREY, _lh(8.5, 1.3))),
+                Cell((r["dimension"].capitalize(), "sans", "", 8.5, BLACK)),
+                Cell((r["label"], "semi" if r["status"] == "open" else "sans", "", 8.5, BLACK),
+                     (r["reason"], "sans", "", 8, GREY)),
+                Cell((f"“{r['quote']}”" if r["quote"] else "", "sans", "", 8.5, BLACK, _lh(8.5, 1.3)),
+                     (r["time"], "sans", "", 8, GREY))])
+        table(pdf, [61, 30, 29, Wd - 120], ["Concern", "Dimension", "Status", "Transcript"], out)
+
     def signoff():
         if pdf.get_y() + 26 > pdf.h - pdf.b_margin:
             pdf.add_page()
@@ -1098,6 +1117,7 @@ def render_doctor_report(consult, note_md: str, path, care_plan: dict | None = N
     for key in order:  # headings the clinician added by hand
         if key not in _SECTION_KEYS.values():
             _safe(pdf, key, text_section, key, key)
+    _safe(pdf, "Copilot concerns", concerns)
     _safe(pdf, "Sign-off", signoff)
     _safe(pdf, "Transcript", appendix)
     path = Path(path)

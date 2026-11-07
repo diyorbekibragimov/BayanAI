@@ -56,6 +56,7 @@ then ticks the timer rules. A new turn while a sentence is held discards it (the
 expect:
   must_hold:      [{drug: co-amoxiclav, rule: ALG-PEN-01, turn: 4}]   # the gate held this sentence (rule_any: [...])
   must_not_hold:  [paracetamol, {drug: diclofenac, turn: 4}, "*"]      # "*" = no hold at all
+                  # a coherence hold (bayan.brain.coherence) has no drug and rule COHERENCE: {rule: COHERENCE, turn: 5}
   must_flag:      # by the end (or by_turn): a rule fired (any time; grouped cards are tracked per rule item) ...
     - {rule: WORK-CHEST-05, severity: caution, by_turn: 1}
     - {rule_any: [WORK-CHEST-02, WORK-CHEST-03], severity: critical}

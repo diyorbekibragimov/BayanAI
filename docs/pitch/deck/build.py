@@ -48,6 +48,28 @@ def text(x, y, s, size=26, fill=INK, weight=400, anchor="start", extra="") -> st
 
 
 # ------------------------------------------------------------------ chart 1: harm (Divi 2007)
+def harm_rows() -> str:
+    """Artificial-Analysis-style rows: label, two bars (limited English / English-speaking), values, ratio."""
+    labels = {
+        "adverse events causing physical harm": "Adverse events that caused physical harm",
+        "harmful events: moderate temporary harm to death": "Harmful events rated moderate harm or worse, up to death",
+        "adverse events caused by communication errors": "Adverse events caused by communication errors",
+    }
+    px = 15.0   # px per percentage point; 60% = 900 px
+    out = []
+    for d in rows("lep_adverse_events.csv"):
+        lep, eng = float(d["lep_patients_pct"]), float(d["english_speakers_pct"])
+        out.append(f'''<div class="aarow">
+      <p class="lbl">{esc(labels[d["metric"]])}</p>
+      <div class="bars">
+        <div class="bl"><span class="b lep" style="width:{lep * px:.0f}px"></span><span class="val">{lep:.0f}%</span></div>
+        <div class="bl"><span class="b eng" style="width:{eng * px:.0f}px"></span><span class="val">{eng:.0f}%</span></div>
+      </div>
+      <p class="mult">{lep / eng:.1f}×</p>
+    </div>''')
+    return "\n    ".join(out)
+
+
 def chart_harm() -> str:
     data = rows("lep_adverse_events.csv")
     names = {
@@ -270,6 +292,97 @@ def chart_arch() -> str:
             + "".join(out) + "</svg>")
 
 
+def chart_arch_overview() -> str:
+    """Simplified architecture: three parts and the loop, large blocks (Transformer-figure style)."""
+    W, H = 1664, 790
+    out = ['<defs>'
+           f'<marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{INK}"/></marker>'
+           f'<marker id="ahv2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{HELD}"/></marker>'
+           '</defs>']
+
+    def arrow(points, color=INK, width=2.2):
+        pts = " ".join(f"{x:.0f},{y:.0f}" for x, y in points)
+        mk = "ahv2" if color == HELD else "ah2"
+        return f'<polyline points="{pts}" fill="none" stroke="{color}" stroke-width="{width}" marker-end="url(#{mk})"/>'
+
+    def blk(cx, cy, w, h, title, subs, fill, stroke=INK, sw=1.8):
+        s = (f'<rect x="{cx - w / 2:.0f}" y="{cy - h / 2:.0f}" width="{w:.0f}" height="{h:.0f}" rx="14" fill="{fill}" '
+             f'stroke="{stroke}" stroke-width="{sw}"/>')
+        n = len(subs)
+        ty = cy + 10 - 12 * n
+        s += text(cx, ty, title, 28, INK, 600, "middle")
+        for k, sub in enumerate(subs):
+            s += text(cx, ty + 30 + 23 * k, sub, 19, MUTED, 400, "middle")
+        return s
+
+    def nlabel(x, y, big, lines):
+        s = text(x, y, big, 32, INK, 600, "middle")
+        for k, line in enumerate(lines):
+            s += text(x, y + 26 + 20 * k, line, 17, MUTED, 400, "middle")
+        return s
+
+    R = [600, 480, 360, 240]   # block centres, bottom to top
+    bh = 96
+
+    # interpretation stack
+    ix, iw = 300, 380
+    out.append(f'<rect x="100" y="178" width="400" height="482" rx="24" fill="{A_BOX}" stroke="{A_BOX_LINE}" stroke-width="1.6"/>')
+    out.append(nlabel(48, 560, "N×", ["each", "turn"]))
+    talk = [("Hear", ["speaker check, speech-to-text", "Whisper, IndicConformer, MMS"], A_GREY, INK, 1.8),
+            ("Interpret", ["translate with gpt-oss-120b"], A_GREY, INK, 1.8),
+            ("Safety gate", ["83 rules"], A_VERM, HELD, 2.6),
+            ("Speak", ["voice in the listener's language"], A_GREY, INK, 1.8)]
+    for i, (t, sub, fill, st, sw) in enumerate(talk):
+        out.append(blk(ix, R[i], iw, bh, t, sub, fill, st, sw))
+        if i < 3:
+            out.append(arrow([(ix, R[i] - bh / 2), (ix, R[i + 1] + bh / 2 + 2)]))
+    out.append(arrow([(ix, R[3] - bh / 2), (ix, 120)]))
+    out.append(text(ix, 100, "Spoken translation", 28, INK, 600, "middle"))
+    for cx, label, fill in ((200, "Doctor speech", A_BLUE), (400, "Patient speech", A_GREEN)):
+        out.append(f'<rect x="{cx - 92}" y="712" width="184" height="58" rx="14" fill="{fill}" stroke="{INK}" stroke-width="1.8"/>')
+        out.append(text(cx, 749, label, 22, INK, 600, "middle"))
+        out.append(arrow([(cx, 712), (cx, R[0] + bh / 2 + 2)]))
+    out.append(arrow([(ix + iw / 2, R[2]), (ix + iw / 2 + 34, R[2])], HELD, 2.6))
+    out.append(text(ix + iw / 2 + 42, R[2] - 4, "held,", 21, HELD, 600))
+    out.append(text(ix + iw / 2 + 42, R[2] + 20, "not spoken", 21, HELD, 600))
+
+    # reasoning loop (one grouped block)
+    rx, rw = 990, 440
+    out.append(f'<rect x="750" y="178" width="480" height="482" rx="26" fill="{A_BOX}" stroke="{INK}" stroke-width="2"/>')
+    out.append(nlabel(1290, 560, "N×", ["each turn,", "background"]))
+    loop = [("Case summary", ["what the doctor and patient have said"], 88),
+            ("Clinical review agent", ["smolagents + gpt-oss-120b", "tools: rules, idioms, drug check"], 100),
+            ("Attention filter", ["what is worth showing now"], 88),
+            ("Doctor's screen", ["one Ask next + flags"], 88)]
+    ys = [604, 480, 360, 244]
+    for i, (t, sub, h) in enumerate(loop):
+        out.append(blk(rx, ys[i], rw, h, t, sub, A_BLUE, INK, 2.6 if i == 1 else 1.8))
+    hs = [88, 100, 88, 88]
+    for i in range(3):
+        out.append(arrow([(rx, ys[i] - hs[i] / 2), (rx, ys[i + 1] + hs[i + 1] / 2 + 2)]))
+    # loop arrow
+    out.append(arrow([(rx - rw / 2, ys[3]), (728, ys[3]), (728, ys[0]), (rx - rw / 2 - 2, ys[0])], INK, 2.2))
+    my = (ys[3] + ys[0]) / 2
+    out.append(f'<text x="714" y="{my:.0f}" font-size="19" fill="{MUTED}" text-anchor="middle" font-family="{FONT}" '
+               f'transform="rotate(-90 714 {my:.0f})">next turn</text>')
+    # feed from Interpret into the case summary
+    out.append(arrow([(ix + iw / 2, R[1]), (600, R[1]), (600, 696), (rx, 696), (rx, ys[0] + 46)], INK, 1.8))
+    out.append(text(800, 688, "each turn's text", 18, MUTED, 400, "middle"))
+
+    # wrap-up
+    wx = 1500
+    out.append(blk(wx, 420, 270, 150, "Wrap-up", ["at the end:", "care plan, PDFs, QR"], A_GREEN))
+    out.append(arrow([(wx, 600), (wx, 420 + 75 + 2)]))
+    out.append(text(wx, 628, "full record", 19, MUTED, 400, "middle"))
+    out.append(arrow([(wx, 420 - 75), (wx, 262)]))
+    out.append(text(wx, 244, "Care plan for the patient", 22, INK, 600, "middle"))
+
+    return (f'<svg class="arch" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" '
+            'aria-label="Bayan architecture overview: hear, interpret, safety gate and speak on each turn; a background loop '
+            'of case summary, clinical review agent, attention filter and the doctor\'s screen; wrap-up at the end.">'
+            + "".join(out) + "</svg>")
+
+
 # ------------------------------------------------------------------ Hugging Face stack slide
 HF_LOGO = "../assets/brand/huggingface_logo-noborder.svg"
 
@@ -312,7 +425,7 @@ def foot(n: int, note: str = "") -> str:
 
 def slides() -> list[str]:
     S = []
-    total = 14
+    total = 16
 
     # 1 Title
     S.append(f'''
@@ -344,16 +457,30 @@ def slides() -> list[str]:
 
     # 2 Qatar
     S.append(f'''
-<section class="slide s-qatar" data-title="Qatar">
+<section class="slide" data-title="Qatar">
   {brand()}
   <h2>Language barriers in Qatar</h2>
   <div class="figs">
     <div><p class="v">65%</p><p class="l">of HMC ambulance staff face language barriers at work</p></div>
     <div><p class="v">71%</p><p class="l">are comfortable letting family members interpret</p></div>
     <div><p class="v">9</p><p class="l">languages with face-to-face interpreters at Sidra; Nepali, Malayalam, Bengali and Tagalog are not among them</p></div>
-    <div><p class="v">49%</p><p class="l">of adverse events in patients with limited English caused physical harm, against 30% for English speakers (US study)</p></div>
   </div>
   {foot(2, "Farhat et al., Qatar Medical Journal 2025, survey of HMC Ambulance Service staff (n = 312): 24% very often, 41% occasionally. Sidra Medicine, Medical interpreters (2026): 9 languages in person, 66 by phone or video. About 94% of Qatar's workforce is non-Qatari (Labour Force Survey 2024, via GLMM).")}
+</section>''')
+
+    # 2c Adverse events and language
+    S.append(f'''
+<section class="slide s-harm" data-title="Adverse events">
+  {brand()}
+  <h2>Adverse events and language</h2>
+  <p class="lede">Many patients in Qatar don’t share a language with their doctor. US hospitals that measured the effect found this.</p>
+  <div class="aa">
+    <p class="aaleg"><span class="sw lep"></span>Patients with limited English<span class="sw eng"></span>English-speaking patients</p>
+    <span class="base"></span>
+    {harm_rows()}
+  </div>
+  <p class="bridge">Bayan is built to close this gap: it interprets, reasons about the consultation and flags what gets missed.</p>
+  {foot(4, "Divi et al., six US Joint Commission hospitals, voluntarily reported adverse events (pilot); docs/pitch/data/lep_adverse_events.csv.")}
 </section>''')
 
     # 3 What Bayan does
@@ -409,6 +536,15 @@ def slides() -> list[str]:
 </section>''')
 
     # 7 Architecture / agentic loop
+    # Architecture overview (alternate to the detailed slide)
+    S.append(f'''
+<section class="slide s-arch" data-title="Architecture overview">
+  {brand()}
+  <h2>Architecture (overview)</h2>
+  <div class="archwrap ov">{chart_arch_overview()}</div>
+  {foot(8, "Alternate to the detailed architecture slide; same design.")}
+</section>''')
+
     S.append(f'''
 <section class="slide s-arch" data-title="Architecture">
   {brand()}
@@ -431,17 +567,25 @@ def slides() -> list[str]:
 <section class="slide s-proof" data-title="Proof">
   {brand()}
   <h2>Simulation results</h2>
-  <p class="lede">38 scripted consultations in 14 languages, run through the real engine as text</p>
-  <div class="figs three">
-    <div><p class="v">99%</p><p class="l">of 727 checks passed</p></div>
-    <div><p class="v">0 of 44</p><p class="l">false-alarm traps tripped</p></div>
-    <div><p class="v">100%</p><p class="l">of 477 PDF checks: native script, no missing glyphs, no held drug on the patient sheet</p></div>
+  <p class="lede">Scripted consultations run through the real engine as text, with gpt-oss-120b. Results vary between runs.</p>
+  <div class="evals">
+    <div class="eg">
+      <p class="eh">Safety rules</p>
+      <p class="es">38 consultations, 14 languages</p>
+      <div class="er"><p class="v">99%</p><p class="l">of 727 checks passed</p></div>
+      <div class="er"><p class="v">0 of 44</p><p class="l">false-alarm traps tripped</p></div>
+      <div class="er"><p class="v">100%</p><p class="l">of 477 PDF checks: native script, held drug never on the patient sheet</p></div>
+    </div>
+    <div class="eg">
+      <p class="eh">Clinical review</p>
+      <p class="es">16 consultations, 9 languages: 7 with a plan that doesn’t fit, 6 quiet visits, 3 repeats of rule cases</p>
+      <div class="er"><p class="v">8 of 12</p><p class="l">expected concerns flagged</p></div>
+      <div class="er"><p class="v">0</p><p class="l">false caution alerts on the 6 quiet visits</p></div>
+      <div class="er"><p class="v">30 of 30</p><p class="l">rule checks still passed, 0 of 22 traps tripped</p></div>
+    </div>
   </div>
-  <div class="lat">
-    <p class="ct">Median seconds from the turn to the result</p>
-    {chart_latency()}
-  </div>
-  {foot(9, "scripts/simulate.py, run gptoss120b-full (reports/sim/gptoss120b-full/summary.md): text turns through the real engine, no audio; gpt-oss-120b on Cerebras, extraction on Groq. Clinical checks 91 of 97 (94%). Missed: 3 of 16 expected holds (Augmentin by brand name, an allergy told only as an idiom, tramadol daily total). First audio from the voice Space: about 1–3 s.")}
+  <p class="evfoot">Translation and gate: 0.9 s per turn. Agent card: about 7 s after the turn. LLM cost: about $0.014 per consultation.</p>
+  {foot(10, "reports/sim/gptoss120b-full/summary.md; reports/sim/coherence-r2/summary.md (one full run); smaller reruns coherence-r3 (4 of 7) and coherence-r4 (2 of 5).")}
 </section>''')
 
     # 10 Buyers
@@ -572,14 +716,16 @@ h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-heigh
 .figs{position:absolute;left:128px;top:420px;display:grid;grid-template-columns:repeat(3,456px);column-gap:96px}
 .figs .v{font-size:150px;line-height:1;font-weight:600;letter-spacing:-.03em}
 .figs .l{margin-top:26px;font-size:30px;line-height:1.4;color:var(--muted)}
-.s-proof .figs{top:356px}
-.s-proof .figs .v{font-size:112px}
-.s-proof .figs .l{margin-top:18px;font-size:27px}
+.evals{position:absolute;left:128px;top:356px;width:1664px;display:grid;grid-template-columns:800px 800px;column-gap:64px}
+.eg{border-top:1px solid var(--rule);padding-top:26px}
+.eh{font-size:36px;font-weight:600}
+.es{margin-top:8px;font-size:22px;line-height:1.4;color:var(--muted);min-height:62px}
+.er{display:grid;grid-template-columns:250px 1fr;align-items:baseline;column-gap:24px;margin-top:22px}
+.er .v{font-size:64px;font-weight:600;line-height:1.05;letter-spacing:-.02em}
+.er .l{font-size:25px;line-height:1.35;color:var(--muted)}
+.evfoot{position:absolute;left:128px;top:880px;font-size:24px;color:var(--ink)}
 
 /* 2b qatar: four figures */
-.s-qatar .figs{grid-template-columns:repeat(4,380px);column-gap:48px}
-.s-qatar .figs .v{font-size:132px}
-.s-qatar .figs .l{font-size:27px}
 
 /* 3 what bayan does */
 .s-does .lede{position:absolute;left:128px;top:262px;font-size:32px;color:var(--muted)}
@@ -588,8 +734,23 @@ h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-heigh
 .four .k{font-size:44px;font-weight:600;letter-spacing:-.01em}
 .four .d{margin-top:18px;font-size:28px;line-height:1.42;color:var(--muted)}
 
-/* 3 harm */
+/* 3 harm (benchmark rows) */
 .chartwrap.harm{position:absolute;left:128px;top:350px}
+.aa{position:absolute;left:128px;top:340px;width:1664px}
+.aaleg{display:flex;align-items:center;gap:14px;font-size:22px;color:var(--muted);margin-bottom:34px}
+.aaleg .sw{display:inline-block;width:18px;height:18px;border-radius:4px}
+.aaleg .sw.eng{margin-left:28px}
+.sw.lep,.b.lep{background:#C2410C}
+.sw.eng,.b.eng{background:#83948F}
+.aa .base{position:absolute;left:538px;top:72px;bottom:0;width:2px;background:#9FB0AD}
+.aarow{display:grid;grid-template-columns:520px 1000px 104px;column-gap:20px;align-items:center;height:150px}
+.aarow .lbl{font-size:28px;line-height:1.3;font-weight:500;padding-right:24px}
+.aarow .bars{display:flex;flex-direction:column;gap:8px}
+.aarow .bl{display:flex;align-items:center;gap:18px;height:40px}
+.aarow .b{display:block;height:40px;border-radius:0 6px 6px 0}
+.aarow .val{font-size:34px;font-weight:600;color:var(--ink);font-variant-numeric:normal}
+.aarow .mult{font-size:30px;font-weight:500;color:var(--muted);text-align:right}
+.bridge{position:absolute;left:128px;top:880px;width:1500px;font-size:30px;line-height:1.4;font-weight:500}
 
 /* 4 demo */
 .screen{position:absolute;overflow:hidden;background:var(--bg);border-radius:22px;box-shadow:0 0 0 1px var(--rule),0 50px 90px -60px rgba(23,52,48,.45)}
@@ -620,6 +781,7 @@ body.still .screen .poster{display:block}
 /* 7 architecture */
 .archwrap{position:absolute;left:128px;top:262px}
 .archwrap svg{display:block}
+.archwrap.ov{top:250px}
 
 /* 8 hugging face */
 h2.hfh{display:flex;align-items:center;gap:22px}

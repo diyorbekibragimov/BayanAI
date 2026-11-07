@@ -159,7 +159,8 @@ def _worker_init(env: dict) -> None:
         t0 = time.time()
         out = orig_translate(text, role, src, tgt, context=context, hint=hint)
         tr_log.append({"role": role, "src": src, "tgt": tgt, "text": text[:200], "s": round(time.time() - t0, 2),
-                       "drugs": out.get("drugs"), "allergies": out.get("allergies"), "tests": out.get("tests")})
+                       "drugs": out.get("drugs"), "allergies": out.get("allergies"), "tests": out.get("tests"),
+                       "statement": out.get("statement")})
         return out
 
     talk.translate = translate
@@ -389,7 +390,7 @@ def run_scenario(sc: dict, run_dir: str, prices: dict, wrapup: bool = True) -> d
             tr = {"i": i, "t_min": t_clock, "role": step.get("role"), "action": step.get("action")}
             t0 = time.time()
             action = step.get("action")
-            n_turns = len(b.turns)
+            n_turns, n_trace = len(b.turns), len(b.trace)
             if rec["holds"] and rec["holds"][-1].get("resolution") is None and s.held:
                 rec["holds"][-1]["resolution"] = {"held_else": "withdrawn", "held_anyway": "overridden"}.get(
                     action or "", "discarded (conversation moved on)")
@@ -422,9 +423,12 @@ def run_scenario(sc: dict, run_dir: str, prices: dict, wrapup: bool = True) -> d
                     rec["errors"].append(f"turn {i}: {s.error}")
                     tr["error"] = s.error
             tr["process_s"] = round(time.time() - t0, 2)
+            coh = [t["text"] for t in b.trace[n_trace:] if "coherence check" in str(t.get("text"))]
+            if coh:
+                tr["coherence"] = coh
             tl = _W["tr_log"]
             if tl and tl[-1]["text"] == str(step.get("text") or "")[:200]:
-                tr["talk"] = {k: tl[-1][k] for k in ("drugs", "allergies", "tests", "s")}
+                tr["talk"] = {k: tl[-1].get(k) for k in ("drugs", "allergies", "tests", "statement", "s")}
             new = b.turns[n_turns:]
             if new:
                 last = new[-1]
@@ -434,7 +438,7 @@ def run_scenario(sc: dict, run_dir: str, prices: dict, wrapup: bool = True) -> d
             if s.held:
                 hc = [b.cards.get(c) or {} for c in s.held.get("cards") or []]
                 hold = {"turn": i, "rule": s.held.get("rule"), "drug": s.held.get("drug"),
-                        "headline": s.held.get("headline"),
+                        "headline": s.held.get("headline"), "kind": s.held.get("kind"), "pq": s.held.get("pq"),
                         "rule_ids": sorted({r for c in hc for r in c.get("rule_ids") or []}),
                         "drug_norm": normalise_drug(s.held.get("drug") or "")}
                 if not rec["holds"] or rec["holds"][-1]["turn"] != i:

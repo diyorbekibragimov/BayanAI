@@ -83,7 +83,7 @@
       .forEach((id) => { const el = $(id); if (el) el.setAttribute('lang', UI); });
     notesKey = ''; sugKey = ''; stepsKey = ''; moreBuilt = ''; if (moreOpen) buildMore(); paintChips();
   }
-  let V = null, lastS = '', appliedEl = null, selLang = 'ne', panelOpen = false, lastCid = '';
+  let V = null, lastS = '', appliedEl = null, selLang = 'ne', panelOpen = false, lastCid = '', openWhenFree = false;
   let tokNotice = 0, demoTried = false, tokOpen = 0, tokClose = 0, tokEnd = 0, tokStop = 0, capKey = '', planKey = '', notesKey = '', sugKey = '', stepsKey = '', patKey = '';
   let clockBase = null;
 
@@ -574,7 +574,8 @@
     const L = LANGS[v.lang] || LANGS.ne, lang = v.lang || 'ne';
     const notesOn = live && !cap;
     if (!notesOn) panelOpen = false;
-    if (v.openNotes !== tokOpen) { const fire = v.openNotes > tokOpen; tokOpen = v.openNotes; if (fire && notesOn) panelOpen = true; }
+    if (v.openNotes !== tokOpen) { const fire = v.openNotes > tokOpen; tokOpen = v.openNotes; if (fire) openWhenFree = true; }
+    if (openWhenFree && notesOn) { panelOpen = true; openWhenFree = false; }  // a card that arrived while Bayan was speaking opens the panel right after
     if (v.closeNotes !== tokClose) { const fire = v.closeNotes > tokClose; tokClose = v.closeNotes; if (fire) panelOpen = false; }
     const showPanel = panelOpen && notesOn;
     if (v.turnSeq !== turnSeq) { turnSeq = v.turnSeq; if (!rec) spk = v.turn || 'doctor'; }
@@ -685,6 +686,7 @@
     const h = v.held || {};
     txt($('bz-held-h'), h.headline || '');
     txt($('bz-held-pq'), h.pq ? '“' + h.pq + '”' : '');
+    $('bz-held-pq').parentNode.style.display = h.pq ? '' : 'none';   // a held claim may quote no patient words
     txt($('bz-held-dq'), h.dq ? '“' + h.dq + '”' : '');
 
     // wrap

@@ -55,59 +55,81 @@ SLOTS = ("wake", "breakfast", "lunch", "dinner", "bedtime")
 
 
 # ------------------------------------------------------------------ review text (doctor)
+def _one_line(x) -> str:
+    """Whitespace (newlines, tabs, runs of spaces) collapsed: every item is exactly one line per language."""
+    return " ".join(str(x or "").split())
+
+
 def plan_text(plan: dict) -> str:
-    """The care plan as the doctor reviews it: English first, the patient-language line beneath each item. Same
-    content as the patient PDF."""
+    """The care plan as the doctor reviews it (the Review screen's editable text). Same content as the patient PDF.
+    Plain text, one layout for every language:
+
+        Your medicines            <- section heading, English
+        तपाईंका औषधिहरू             <- the same heading in the patient's language (own line)
+        - Paracetamol 1 g: ...    <- one item, English
+          प्यारासिटामोल ...         <- its patient-language line, indented two spaces
+                                  <- one blank line between sections
+        Do not take
+        ...
+
+    No separators, no trailing spaces, never two blank lines; _text_sections() parses it back."""
     lang = plan.get("lang", "en")
     L, E = labels(lang), labels("en")
     nat = lang != "en"
-    out: list[str] = []
+    sections: list[list[str]] = []
 
-    def head(key: str):
-        out.extend(["", E[key] + (f"  ·  {L[key]}" if nat and L[key] != E[key] else "")])
+    def head(key: str) -> list[str]:
+        sec = [E[key]]
+        if nat and L[key] and L[key] != E[key]:
+            sec.append(L[key])
+        sections.append(sec)
+        return sec
 
-    def item(en: str, native: str = ""):
+    def item(sec: list[str], en: str, native: str = ""):
+        en, native = _one_line(en), _one_line(native)
         if en:
-            out.append(f"- {en}")
-        if nat and native:
-            out.append(f"  {native}")
+            sec.append(f"- {en}")
+        if nat and native and native != en:
+            sec.append(f"  {native}" if en else f"- {native}")
 
     meds = plan.get("medicines") or []
     if meds:
-        head("medicines")
+        sec = head("medicines")
         for m in meds:
-            item(f"{m.get('title_en') or m.get('name') or ''}: {m.get('note_en') or ''}".strip(": "),
-                 " ".join(x for x in (m.get("title_native") or "", m.get("note_native") or "") if x))
+            item(sec, f"{_one_line(m.get('title_en') or m.get('name'))}: {_one_line(m.get('note_en'))}".strip(": "),
+                 ": ".join(x for x in (_one_line(m.get("title_native")), _one_line(m.get("note_native"))) if x))
     if plan.get("avoid"):
-        head("avoid")
+        sec = head("avoid")
         for a in plan["avoid"]:
-            item(a.get("en", ""), a.get("native", ""))
+            item(sec, a.get("en", ""), a.get("native", ""))
     other = list(plan.get("advice") or [])
     fu = plan.get("follow_up") or {}
     if fu.get("en") or fu.get("native"):
         other.append(fu)
     if other:
-        head("other")
+        sec = head("other")
         for a in other:
-            item(a.get("en", ""), a.get("native", ""))
-    head("red_flags")
+            item(sec, a.get("en", ""), a.get("native", ""))
+    sec = head("red_flags")
     for f in plan.get("red_flags") or []:
-        item(f.get("en", ""), f.get("native", ""))
+        item(sec, f.get("en", ""), f.get("native", ""))
     if not plan.get("red_flags"):
-        out.append(f"- Call {plan.get('emergency') or '999'}.")
-    return "\n".join(out).strip()
+        sec.append(f"- Call {plan.get('emergency') or '999'}.")
+    return "\n\n".join("\n".join(ln.rstrip() for ln in sec) for sec in sections).strip()
 
 
 # ------------------------------------------------------------------ doctor edits (the doctor gives the plan)
 TRANSLATE_PLAN_SYSTEM = """Translate this patient care plan faithfully into {lang}, in its native script.
-Keep the same layout: one item per line, headings on their own lines, blank lines kept, lines starting with "- " kept.
+Keep the same layout: one item per line, headings on their own lines, blank lines kept, lines starting with "- " kept,
+lines indented with two spaces keep their two leading spaces.
 Keep every drug name recognisable and every number, dose, unit and frequency exact, written with Western digits.
 Use simple everyday words. Return only the translation."""
 
 LOCALIZE_PLAN_SYSTEM = """This care plan text mixes English lines with lines in the patient's language. Rewrite ONLY the
 English parts into formal Modern Standard Arabic for the doctor; copy every line that is in another language unchanged.
-Keep the layout, the "- " bullets, every drug name (Arabic script as Gulf doctors write it), every number, dose, unit and
-frequency exactly, with Western digits. Return only the text."""
+Keep the layout (headings on their own lines, blank lines, the "- " bullets, the two-space indent), every drug name
+(Arabic script as Gulf doctors write it), every number, dose, unit and frequency exactly, with Western digits.
+Return only the text."""
 
 
 def translate_plan(text: str, lang: str) -> str:
@@ -116,7 +138,22 @@ def translate_plan(text: str, lang: str) -> str:
     from .talk import LANG_NAMES
     if not (text or "").strip() or lang == "en":
         return text
-    return llm.chat_text(TRANSLATE_PLAN_SYSTEM.format(lang=LANG_NAMES.get(lang, lang)), text, max_tokens=2500).strip()
+    system = TRANSLATE_PLAN_SYSTEM.format(lang=LANG_NAMES.get(lang, lang))
+    return tidy_text(llm.chat_text(system, text, max_tokens=2500))
+
+
+def tidy_text(text: str) -> str:
+    """plan_text()'s plain-text hygiene for text that came back from a model: no trailing spaces, at most one blank
+    line in a row, no leading/trailing blank lines (indentation kept)."""
+    out: list[str] = []
+    for ln in (text or "").replace("\r\n", "\n").split("\n"):
+        ln = ln.rstrip()
+        if not ln and (not out or not out[-1]):
+            continue
+        out.append(ln)
+    while out and not out[-1]:
+        out.pop()
+    return "\n".join(out)
 
 
 def plan_text_for(plan: dict, doc_lang: str) -> str:
@@ -126,7 +163,7 @@ def plan_text_for(plan: dict, doc_lang: str) -> str:
     if doc_lang != "ar" or not text.strip():
         return text
     try:
-        out = llm.chat_text(LOCALIZE_PLAN_SYSTEM, text, max_tokens=2500).strip()
+        out = tidy_text(llm.chat_text(LOCALIZE_PLAN_SYSTEM, text, max_tokens=2500))
         return out or text
     except Exception as e:  # noqa: BLE001 - the English review text is still correct
         print(f"[plan ar] {type(e).__name__}: {e}", flush=True)
@@ -325,7 +362,6 @@ def _plan_html(plan: dict, pdf_url: str | None) -> str:
         parts.append(f"<section>{head('red_flags', red=True)}{items(plan['red_flags'])}</section>")
     else:  # as on the PDF: one plain emergency line, never an empty "Call 999 if" heading
         parts.append(f"<section>{head('emergency', red=True)}</section>")
-    parts.append("<p class='foot'>From your visit today. This page is private and is deleted after 24 hours.</p>")
     return "".join(parts)
 
 
@@ -342,36 +378,54 @@ def page_html(pid: str) -> tuple[int, str]:
     return 200, _page(_plan_html(rec["plan"], pdf_url), rec["lang"])
 
 
-def _text_sections(text: str, lang: str) -> str:
-    """Plain plan text -> sections. A line starting with "- " is an item; an indented line right after it is that
-    item's second line (the other language); any other line is a heading."""
-    d = " dir='rtl'" if lang in RTL_LANGS or lang == "ar" else " dir='auto'"
-    out, items, heading = [], [], ""
-    red_keys = {lab[k].strip() for lab in (labels(lang), labels("en")) for k in ("avoid", "red_flags", "emergency")}
-
-    def flush():
-        nonlocal items, heading
-        if heading or items:
-            red = any(k and (k in heading or heading in k) for k in red_keys)
-            h = f"<h2 class='h{' red' if red else ''}'><span>{_e(_latin(heading))}</span></h2>" if heading else ""
-            en_cls = " class='en'"
-            lis = "".join("<li>" + "".join(f"<p{en_cls if k else ''}>{_e(_latin(x))}</p>" for k, x in enumerate(it))
-                          + "</li>" for it in items)
-            out.append(f"<section lang='{lang}'{d}>{h}" + (f"<ul class='dots'>{lis}</ul>" if lis else "") + "</section>")
-        items, heading = [], ""
-
+def parse_text(text: str) -> list[dict]:
+    """Plain plan text (plan_text()'s layout, or the doctor's own) -> [{"heading": [lines], "items": [[lines]]}].
+    A line starting with "- " (or "• ", "* ") is an item; an indented line right after an item is that item's next
+    line (the other language); any other line is a heading, and a heading line right under another one (no blank
+    line, no item between) is the same heading in the other language. A blank line ends a section's heading block.
+    A line that only repeats the line above it (a translation that left a line unchanged) is dropped."""
+    out: list[dict] = []
+    cur: dict | None = None
+    blank = True
     for raw in (text or "").splitlines():
-        if not raw.strip():
-            continue
         st = raw.strip()
-        if st.startswith(("- ", "• ", "* ")):
-            items.append([st[2:].strip()])
-        elif raw[:1].isspace() and items:
-            items[-1].append(st)
+        if not st:
+            blank = True
+            continue
+        if st[:2] in ("- ", "• ", "* "):
+            if cur is None:
+                cur = {"heading": [], "items": []}
+                out.append(cur)
+            cur["items"].append([st[2:].strip()])
+        elif raw[:1].isspace() and cur is not None and cur["items"]:
+            if st != cur["items"][-1][-1]:
+                cur["items"][-1].append(st)
+        elif cur is not None and cur["heading"] and not cur["items"] and not blank:
+            if st != cur["heading"][-1]:
+                cur["heading"].append(st)
         else:
-            flush()
-            heading = st
-    flush()
+            cur = {"heading": [st], "items": []}
+            out.append(cur)
+        blank = False
+    return out
+
+
+def _text_sections(text: str, lang: str) -> str:
+    """Plain plan text -> HTML sections (see parse_text): a two-line heading shows its second line small beneath."""
+    d = " dir='rtl'" if lang in RTL_LANGS or lang == "ar" else " dir='auto'"
+    red_keys = {lab[k].strip() for lab in (labels(lang), labels("en")) for k in ("avoid", "red_flags", "emergency")}
+    out = []
+    for sec in parse_text(text):
+        heading = sec["heading"]
+        red = any(k and h and (k in h or h in k) for k in red_keys for h in heading)
+        h = ""
+        if heading:
+            h = (f"<h2 class='h{' red' if red else ''}'><span>{_e(_latin(heading[0]))}</span>"
+                 + "".join(f"<small>{_e(_latin(x))}</small>" for x in heading[1:]) + "</h2>")
+        en_cls = " class='en'"
+        lis = "".join("<li>" + "".join(f"<p{en_cls if k else ''}>{_e(_latin(x))}</p>" for k, x in enumerate(it))
+                      + "</li>" for it in sec["items"])
+        out.append(f"<section lang='{lang}'{d}>{h}" + (f"<ul class='dots'>{lis}</ul>" if lis else "") + "</section>")
     return "".join(out)
 
 
@@ -390,7 +444,6 @@ def _text_html(rec: dict, pdf_url: str | None) -> str:
                      f"{_text_sections(rec.get('text_doc') or '', dl)}</details>")
     else:
         parts.append(_text_sections(rec.get("text_doc") or "", dl))
-    parts.append("<p class='foot'>From your visit today. This page is private and is deleted after 24 hours.</p>")
     return "".join(parts)
 
 
