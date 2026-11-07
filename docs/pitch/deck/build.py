@@ -19,6 +19,17 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "data"
 OUT = HERE / "index.html"
+SPACE_URL = "https://huggingface.co/spaces/dullgrey/team-qh-129-bayan-app"
+QR = HERE.parent / "assets" / "qr-space.svg"   # committed; regenerated when segno is installed
+
+
+def write_qr() -> None:
+    try:
+        import segno
+    except ImportError:
+        return
+    segno.make(SPACE_URL, error="m").save(str(QR), kind="svg", scale=10, border=0, dark="#173430", light=None,
+                                         xmldecl=False, svgns=True)
 
 # Theme tokens (bayan/web/static/css/duet.css, plan_page.css)
 BG, INK, MUTED, RULE = "#FBFCFC", "#173430", "#5B6B69", "#E3EAE9"
@@ -503,12 +514,12 @@ def slides() -> list[str]:
     S.append(f'''
 <section class="slide s-demo" data-title="Demo">
   <div class="screen video">
-    <video id="demo" src="../assets/demo.webm" muted playsinline preload="auto" poster="../assets/screens/06-live-patient-notes.png"></video>
+    <video id="demo" src="../assets/demo-fast.mp4" muted playsinline preload="auto" poster="../assets/screens/06-live-patient-notes.png"></video>
     <img class="poster" src="../assets/screens/06-live-patient-notes.png" alt="Bayan live consultation: the patient's Nepali, the English for the doctor, the idiom note and the Notes panel">
   </div>
   <div class="cap">
     <p class="t">Doctor and patient take turns tapping the pearl. Bayan translates, speaks, and checks.</p>
-    <p class="s">Recorded on the live Space: scripted Nepali consultation, live translation and voices. Played at 1.5× speed.</p>
+    <p class="s">Recorded on the live Space: scripted Nepali consultation, live translation and voices. Played at 2× speed.</p>
   </div>
   <span class="pg">{{PG}}</span>
 </section>''')
@@ -657,6 +668,7 @@ def slides() -> list[str]:
       <li>Clinicians to review our 83 rules and 98 idioms</li>
       <li>Native speakers to validate each language</li>
     </ul>
+    <p class="lim">Decision support for clinicians.<br>Not a certified interpreter or a medical device.</p>
     <p class="team">Team QH-129<br><span>huggingface.co/spaces/dullgrey/team-qh-129-bayan-app</span></p>
   </div>
   {foot(13, "Limits we state up front: machine translation is not certified interpreting; Bayan covers the visits that today get a roommate or no one, not consent or bad news. Rules and idioms are cited but not yet clinician-reviewed; accuracy varies by language.")}
@@ -687,7 +699,10 @@ def slides() -> list[str]:
   <div class="thanks">
     <p class="ty">Thank you</p>
     <p class="q">Questions</p>
-    <p class="url">huggingface.co/spaces/dullgrey/team-qh-129-bayan-app</p>
+    <div class="try">
+      <span class="qrbox"><img src="../assets/qr-space.svg" alt="QR code: the Bayan Space on Hugging Face"></span>
+      <div><p class="tl">Try it live</p><p class="url">huggingface.co/spaces/dullgrey/team-qh-129-bayan-app</p></div>
+    </div>
   </div>
 </section>''')
 
@@ -901,12 +916,16 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
 .people figcaption{margin-top:36px;font-size:32px;font-weight:600;text-align:center}
 
 /* thank you */
-.orb.mid{width:300px;height:300px;left:810px;top:170px}
+.orb.mid{width:300px;height:300px;left:810px;top:120px}
 .orb.mid .r1{inset:-34px}.orb.mid .r2{inset:-80px}
-.thanks{position:absolute;left:0;right:0;top:600px;text-align:center}
+.thanks{position:absolute;left:0;right:0;top:530px;text-align:center}
 .thanks .ty{font-size:120px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
 .thanks .q{margin-top:18px;font-size:48px;color:var(--muted)}
-.thanks .url{margin-top:56px;font-size:22px;color:var(--muted)}
+.thanks .try{margin-top:44px;display:inline-flex;align-items:center;gap:32px;text-align:left}
+.thanks .qrbox{display:block;width:196px;height:196px;padding:14px;background:#fff;border:1px solid var(--rule);border-radius:16px}
+.thanks .qrbox img{display:block;width:100%;height:100%}
+.thanks .tl{margin:0;font-size:32px;font-weight:600;color:var(--ink)}
+.thanks .url{margin:10px 0 0;font-size:22px;color:var(--muted)}
 
 /* 12 close */
 .close{position:absolute;left:1000px;top:330px;width:800px}
@@ -916,7 +935,8 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
 .close .ch{margin-top:56px;font-size:28px;font-weight:600}
 .close .ask{list-style:none;margin-top:18px}
 .close .ask li{font-size:34px;line-height:1.4;margin-bottom:14px}
-.close .team{margin-top:52px;font-size:24px;font-weight:600}
+.close .lim{margin-top:36px;font-size:24px;line-height:1.4;color:var(--muted)}
+.close .team{margin-top:40px;font-size:24px;font-weight:600}
 .close .team span{font-weight:400;color:var(--muted)}
 
 @page{size:1920px 1080px;margin:0}
@@ -1035,6 +1055,7 @@ def export() -> None:
 
 
 if __name__ == "__main__":
+    write_qr()
     build()
     if "--export" in sys.argv:
         export()
