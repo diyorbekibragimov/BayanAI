@@ -192,7 +192,7 @@
         }
       ],
       "masks_red_flags": [
-        "Acute coronary syndrome: cardiovascular causes made up most recorded deaths of Nepali workers in Qatar in hot months (Pradhan et al. 2019)",
+        "Acute coronary syndrome: in Nepal, heart attacks are often mistaken for 'gastric' (Prajapati et al., JNHRC 2022: 87.9% of STEMI patients had typical chest pain, only 23.8% thought it was cardiac)",
         "Upper GI bleeding (black stools, vomiting blood)"
       ],
       "clarifying_questions_en": [
@@ -206,7 +206,7 @@
       "source_urls": [
         "https://pmc.ncbi.nlm.nih.gov/articles/PMC3819627/",
         "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/",
-        "https://pubmed.ncbi.nlm.nih.gov/31302648/",
+        "https://jnhrc.com.np/index.php/jnhrc/article/view/1217",
         "https://doi.org/10.1161/CIR.0000000000001029"
       ],
       "evidence_level": "literature",

@@ -1,101 +1,83 @@
-"""Patient care plan: written from the transcript, reviewed by the doctor, opened by QR.
+"""Patient care plan hand-off: the review text, the expiring /plan/<id> page, its QR code and the PDF files.
 
-Plans live in memory only (privacy) and expire after PLAN_TTL seconds.
+The plan itself is built by the wrap-up agent (bayan.brain.wrapup: structured, every medicine re-checked by the
+rule engine, translated with the numbers verified). This module only presents it, with the same content and wording
+as the patient PDF (bayan.outputs.report): Your medicines, Daily schedule (regular medicines), Do not take, Other
+instructions, Call 999 or come back now if.
+
+Privacy: plans live in memory only and expire after PLAN_TTL seconds. Files are served by unguessable token from the
+consultation's retention folder (whitelisted names only); an approved plan keeps an in-memory copy of the patient
+PDF so the patient's link outlives the doctor's session (which erases its folder).
 """
 
 from __future__ import annotations
 
+import copy
 import html
+import os
 import re
 import secrets
 import threading
 import time
+from datetime import datetime
+from pathlib import Path
 
 import segno
 
-from . import talk
+from .outputs import RTL_LANGS, labels
+from .web import fill, read
 
 PLAN_TTL = 24 * 3600
 PLANS: dict[str, dict] = {}
+FILES: dict[str, dict] = {}   # token -> {"dir": Path, "names": set, "blobs": {name: bytes}, "expires": float}
 _LOCK = threading.Lock()
-
-SECTIONS = ["Medicine", "At home", "Tests done today", "Call 999 or come back straight away if"]
-
-PLAN_SYSTEM = """You write a patient's care plan at the end of a clinic visit in Qatar, from the
-interpreted transcript. Write in plain, short, everyday English for a patient with little schooling.
-
-Use only these section headings, in this order, each on its own line, followed by its lines:
-Medicine
-At home
-Tests done today
-Call 999 or come back straight away if
-
-Strict rules:
-- Use ONLY what the doctor actually said in the transcript. Never add a medicine, dose, frequency,
-  test, result or advice the doctor did not say. If the doctor did not cover a section, leave the
-  whole section out (heading too).
-- Lines marked [NOT SPOKEN] were held back and never said to the patient: ignore them completely.
-- Keep every drug name, dose and frequency exactly as the doctor said them.
-- Under Medicine, At home and Tests done today, write short full sentences, each on its own line,
-  starting with a capital letter (for example "Paracetamol 1 g, up to three times a day.").
-- In "Call 999 or come back straight away if", write each warning sign as a line starting with "- ".
-- Separate sections with one blank line. No title, no greeting, no markdown, no extra notes.
-- If the doctor gave no plan at all, return an empty answer."""
-
-TRANSLATE_PLAN_SYSTEM = """Translate this patient care plan faithfully into {lang}, in its native script.
-Keep the same layout: section headings on their own lines, blank lines between sections, and lines
-starting with "- " kept as they are. Keep every drug name, number, dose and frequency exact. Use simple
-everyday words. Return only the translation."""
+MEDIA = {"care_plan.pdf": "application/pdf", "doctor_report.pdf": "application/pdf", "care_plan.wav": "audio/wav"}
+_TOKEN = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+SLOTS = ("wake", "breakfast", "lunch", "dinner", "bedtime")
 
 
-def _chat(system: str, user: str, max_tokens: int = 1200) -> str:
-    kwargs = dict(model=talk.LLM_MODEL, temperature=0, max_tokens=max_tokens,
-                  messages=[{"role": "system", "content": system}, {"role": "user", "content": user}])
-    try:
-        out = talk.llm().chat.completions.create(**kwargs, extra_body={"reasoning_effort": "low"})
-    except Exception:  # noqa: BLE001 - provider may reject the extra field; retry plain
-        out = talk.llm().chat.completions.create(**kwargs)
-    return (out.choices[0].message.content or "").strip()
+# ------------------------------------------------------------------ review text (doctor)
+def plan_text(plan: dict) -> str:
+    """The care plan as the doctor reviews it: English first, the patient-language line beneath each item. Same
+    content as the patient PDF."""
+    lang = plan.get("lang", "en")
+    L, E = labels(lang), labels("en")
+    nat = lang != "en"
+    out: list[str] = []
 
+    def head(key: str):
+        out.extend(["", E[key] + (f"  ·  {L[key]}" if nat and L[key] != E[key] else "")])
 
-def transcript_text(turns: list[dict]) -> str:
-    lines = []
-    for t in turns:
-        who = "Doctor" if t["role"] == "doctor" else "Patient"
-        said = t.get("english") or t.get("said") or ""
-        if not said:
-            continue
-        flag = " [NOT SPOKEN]" if t.get("held") and not t.get("overridden") else ""
-        lines.append(f"{who}{flag}: {said}")
-    return "\n".join(lines)
+    def item(en: str, native: str = ""):
+        if en:
+            out.append(f"- {en}")
+        if nat and native:
+            out.append(f"  {native}")
 
-
-def write_plan(turns: list[dict]) -> str:
-    tx = transcript_text(turns)
-    if not any(t["role"] == "doctor" for t in turns) or not tx.strip():
-        return ""
-    out = _chat(PLAN_SYSTEM, f"Transcript:\n{tx}")
-    out = re.sub(r"[*#`]+", "", out).strip()
-    return re.sub(r"\n{3,}", "\n\n", out)
-
-
-def translate_plan(plan_en: str, lang: str) -> str:
-    if not plan_en.strip() or lang == "en":
-        return plan_en
-    return _chat(TRANSLATE_PLAN_SYSTEM.format(lang=talk.LANG_NAMES.get(lang, lang)), plan_en, max_tokens=2000)
-
-
-def safety_check(plan_en: str, allergies: list[dict]) -> list[str]:
-    """Deterministic: any medicine named in the plan that shares a class with a reported allergy."""
-    warnings = []
-    words = set(re.findall(r"[a-z][a-z-]+", plan_en.lower()))
-    for a in allergies:
-        a_cls = talk.classes_of(a["substance"])
-        for w in words:
-            shared = talk.classes_of(w) & a_cls
-            if shared and w not in a_cls:
-                warnings.append(f"The plan mentions {w}; the patient reported a {a['substance']} allergy.")
-    return sorted(set(warnings))
+    meds = plan.get("medicines") or []
+    if meds:
+        head("medicines")
+        for m in meds:
+            item(f"{m.get('title_en') or m.get('name') or ''}: {m.get('note_en') or ''}".strip(": "),
+                 " ".join(x for x in (m.get("title_native") or "", m.get("note_native") or "") if x))
+    if plan.get("avoid"):
+        head("avoid")
+        for a in plan["avoid"]:
+            item(a.get("en", ""), a.get("native", ""))
+    other = list(plan.get("advice") or [])
+    fu = plan.get("follow_up") or {}
+    if fu.get("en") or fu.get("native"):
+        other.append(fu)
+    if other:
+        head("other")
+        for a in other:
+            item(a.get("en", ""), a.get("native", ""))
+    head("red_flags")
+    for f in plan.get("red_flags") or []:
+        item(f.get("en", ""), f.get("native", ""))
+    if not plan.get("red_flags"):
+        out.append(f"- Call {plan.get('emergency') or '999'}.")
+    return "\n".join(out).strip()
 
 
 # ------------------------------------------------------------------ store
@@ -103,22 +85,38 @@ def _purge():
     now = time.time()
     for k in [k for k, v in PLANS.items() if v["expires"] < now]:
         PLANS.pop(k, None)
+    for k in [k for k, v in FILES.items() if v["expires"] < now]:
+        FILES.pop(k, None)
 
 
-def create(lang: str, plan_en: str, plan_native: str) -> str:
+def create(lang: str, plan: dict, token: str | None = None) -> str:
+    """Store the structured plan (not yet visible to the patient). `token` = the patient-file token (PDF link)."""
     with _LOCK:
         _purge()
         pid = secrets.token_urlsafe(18)
-        PLANS[pid] = {"lang": lang, "plan_en": plan_en, "plan_native": plan_native, "approved": False,
+        PLANS[pid] = {"lang": lang, "plan": copy.deepcopy(plan), "token": token, "approved": False,
                       "created": time.time(), "expires": time.time() + PLAN_TTL}
         return pid
 
 
-def approve(pid: str, plan_en: str, plan_native: str) -> None:
+def approve(pid: str) -> None:
+    """The doctor approved: the page goes live, and the patient files are copied into memory so they outlive the
+    doctor's session."""
     with _LOCK:
         rec = PLANS.get(pid)
-        if rec:
-            rec.update(plan_en=plan_en, plan_native=plan_native, approved=True, approved_at=time.time())
+        if not rec:
+            return
+        rec.update(approved=True, approved_at=time.time())
+        entry = FILES.get(rec.get("token") or "")
+    if entry:
+        blobs = {}
+        for name in entry["names"]:
+            p = _safe_path(entry, name)
+            if p is not None and p.is_file():
+                blobs[name] = p.read_bytes()
+        with _LOCK:
+            entry["blobs"] = blobs
+            entry["expires"] = rec["expires"]
 
 
 def get(pid: str) -> dict | None:
@@ -135,79 +133,149 @@ def qr_svg(url: str) -> str:
                   f'<svg viewBox="0 0 {n} {n}" width="232" height="232" shape-rendering="crispEdges"', svg, count=1)
 
 
+# ------------------------------------------------------------------ files (token -> retention folder)
+def register_files(token: str, directory: Path, names: list[str], ttl: float = PLAN_TTL) -> None:
+    """Serve these whitelisted file names of one consultation folder under /files/<token>/<name>."""
+    if not _TOKEN.match(token or ""):
+        raise ValueError("unsafe token")
+    with _LOCK:
+        FILES[token] = {"dir": Path(directory).resolve(), "names": {n for n in names if n in MEDIA},
+                        "blobs": {}, "expires": time.time() + ttl}
+
+
+def forget_files(tokens: list[str]) -> None:
+    """Session reset / garbage collection: drop the doctor-side tokens. A token whose files were copied into
+    memory at approval (the patient's) stays until the plan expires."""
+    with _LOCK:
+        for t in tokens or []:
+            e = FILES.get(t)
+            if e is not None and not e.get("blobs"):
+                FILES.pop(t, None)
+
+
+def _safe_path(entry: dict, name: str) -> Path | None:
+    d = entry.get("dir")
+    if d is None or name not in entry["names"]:
+        return None
+    p = (d / name).resolve()
+    return p if p.parent == d else None
+
+
+def open_file(token: str, name: str) -> tuple[bytes, str] | None:
+    """(bytes, media type) for a registered token + whitelisted name, else None. No other path is reachable."""
+    if not _TOKEN.match(token or "") or name not in MEDIA:
+        return None
+    with _LOCK:
+        _purge()
+        entry = FILES.get(token)
+        if entry is None or name not in entry["names"]:
+            return None
+        blob = entry["blobs"].get(name)
+    if blob is not None:
+        return blob, MEDIA[name]
+    p = _safe_path(entry, name)
+    if p is None or not p.is_file():
+        return None
+    return p.read_bytes(), MEDIA[name]
+
+
 # ------------------------------------------------------------------ patient page
-_FONTS = ("https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500;600"
-          "&family=Noto+Sans+Bengali:wght@400;500;600&family=Noto+Sans+Malayalam:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600"
-          "&family=Reem+Kufi:wght@500&display=swap")
+# page shell + CSS + the two fixed messages live in bayan/web (templates/plan_*.html, static/css/plan_page.css)
+_PAGE = read("templates/plan_page.html")
+_PAGE_CSS = read("static/css/plan_page.css")
+_UNAVAILABLE = read("templates/plan_unavailable.html")
+_PENDING = read("templates/plan_pending.html")
 
 
-def _sections_html(text: str, lang: str) -> str:
-    out = []
-    for block in re.split(r"\n\s*\n", text.strip()):
-        lines = [ln.strip() for ln in block.strip().splitlines() if ln.strip()]
-        if not lines:
-            continue
-        head, rest = lines[0], lines[1:]
-        items, paras = [], []
-        for ln in rest:
-            if ln.startswith(("- ", "• ", "* ")):
-                items.append(f"<li>{html.escape(ln[2:].strip())}</li>")
-            else:
-                paras.append(f"<p>{html.escape(ln)}</p>")
-        body = "".join(paras) + (f"<ul>{''.join(items)}</ul>" if items else "")
-        out.append(f"<section class='card' lang='{lang}' dir='auto'><h2>{html.escape(head)}</h2>{body}</section>")
-    return "".join(out)
+def _e(x) -> str:
+    return html.escape(str(x or ""))
+
+
+def _plan_html(plan: dict, pdf_url: str | None) -> str:
+    """The structured plan, native script first and English beneath (the patient PDF's content and wording)."""
+    lang = plan.get("lang", "en")
+    L, E = labels(lang), labels("en")
+    nat = lang != "en"
+    d = " dir='rtl'" if lang in RTL_LANGS else " dir='auto'"
+
+    def head(key: str, red: bool = False) -> str:
+        cls = " class='red'" if red else ""
+        if nat:
+            return f"<h2{cls} lang='{lang}'{d}>{_e(L[key])}</h2><p class='h2en'>{_e(E[key])}</p>"
+        return f"<h2{cls}>{_e(E[key])}</h2>"
+
+    def pair(native: str, en: str, strong: bool = False) -> str:
+        tag = "p class='strong'" if strong else "p"
+        if nat and native:
+            return f"<{tag} lang='{lang}'{d}>{_e(native)}</p>" + (f"<p class='en'>{_e(en)}</p>" if en else "")
+        return f"<{tag}>{_e(en)}</p>" if en else ""
+
+    def items(rows: list[dict]) -> str:
+        return "<ul>" + "".join(f"<li>{pair(r.get('native', ''), r.get('en', ''))}</li>" for r in rows) + "</ul>"
+
+    title = (plan.get("title_native") or L["title"]) if nat else E["title"]
+    date = plan.get("date") or datetime.now().strftime("%Y-%m-%d")
+    try:
+        date = datetime.strptime(date, "%Y-%m-%d").strftime("%d %b %Y")
+    except ValueError:
+        pass
+    meta = " · ".join(x for x in (plan.get("clinic") or "", date) if x)
+    parts = [f"<h1 lang='{lang}'{d}>{_e(title)}</h1>" + (f"<p class='h1en'>{_e(E['title'])}</p>" if nat else ""),
+             f"<p class='muted meta'>{_e(meta)}</p>"]
+    meds = plan.get("medicines") or []
+    if meds:
+        body = ""
+        for m in meds:
+            title_en = m.get("title_en") or m.get("name") or ""
+            body += "<div class='med'>" + pair(m.get("title_native") or "", title_en, strong=True)
+            body += pair(m.get("note_native") or "", m.get("note_en") or "") + "</div>"
+        parts.append(f"<section class='card'>{head('medicines')}{body}</section>")
+    regular = [m for m in meds if not m.get("prn") and m.get("slots")]
+    if regular and os.environ.get("BAYAN_PDF_SCHEDULE_TABLE", "on").strip().lower() not in ("0", "off", "false", "no"):
+        used = [sl for sl in SLOTS if any(sl in (m.get("slots") or []) for m in regular)]
+
+        def cell(native: str, en: str) -> str:
+            if nat and native:
+                return f"<span lang='{lang}'>{_e(native)}</span><small>{_e(en)}</small>"
+            return _e(en)
+        th = "".join(f"<th>{cell(L[sl], E[sl])}</th>" for sl in used)
+        rows = ""
+        for m in regular:
+            amt = cell(m.get("dose_amount_native") or "", m.get("dose_amount_en") or "")
+            rows += (f"<tr><th scope='row'>{cell(m.get('name_native') or '', m.get('name') or '')}</th>"
+                     + "".join(f"<td>{amt if sl in (m.get('slots') or []) else ''}</td>" for sl in used) + "</tr>")
+        for m in [m for m in meds if m.get("prn")]:
+            en_line = ", ".join(x for x in (m.get("dose_amount_en") or "", E["prn"].lower()) if x)
+            nat_line = ", ".join(x for x in (m.get("dose_amount_native") or m.get("dose_amount_en") or "", L["prn"]) if x)
+            rows += (f"<tr><th scope='row'>{cell(m.get('name_native') or '', m.get('name') or '')}</th>"
+                     f"<td colspan='{len(used)}'>{cell(nat_line, en_line) if nat else _e(en_line[:1].upper() + en_line[1:])}</td></tr>")
+        parts.append(f"<section class='card'>{head('schedule')}<div class='tw'><table{d}><thead><tr>"
+                     f"<th>{cell(L['medicine'], E['medicine'])}</th>{th}</tr></thead><tbody>{rows}</tbody></table></div></section>")
+    if plan.get("avoid"):
+        parts.append(f"<section class='card'>{head('avoid', red=True)}{items(plan['avoid'])}</section>")
+    other = list(plan.get("advice") or [])
+    fu = plan.get("follow_up") or {}
+    if fu.get("en") or fu.get("native"):
+        other.append(fu)
+    if other:
+        parts.append(f"<section class='card'>{head('other')}{items(other)}</section>")
+    parts.append(f"<section class='card'>{head('red_flags', red=True)}{items(plan.get('red_flags') or [])}</section>")
+    if pdf_url:
+        parts.append(f"<p><a class='btn' href='{_e(pdf_url)}' download='care_plan.pdf'>Download PDF</a></p>")
+    parts.append("<p class='foot'>From your visit today. This page is private and is deleted after 24 hours.</p>")
+    return "".join(parts)
 
 
 def page_html(pid: str) -> tuple[int, str]:
     rec = get(pid)
     if rec is None:
-        body = ("<h1>This care plan is no longer available</h1>"
-                "<p class='muted'>Care plans are kept for 24 hours only. Please ask the clinic for a new copy.</p>")
-        return 404, _page(body, "en")
+        return 404, _page(_UNAVAILABLE, "en")
     if not rec["approved"]:
-        body = ("<h1>Your care plan is almost ready</h1>"
-                "<p class='muted'>The doctor is still checking it. Scan the code again in a moment.</p>")
-        return 200, _page(body, "en")
-    lang = rec["lang"]
-    native = rec["plan_native"] or ""
-    name = talk.LANG_NAMES.get(lang, lang)
-    parts = ["<h1>Your care plan</h1>"]
-    if native.strip() and lang != "en":
-        parts.append(f"<p class='tag'>{html.escape(name)}</p>{_sections_html(native, lang)}")
-        parts.append("<p class='tag en'>English</p>")
-    parts.append(_sections_html(rec["plan_en"], "en") or "<p class='muted'>No plan was written for this visit.</p>")
-    parts.append("<p class='foot'>From your visit today. This page is private and is deleted after 24 hours.</p>")
-    return 200, _page("".join(parts), lang)
+        return 200, _page(_PENDING, "en")
+    token = rec.get("token")
+    pdf_url = f"/files/{token}/care_plan.pdf" if token and open_file(token, "care_plan.pdf") else None
+    return 200, _page(_plan_html(rec["plan"], pdf_url), rec["lang"])
 
 
 def _page(body: str, lang: str) -> str:
-    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Your care plan · Bayan</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="{_FONTS}" rel="stylesheet">
-<style>
-:root{{color-scheme:light}}
-body{{margin:0;background:#FBFCFC;color:#173430;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-text-size-adjust:100%}}
-main{{max-width:640px;margin:0 auto;padding:28px 20px 56px}}
-.top{{display:flex;align-items:center;gap:14px;margin-bottom:26px}}
-.pearl{{width:44px;height:44px;border-radius:50%;flex:none;background:radial-gradient(circle at 34% 28%,#FFFFFF 0%,#F2FBF8 18%,#BFEBDF 46%,#C9EDE6 66%,#D9E9FA 100%);box-shadow:0 14px 30px -14px rgba(14,138,111,.42),inset 0 6px 12px rgba(255,255,255,.95)}}
-.wm{{display:flex;align-items:baseline;gap:8px}}.wm b{{font-family:'Reem Kufi',sans-serif;font-size:26px;font-weight:500}}.wm span{{font-size:15px;color:#5B6B69}}
-h1{{font-size:30px;line-height:1.25;font-weight:600;margin:0 0 18px}}
-.tag{{display:inline-block;margin:18px 0 10px;padding:6px 14px;border-radius:999px;background:#E1F3ED;color:#0B6E59;font-size:15px;font-weight:500}}
-.tag.en{{background:#EEF5FC;color:#174F80;margin-top:30px}}
-.card{{background:#FFFFFF;border:1px solid #E3EAE9;border-radius:22px;padding:18px 20px;margin:0 0 14px}}
-.card h2{{margin:0 0 8px;font-size:20px;font-weight:600;color:#0B6E59}}
-.card p,.card li{{margin:0 0 8px;font-size:20px;line-height:1.6}}
-.card ul{{margin:0;padding-left:22px}}
-[lang=ne],[lang=hi]{{font-family:'Noto Sans Devanagari','Instrument Sans',sans-serif}}
-[lang=bn]{{font-family:'Noto Sans Bengali','Instrument Sans',sans-serif}}
-[lang=ml]{{font-family:'Noto Sans Malayalam','Instrument Sans',sans-serif}}
-[lang=ur]{{font-family:'Noto Naskh Arabic',serif;direction:rtl;text-align:right}}
-[lang=ur] ul{{padding-left:0;padding-right:22px}}
-.muted{{color:#5B6B69;font-size:19px;line-height:1.55}}
-.foot{{margin-top:28px;color:#5B6B69;font-size:15px;line-height:1.5}}
-</style></head><body><main>
-<div class="top"><div class="pearl" aria-hidden="true"></div><div class="wm"><b>بيان</b><span>Bayan</span></div></div>
-{body}
-</main></body></html>"""
+    return fill(_PAGE, css=_PAGE_CSS, body=body)

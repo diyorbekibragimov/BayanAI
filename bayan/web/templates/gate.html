@@ -1,0 +1,16 @@
+
+<div class="bz-frame" id="bz-gate">
+  <div style="position:absolute;z-index:1;left:calc(-270px + var(--ox, 0px));top:calc(-120px + var(--oy, 0px));width:1000px;height:1000px;pointer-events:none" aria-hidden="true">{glow}</div>
+  <div style="position:absolute;left:40px;top:28px;z-index:6;display:flex;align-items:baseline;gap:10px">{wordmark}</div>
+  <div style="position:absolute;z-index:7;left:calc(90px + var(--ox, 0px));top:calc(240px + var(--oy, 0px));width:280px;height:280px;pointer-events:none">{pearl}</div>
+  <section style="position:absolute;left:calc(500px + var(--ox, 0px));top:calc(96px + var(--oy, 0px));right:calc(56px + var(--ox, 0px));bottom:calc(40px + var(--oy, 0px));z-index:3">
+    <form onsubmit="return false" style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:560px">
+      <h1 style="font-size:36px;font-weight:600;line-height:1.2">Enter the access code</h1>
+      <p style="font-size:18px;line-height:1.5;color:#5B6B69">Bayan is in private preview. The code keeps the microphone and patient data off the open web.</p>
+      <input id="bz-code" type="password" autocomplete="off" aria-label="Access code" placeholder="Access code"
+        style="height:64px;border-radius:18px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;font:inherit;font-size:22px;padding:0 22px;letter-spacing:.06em;outline:none">
+      <p id="bz-gate-err" role="alert" style="min-height:24px;font-size:16px;color:#C2410C">{error}</p>
+      <button type="button" data-act="unlock" class="btn-dark" style="align-self:flex-start">Continue</button>
+    </form>
+  </section>
+</div>

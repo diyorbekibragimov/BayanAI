@@ -259,17 +259,28 @@ def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str) -> dict:
     }
 
 
+def _load_and_delete(audio_path: str):
+    """Load the uploaded utterance, then delete it: patient audio must not stay in Gradio's cache."""
+    try:
+        return torchaudio.load(audio_path)
+    finally:
+        try:
+            os.unlink(audio_path)
+        except OSError:
+            pass
+
+
 def hear(audio_path: str, patient_lang: str = "ne") -> dict:
     if not audio_path:
         raise gr.Error("No audio received.")
-    wav, sr = torchaudio.load(audio_path)
+    wav, sr = _load_and_delete(audio_path)
     return _hear_wave(wav, sr, patient_lang)
 
 
 def transcribe(audio_path: str, lang: str = "ne", decoding: str = "ctc") -> dict:
     if not audio_path:
         raise gr.Error("No audio received.")
-    wav, sr = torchaudio.load(audio_path)
+    wav, sr = _load_and_delete(audio_path)
     return _transcribe_wave(wav, sr, lang, decoding)
 
 
@@ -654,7 +665,8 @@ except Exception as e:  # noqa: BLE001 - never fail boot because of the warm-up
 _log(f"ready to serve (models {LOAD_SECONDS}s)")
 
 # ---------------------------------------------------------------- UI / API
-with gr.Blocks(title="Bayan voice worker") as demo:
+# delete_cache: synthesised speech and any other cached files are removed every 10 min once 10 min old.
+with gr.Blocks(title="Bayan voice worker", delete_cache=(600, 600)) as demo:
     gr.Markdown(
         "# Bayan AI · GPU voice worker\n"
         "Private API backend for the Bayan AI Space: IndicConformer (ASR) and Indic Parler-TTS (TTS)."

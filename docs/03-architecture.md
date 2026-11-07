@@ -1,177 +1,151 @@
 # 03 · System Architecture
 
 > **One tablet. One ambient agent. It listens, talks, and thinks.**
-> Bayan AI is a *cascaded* pipeline of open Hugging Face models. Speech is turned into text, the text is reasoned over, and the result is spoken again. It is not a single black-box speech-to-speech model. The text in the middle is what makes safety checks, idiom interpretation, audit trails and the final notes possible.
-> Model choices and language coverage are justified in [04 · Models & Languages](04-models-and-languages.md).
+> Bayan AI is a *cascade* of open Hugging Face models: speech becomes text, the text is checked and reasoned over, and the result is spoken again. The text in the middle is what makes the safety checks, idiom notes, audit trail and notes possible.
+> Models and languages: [04](04-models-and-languages.md). The agents in detail: [11](11-clinical-copilot-agent.md).
+>
+> **Status (2026-11-07):** the clinical brain (`bayan/brain/`) and outputs (`bayan/outputs/`) are wired into the UI shell in the local code (269 offline tests, live smoke run 17/17). This state is **not yet deployed** to the Space.
 
 ---
 
-## 1. Bird's-eye view
+## 1. Module map
 
-```mermaid
-flowchart LR
-    subgraph Tablet["Tablet (browser, single screen)"]
-        MIC[🎙️ Mic + echo cancellation] --> VAD[Client-side VAD<br/>speech segments only]
-        SPK[🔊 Speaker]
-        UI[Doctor-facing screen<br/>transcript · idiom cards · silent alerts · state]
-    end
+| Module | Owner role | Job |
+|---|---|---|
+| `app.py` | UI shell | Access-code gate (`BAYAN_ACCESS_CODE`; a startup warning if unset), FastAPI + Gradio mount, FastRTC `WebRTC` stream with `ReplyOnPause` (Silero VAD), Cloudflare TURN, output pump that also re-renders when cards change, `GET /plan/<id>`, `GET /files/<token>/<name>`, retention sweeper |
+| `bayan/ui.py` | UI shell | Assembles the screens from `bayan/web/`: gate, start (language), consent, doctor/patient "Duet", caption mode, Notes panel, held sentence, consultation ended, review (care plan + "Doctor's note" tab, QR hand-off), sent |
+| `bayan/web/` | UI shell | Frontend files: `templates/` (HTML), `static/css`, `static/js`, `static/img` |
+| `bayan/consult.py` | UI shell | Per-tab state machine that owns a brain `Consultation`: prescription gate on doctor turns, held sentences ("Say something else" withdraws the turn and rolls the state back; "Speak it anyway" is audited), allergies + idiom card + one "Ask next" on patient turns, speech queue, echo guard, no-mic demo, end of visit (copilot flush, then the wrap-up agent) |
+| `bayan/talk.py` | Talk loop | Voice worker client (`/hear`, `/speak_stream`, `/speak`), translation call to `gpt-oss-120b` on Cerebras (JSON schema: translation, literal English, drugs with intent / dose / frequency, allergies, tests; the last 4 turns as context), optional Kokoro doctor voice |
+| `bayan/copilot.py` | Adapter | Maps brain cards to the stage: "ask" → Notes-panel suggestion, idiom → explanation under the English line, missed / observation → notes, rule cards → red alerts |
+| `bayan/careplan.py` | Adapter | Care plan page `/plan/<id>`: the structured plan with the patient PDF's wording plus a PDF download, in memory, expires after 24 h, opened by an on-screen QR; serves `/files/<token>/` (whitelisted names) |
+| `bayan/brain/state.py` | Brain | Consultation state, turns with utterance ids (`u001`…), activity trace, consultation clock |
+| `bayan/brain/extract.py` | Brain | `update_state`: one `gpt-oss-120b` JSON-schema call (Groq, Cerebras fallback) returning a delta with evidence; keyword fallback |
+| `bayan/brain/merge.py` | Brain | Validator: drug normalisation (brand → generic, classes), units, daily dose, earliest first mention, never overwrites known with unknown |
+| `bayan/brain/vocab.py` | Brain | Controlled vocabularies harvested from the rules, so extraction can only emit codes the rules know |
+| `bayan/brain/rules.py` | Brain | Deterministic engine over `data/safety_rules.json` (81 rules), including `check_prescription` for the gate. No LLM |
+| `bayan/brain/idioms.py` | Brain | Lexicon matcher over `data/idiom_lexicon.json` (59 entries): native script, romanized, English loanwords. No LLM |
+| `bayan/brain/checklist.py` | Brain | Presenting-complaint workup checklists derived from the state |
+| `bayan/brain/cards.py` | Brain | Card store with guardrails in code, dedupe, doctor actions, append-only audit |
+| `bayan/brain/agentkit.py` | Brain | smolagents 1.26.0 plumbing: `InferenceClientModel` on Cerebras, compact system prompt, hard timeout, no extra final-answer call |
+| `bayan/brain/copilot.py` | Brain | Think loop, prescription gate, `record_allergies`, copilot agent tools, deterministic fallback cards |
+| `bayan/brain/wrapup.py` | Brain | Wrap-up agent: note, care plan, checks, render; deterministic fallback order |
+| `bayan/outputs/report.py` | Outputs | fpdf2 + HarfBuzz PDFs with Noto fonts: "Consultation note" and the patient sheet |
+| `bayan/outputs/delivery.py` | Outputs | Care-plan audio (WAV), prefilled `wa.me` and `sms:` links; phone numbers never stored |
+| `bayan/outputs/retention.py` | Outputs | Per-consultation temp folder, `purge()` on reset, hourly sweep of folders older than 24 h |
+| `voice_worker/app.py` | GPU Space | Whisper, VoxLingua107, IndicConformer, Indic Parler-TTS behind a private Gradio API |
 
-    subgraph Space["HF Space (cpu-upgrade) · orchestrator"]
-        ROUTE[Language & role router]
-        BRAIN[Interpreter LLM<br/>translate + idiom RAG]
-        THINK[Background thinker<br/>state extractor → safety sentinel]
-        OUT[Output factory<br/>SOAP · PDF · MP3 · WhatsApp · SMS]
-        SESS[(In-memory session<br/>no audio retention)]
-    end
-
-    subgraph HF["Hugging Face compute"]
-        ASR[ASR router<br/>Whisper via Providers · IndicConformer /<br/>Omnilingual / Voxtral-Arabic on GPU worker]
-        LLM[Open LLMs via Inference Providers<br/>gpt-oss-120b · Fanar]
-        TTS[TTS router<br/>Kokoro / Chatterbox via Providers ·<br/>Indic Parler / MMS / OmniVoice on GPU worker]
-    end
-
-    VAD -->|utterance audio| ROUTE --> ASR --> ROUTE
-    ROUTE --> BRAIN --> LLM
-    BRAIN -->|translated text| TTS --> SPK
-    BRAIN --> UI
-    BRAIN --> SESS --> THINK --> LLM
-    THINK -->|silent alerts| UI
-    SESS --> OUT --> LLM
-    OUT --> TTS
-```
-
-## 2. The three loops
-
-Bayan runs three loops at different speeds. Keeping them separate is what makes it feel instant while it still thinks deeply.
-
-| Loop | Trigger | Job | Latency target | Model tier |
-|---|---|---|---|---|
-| **Talk loop** (foreground) | Every utterance | Recognise speech, translate, speak to the other party, show the transcript | **≤ 3 s** from end of speech to start of translated audio | Fast ASR plus a fast LLM on low-latency providers |
-| **Think loop** (background) | Every utterance (debounced), and always before the end of the consultation | Update the structured clinical state, run deterministic safety rules, interpret idioms | ≤ 5 s after the utterance; never blocks the talk loop | Small or fine-tuned extractor, plus rules engine |
-| **Wrap-up loop** | "Bayan, end consultation" or the button | SOAP note, patient care plan (PDF, MP3, WhatsApp, SMS) | ≤ 30 s | Largest open LLM, run once per consultation |
-
-> **Efficiency by design:** the expensive model runs **once per consultation**, the cheap model runs often, and deterministic rules cost nothing. See [07 · Compute Budget](07-compute-budget-and-efficiency.md).
-
-## 3. Talk loop, step by step
+## 2. Call flow
 
 ```mermaid
 sequenceDiagram
-    participant P as Patient (Nepali)
-    participant T as Tablet
-    participant S as Space orchestrator
-    participant A as ASR
-    participant L as Interpreter LLM
-    participant V as TTS
-    P->>T: "मेरो छाती ग्यास्ट्रिकले जस्तो पोलेको छ…"
-    T->>T: VAD closes segment (≈300–500 ms silence)
-    T->>S: utterance.wav (speech only)
-    S->>A: transcribe (hint: session languages)
-    A-->>S: text + language
-    S->>S: role = patient (language ≠ en/ar)
-    S->>L: translate → English, flag idioms (lexicon retrieved)
-    L-->>S: {translation, idiom_candidates, confidence}
-    S-->>T: transcript row (literal + English) + idiom card
-    S->>V: synthesize English (or Arabic) for the doctor
-    V-->>T: audio stream
-    T->>T: mic gated while Bayan speaks (echo guard)
+    participant M as Tablet (WebRTC)
+    participant A as app.py / consult.py
+    participant W as GPU worker
+    participant L as gpt-oss-120b (Cerebras)
+    participant B as bayan/brain
+    participant G as gpt-oss-120b (Groq)
+    M->>A: audio stream; Silero VAD closes an utterance
+    A->>W: /hear(utterance, patient_lang)
+    W-->>A: role (VoxLingua107 over en/ar/patient), text (Whisper or IndicConformer)
+    A->>L: translate (reasoning low) → translation, literal English, drugs, allergies, tests
+    alt patient turn with allergies
+        A->>B: record_allergies (sync, no LLM)
+    end
+    alt doctor turn with drugs
+        A->>B: prescription_gate (sync, rules only, ~3 ms)
+        B-->>A: critical hit → hold the sentence
+    end
+    A->>W: /speak_stream (unless held)
+    W-->>M: streamed speech; mic gated while it plays
+    A->>B: on_turn (background, debounced ~1.2 s)
+    B->>B: lookup_idiom → idiom card at once
+    B->>G: extraction (skipped for courtesy turns; questions batched with the answer)
+    B->>B: merge → all 81 rules → rule cards
+    B->>L: copilot agent, only if something is new (reasoning medium)
+    B-->>A: cards for the Notes panel (doctor only)
 ```
 
-### 3.1 Who is speaking? (diarization for free)
+## 3. The three loops
 
-- At consent time the session knows two language sets. **Doctor side:** English and Arabic. **Patient side:** the patient's language, chosen by the doctor or detected automatically from the first utterance.
-- Each utterance's detected language tells us the role: doctor-side means translate to the patient; patient-side means translate to the doctor. No speaker-diarization model is needed in the common case.
-- **Edge case: the patient also speaks Arabic** (for example an Egyptian or Sudanese worker). Language can no longer separate the speakers, so we fall back to a speaker-embedding diarization model (pyannote) that is enrolled during the consent exchange. See [04](04-models-and-languages.md).
-- **Low confidence:** if language ID or ASR confidence is low, Bayan asks a short clarification in the likely language instead of guessing.
+| Loop | Trigger | Job | Measured / target |
+|---|---|---|---|
+| **Talk** (foreground) | Every utterance | Hear, translate, gate, speak | Worker `/speak_stream` first audio ~2.2 s (3-sentence answer) and ~3.1 s (short question) from Doha. End-to-end target ≤ 3 s from end of speech, **not yet measured** |
+| **Think** (background) | After each turn, debounced ~1.2 s; at most one run in flight per consultation, one rerun if a turn lands mid-run | Deterministic spine (idioms → extraction → merge → rules), then the copilot agent | Extraction ~1.1 s; agent ~1.2–1.6 s, 1 step (golden path) |
+| **Wrap-up** | "End consultation" (voice or button) | Note + care plan in parallel, rule re-check, plan check, render | ~6–8 s (golden path) |
 
-### 3.2 Not translating itself (echo/self-hearing guard)
+The talk loop never waits for the think loop. The prescription gate is the one synchronous safety step, and it uses no LLM.
 
-1. Browser `getUserMedia({ echoCancellation: true, noiseSuppression: true })`.
-2. **Half-duplex gating:** VAD segments are dropped while Bayan's own TTS is playing, with a short tail buffer.
-3. **Barge-in (stretch goal, C4 in [02](02-product-spec.md)):** if a human keeps speaking over Bayan for more than about 700 ms, Bayan stops speaking and listens. The interrupted translation stays visible on screen. The MVP uses half-duplex gating only.
+### 3.1 Who is speaking?
 
-## 4. Think loop: structured state and the safety sentinel
+The patient's language is chosen on the start screen. For each utterance the worker scores VoxLingua107 language ID over {English, Arabic, patient language} only: English or Arabic means the doctor, anything else the patient. The doctor is transcribed with Whisper; the patient with IndicConformer, or Whisper for languages it lacks (Filipino). No diarization model runs. A patient who also speaks Arabic is not handled yet (roadmap: speaker enrolment).
 
-> The think loop is run by the **clinical copilot agent** (smolagents `ToolCallingAgent` on `gpt-oss-120b`). It calls the extractor, the rule engine and the idiom lexicon as tools, and turns the results into doctor-approved cards. Full design: [11 · Clinical Copilot Agent](11-clinical-copilot-agent.md).
+### 3.2 Not translating itself
 
-```mermaid
-flowchart TB
-    U[New utterance<br/>bilingual transcript] --> X[State extractor<br/>LLM → strict JSON]
-    X --> ST[(Consultation state<br/>allergies · meds+doses · symptoms<br/>vitals · investigations · disposition)]
-    ST --> R[Deterministic rules engine<br/>data/safety_rules.json]
-    ST --> Q[LLM second opinion<br/>non-rule patterns, low priority]
-    R --> AL{Alert?}
-    Q --> AL
-    AL -->|critical / caution / info| UI[Silent alert tray<br/>evidence quotes + source]
-    UI -->|acknowledge / override + reason| LOG[(Audit log)]
-```
+`ReplyOnPause(can_interrupt=False)` ignores the mic while Bayan speaks, and `consult.speak_live` keeps it closed until playback ends plus a 300 ms echo tail. No barge-in.
 
-- **Rules are the authority** for drug–allergy, dose ceilings, interactions, pregnancy and missing-workup checks. They are explainable, testable and hallucination-free. The LLM only *extracts* facts and *suggests* softer concerns.
-- Every alert shows the **exact quoted utterances, with timestamps**, plus the rule's source, so the doctor can verify it in a second.
-- Alerts are **never spoken aloud**. They are de-duplicated and capped to avoid alert fatigue.
-- Details: [05 · Clinical Safety & Cultural Intelligence](05-clinical-safety-and-cultural-intelligence.md).
+## 4. Think loop: deterministic spine, then the agent
 
-## 5. Idiom interpretation (retrieval-grounded)
+1. `lookup_idiom` on new patient turns → idiom card at once.
+2. `update_state`: one extraction call (Groq) → `merge_delta`. Courtesy turns skip it; a doctor's plain question waits and is extracted with the patient's answer.
+3. `check_safety_rules`: all 81 rules → rule cards (`WORK-CHEST-*` collapse into one "Chest-pain workup" card); ask/missed cards resolve when their checklist item is done.
+4. Copilot agent (smolagents `ToolCallingAgent`), only when steps 1–3 found something new: read-only tools plus `final_answer(cards)`, 0–2 cards, at most caution.
+5. Fallback: agent off, failed, timed out or no valid card → up to 2 deterministic "ask" cards.
 
-1. A patient-side utterance is embedded with a small multilingual embedding model on CPU and matched against `data/idiom_lexicon.json`. Keyword and romanization matching serve as a fallback.
-2. The top matches go into the interpreter prompt. The LLM must cite which lexicon entry it used, or say "no lexicon match" (no free-floating medical claims).
-3. The doctor sees: **Literal** (always) · **Clinical note** (likely meanings, red flags it may mask) · **Ask next** (one or two clarifying questions, already translatable with one tap).
+Every step is logged as a tool call in the activity trace, with latency, tokens and cost per run. Steps 1–3 never depend on the LLM choosing to call a tool, so a safety alert cannot be skipped by the agent. Only the rule engine can raise a critical card. Details: [05](05-clinical-safety-and-cultural-intelligence.md), [11](11-clinical-copilot-agent.md).
 
-## 6. Wrap-up loop: outputs
+## 5. Wrap-up: outputs
 
 ```mermaid
 flowchart LR
-    ST[(Final state + transcript)] --> SOAP[English SOAP note<br/>copy-to-EMR · JSON]
-    ST --> CP[Care plan<br/>plain-language English]
-    CP --> TR[Translate → patient language<br/>+ back-translation check]
-    TR --> PDF[📄 PDF<br/>native script · med-time grid · red flags · QR]
-    TR --> MP3[🔊 MP3<br/>care plan read aloud]
-    PDF --> LINK[Expiring private link]
-    MP3 --> LINK
-    LINK --> WA[WhatsApp click-to-chat]
-    LINK --> SMS[SMS short summary + link]
+    ST[(State + transcript)] --> D["draft_outputs"]
+    D --> N["Note: JSON-schema call<br/>(map-reduce if long), validated,<br/>Assessment guard"]
+    D --> C["Care plan: deterministic skeleton<br/>+ one call for plain English and<br/>patient-language lines"]
+    C --> R["Rule re-check of every medicine<br/>check_care_plan: numbers, stopped drugs, 999,<br/>missing translations"]
+    N & R --> RO["render_outputs"]
+    RO --> P1["📄 Consultation note PDF<br/>+ plain text for the EMR"]
+    RO --> P2["📄 Patient sheet PDF<br/>native first, English beneath"]
+    RO --> AU["🔊 Care-plan audio (WAV)"]
+    RO --> LK["wa.me and sms: links"]
 ```
 
-- **The PDF is the final artifact.** Complex scripts (Devanagari, Bengali, Malayalam, Tamil, Sinhala, Arabic RTL) need a renderer that does proper text shaping (HarfBuzz), such as WeasyPrint, plus Noto fonts bundled in `assets/fonts/`. Naive PDF libraries break conjunct letters, and that would be a dignity failure in a dignity product.
-- **WhatsApp (MVP):** a `https://wa.me/<number>?text=<prefilled message + link>` click-to-chat link that the doctor or nurse taps. It needs no business API approval. A Cloud API or Twilio sandbox is the stretch goal.
-- **SMS:** native-script SMS uses UCS-2 encoding (70 characters per segment), so we send a short summary plus the link. A Twilio trial is the stretch goal; the `sms:` URI is the MVP.
-- **Audio:** an MP3 of the care plan through the same TTS router, downloadable and linked by QR, for patients who cannot read.
+- Any agent failure falls back to the same steps in a fixed order; a failing note or plan falls back to one built from the structured record, and a failing PDF layout to a plain PDF. Outputs always exist.
+- PDFs use fpdf2 with HarfBuzz shaping and bundled Noto fonts (Devanagari, Bengali, Malayalam, Tamil, Telugu, Arabic script). Known limitation: copying Nepali text out of the PDF gives broken characters; the rendered page is correct.
+- WhatsApp and SMS are prefilled click-to-send links; nobody's message goes out without a person tapping Send.
+- The on-screen QR opens `/plan/<id>`, served by `bayan/careplan.py` (in memory, expires after 24 h).
 
-## 7. Deployment topology on Hugging Face
+## 6. Deployment on Hugging Face
 
-| Piece | Where it runs | Why |
-|---|---|---|
-| UI + orchestrator | **HF Space** `dullgrey/team-qh-129-bayan-app` (Gradio/FastAPI, `cpu-upgrade`, $0.03/h) | Cheap; all heavy compute is remote |
-| Client VAD | In the browser (ONNX) | Only speech is sent, so silence costs nothing and less audio leaves the device |
-| ASR: English, Tagalog, Indonesian | **Inference Providers**: Whisper large-v3 / turbo | Pay per use, no idle GPU |
-| ASR: Indic patient languages, Gulf Arabic, long-tail languages | **One GPU voice worker** (L4 Endpoint scale-to-zero, or ZeroGPU / GPU Space): IndicConformer-600M, Voxtral-Mini-4B-Realtime-Arabic, Omnilingual ASR | No provider serves these today, and Whisper's published WER on Bengali/Malayalam is above 99% ([04](04-models-and-languages.md)) |
-| Interpreter + thinker + wrap-up LLMs | **Inference Providers**: `openai/gpt-oss-120b` on Cerebras/Groq; `QCRI/Fanar-1-9B-Instruct` for Arabic-side text | Low latency, pay per token; Fanar is Qatar's national Arabic LLM |
-| TTS: doctor side (English, Arabic) | **Inference Providers**: Kokoro-82M, Chatterbox Multilingual | Serverless |
-| TTS: patient side | **Same GPU voice worker**: Indic Parler-TTS (Nepali, Hindi, Urdu, Bengali, Malayalam, Tamil, Telugu), MMS-TTS (Tagalog, Indonesian, Swahili, Amharic…), OmniVoice (Sinhala, Pashto) | No provider serves TTS in any South Asian patient language today. Fixed phrases (consent, "please repeat") are **pre-generated and cached** |
-| Optional fine-tuned model | Trained on **HF Jobs**, pushed to the Hub, served on an Endpoint (scale-to-zero) | Shows the full HF loop; see [06](06-fine-tuning-plan.md) |
-| Idiom dataset | **HF Hub dataset** | Reusable public good; feeds RAG and fine-tuning |
-
-### Sovereign / on-prem path (post-hackathon)
-
-The same cascade runs fully self-hosted: Transformers and vLLM on hospital GPUs, or llama.cpp for edge boxes, with Fanar for Arabic. No patient audio ever leaves the hospital network, which matches PDPPL (Law No. 13 of 2016) expectations for health data.
-
-## 8. Data & privacy model
-
-| Data | Default handling |
+| Piece | Where it runs |
 |---|---|
-| Raw audio | Processed in memory per utterance; **not stored** |
-| Transcript & state | In-memory session; erased when the doctor closes the session (the EMR note is copied out by the doctor) |
-| Patient PDF/MP3 | Stored behind an unguessable link that **expires** (for example after 7 days); no patient name needed on the link |
-| Audit log of alerts | Alert, evidence, the doctor's action and reason; no audio |
-| Consent | Spoken in the patient's language at the start; the doctor confirms on screen |
+| UI, orchestration, brain, rules, PDFs | Gradio Space `dullgrey/team-qh-129-bayan-app` (CPU) |
+| `gpt-oss-120b` | HF Inference Providers: Cerebras (translation, agents, wrap-up), Groq (extraction) |
+| Speech models | Private GPU Space `dullgrey/team-qh-129-bayan-voice` on an L4 (`l4x1`, $0.80/h), called with `gradio_client`, one GPU job at a time. Not an Inference Endpoint |
+| Optional English doctor voice | `hexgrad/Kokoro-82M` via Inference Providers (`BAYAN_DOCTOR_VOICE=1`) |
+| WebRTC relay | Cloudflare TURN (own key) |
+
+**On-prem path (post-hackathon):** the same cascade can run self-hosted on hospital GPUs so no patient audio leaves the network, in line with Qatar's PDPPL (Law No. 13 of 2016) for health data. Not built.
+
+## 7. Data & privacy
+
+| Data | Handling today |
+|---|---|
+| Utterance audio | The Space writes a temp WAV per utterance and deletes it after `/hear`; the worker deletes the upload right after loading it (`/hear`, `/transcribe`) and runs Gradio `delete_cache` for other cached files |
+| Transcript & state | In memory per browser tab; idle sessions dropped after 8 h |
+| Output files | One temp folder per consultation, `purge()` on reset, swept after 24 h; links carry an unguessable 128-bit token |
+| Care plan page | In memory, expires after 24 h, `no-store`, `noindex` |
+| Audit | Card actions and overrides in an append-only audit (no audio) |
+| Access | The Space is behind an access code |
+| Tests | No paid calls: `tests/conftest.py` blocks every inference request |
 
 > Demo builds use **synthetic, scripted consultations only.** No real patient data.
 
-## 9. Failure modes & fallbacks
+## 8. Failure modes
 
-| Failure | Fallback |
+| Failure | What happens |
 |---|---|
-| Provider slow or down | Secondary provider for the same open model; then a smaller model |
-| No TTS for the language (for example Sinhala) | Large-type native-script text on screen plus English audio for staff; PDF is still generated |
-| ASR confidence low | Spoken clarification ("Did you say…?") in the patient's language |
-| Mic or network issue in the live demo | "Play sample consultation" runs the pre-recorded golden path through the real pipeline |
-| LLM returns invalid JSON | Constrained/JSON mode, then one retry, then a safe default (show the literal translation only) |
+| Voice worker asleep or down | "Voice service is offline or starting"; the visit continues in text |
+| LLM provider fails | Extraction falls back Groq → Cerebras, then a keyword fallback; agents fall back to deterministic cards; wrap-up falls back to the fixed order |
+| Agent too slow | 20 s timeout per run; late cards are ignored |
+| No voice for the language (Filipino, Arabic) | Caption on screen long enough to read |
+| Mic or network issue in the demo | No-mic demo mode replays the golden path as text turns through the real translation |

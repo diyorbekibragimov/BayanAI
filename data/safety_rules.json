@@ -774,7 +774,7 @@
         }
       },
       "severity": "info",
-      "message_en": "Allergy to {allergy.substance} mentioned, but the reaction and severity were not captured. Suggested question: 'What happened when you took it?'",
+      "message_en": "Allergy to {allergy.substance} mentioned, but the reaction or its severity was not captured. Suggested question: 'What happened when you took it?'",
       "rationale": "NICE CG183 asks for the drug, the reaction, its severity and the date to be documented. The reaction type decides whether alternatives are safe (see ALG-PEN-04).",
       "source_urls": [
         "https://www.nice.org.uk/guidance/cg183"
@@ -2530,11 +2530,11 @@
       },
       "severity": "critical",
       "message_en": "Discharge planned for a patient who reported chest pain ({symptom.evidence}). No ECG documented.",
-      "rationale": "Discharging acute chest pain without an ECG skips the first step of ACS rule-out in both AHA/ACC 2021 and ESC 2023. In Qatar, cardiovascular causes dominate recorded deaths of young Nepali workers in hot months (Pradhan et al. 2019).",
+      "rationale": "Discharging acute chest pain without an ECG skips the first step of ACS rule-out in both AHA/ACC 2021 and ESC 2023. South Asian patients often attribute cardiac pain to 'gastric' (Prajapati et al. 2022).",
       "source_urls": [
         "https://doi.org/10.1161/CIR.0000000000001029",
         "https://doi.org/10.1093/eurheartj/ehad191",
-        "https://pubmed.ncbi.nlm.nih.gov/31302648/"
+        "https://jnhrc.com.np/index.php/jnhrc/article/view/1217"
       ],
       "fire_on": "on_disposition",
       "verification": "label_or_guideline_checked"
@@ -2603,6 +2603,21 @@
             }
           },
           {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "chest_pain",
+                "chest_discomfort",
+                "chest_pressure",
+                "chest_burning",
+                "epigastric_pain_exertional",
+                "jaw_arm_pain"
+              ]
+            }
+          },
+          {
             "none_in": "investigations",
             "where": {
               "fact": "code",
@@ -2619,10 +2634,11 @@
       "rationale": "AHA/ACC 2021 says chest pain includes pressure, tightness or discomfort in the chest, shoulders, arms, neck, back, upper abdomen or jaw, and discourages the label 'atypical'. Lexicon entries such as gyastrik, gas, kabag and seene mein jalan are tagged with this risk.",
       "source_urls": [
         "https://doi.org/10.1161/CIR.0000000000001029",
-        "https://pubmed.ncbi.nlm.nih.gov/31302648/"
+        "https://jnhrc.com.np/index.php/jnhrc/article/view/1217"
       ],
       "fire_on": "state_change",
-      "verification": "label_or_guideline_checked"
+      "verification": "label_or_guideline_checked",
+      "change_note": "2026-11-07: added the chest-pain-group symptom clause (the same codes as WORK-CHEST-01..03: chest_pain, chest_discomfort, chest_pressure, chest_burning, epigastric_pain_exertional, jaw_arm_pain). Previously any idiom tagged 'acs' fired with no ECG; 16 of 59 lexicon entries carry that tag (e.g. 'kabag' = gas pain/infant colic, 'masakit ang sikmura' = stomach hurts, 'man bhaari' = heavy heart-mind), which would alert on most consultations. The rule now needs the acs-tagged idiom AND a chest/epigastric-location symptom. Golden-path step 2 (gyastrik + chest_burning) still fires."
     },
     {
       "id": "WORK-HEAT-01",
@@ -3064,14 +3080,26 @@
           }
         ]
       },
-      "severity": "critical",
+      "severity": "caution",
       "message_en": "Possible suicidal ideation ({symptom.evidence}). No risk or psychosocial assessment documented.",
       "rationale": "NICE NG225: anyone who has self-harmed or expresses suicidal thoughts should receive a psychosocial assessment. Indirect idioms such as 'I wish I could sleep and not wake up' (UNHCR 2015) count.",
       "source_urls": [
         "https://www.nice.org.uk/guidance/ng225"
       ],
       "fire_on": "state_change",
-      "verification": "label_or_guideline_checked"
+      "verification": "label_or_guideline_checked",
+      "escalate_to_critical_if": {
+        "exists_in": "symptoms",
+        "where": {
+          "fact": "code",
+          "op": "in",
+          "value": [
+            "suicidal_ideation",
+            "self_harm"
+          ]
+        }
+      },
+      "change_note": "2026-11-07: base severity lowered to caution; escalates to critical when suicidal_ideation or self_harm is extracted as a symptom. Previously any idiom tagged suicidality fired a critical alert, and 11 of 59 lexicon entries carry that tag (e.g. 'tension', 'chinta' = worry, 'mon kharap', 'ana ta'ban' = I am tired). Explicit statements, including a passive death wish ('I wish I could sleep and not wake up'), must be extracted as suicidal_ideation and stay critical."
     },
     {
       "id": "WORK-SEPSIS-01",

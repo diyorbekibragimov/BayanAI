@@ -1,5 +1,7 @@
 # 06 · Fine-Tuning Plan: What to Fine-Tune, How, and When to Stop
 
+> **Status (2026-11-07): roadmap, not shipped.** The fine-tune was **not trained or shipped** for the hackathon. There is no `dullgrey/team-qh-129-bayan` model and no published idioms dataset. The runtime uses `openai/gpt-oss-120b` via HF Inference Providers for every LLM job: extraction on Groq, translation and the smolagents agents on Cerebras ([04 §0](04-models-and-languages.md), [07 §3](07-compute-budget-and-efficiency.md)). This is the "inference-only" fallback the plan below describes. The rest of this doc is kept as the post-hackathon plan.
+>
 > **Question from the team:** "How would we fine-tune a model? What should we fine-tune?"
 > **Short answer:** fine-tune **one small model, Qwen3-4B-Instruct-2507, with a LoRA adapter on HF Jobs** so that it does Bayan's two most frequent background tasks: reading cultural idioms and keeping the consultation state up to date. Build the training data **label-first** from our literature-sourced idiom lexicon and from scenarios our code generates, so no clinical fact is invented by an LLM. Publish the dataset and the model with cards. If any gate below goes red, ship **inference-only**. The product works either way.
 >
@@ -93,7 +95,7 @@ flowchart LR
 | [Qwen/Qwen3.5-4B](https://huggingface.co/Qwen/Qwen3.5-4B) (Apache-2.0, claims 201 languages) | It is an `image-text-to-text` model with a vision encoder and **thinks by default**. It is newer, with more tooling risk at 2 a.m. It is a good v2 candidate if multilingual input matters more. |
 | [google/gemma-3-4b-it](https://huggingface.co/google/gemma-3-4b-it) | Gated (license acceptance) under the Gemma license, so it adds friction for judges and for re-use. |
 | [meta-llama/Llama-3.2-3B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct) | Gated. Its official languages are en, de, fr, it, pt, hi, es, th. |
-| [QCRI/Fanar-1-9B-Instruct](https://huggingface.co/QCRI/Fanar-1-9B-Instruct) (Apache-2.0, ar/en) | It is the best **Qatar** story, but it is 8.8B parameters (about 2× the train and serve cost) and its card lists only Arabic and English, while our input includes Nepali, Malayalam and other languages. **Use Fanar at inference time for the Arabic doctor side** ([04](04-models-and-languages.md)) instead. |
+| [QCRI/Fanar-1-9B-Instruct](https://huggingface.co/QCRI/Fanar-1-9B-Instruct) (Apache-2.0, ar/en) | It is the best **Qatar** story, but it is 8.8B parameters (about 2× the train and serve cost) and its card lists only Arabic and English, while our input includes Nepali, Malayalam and other languages. **Use Fanar at inference time for the Arabic doctor side** ([04](04-models-and-languages.md)) instead (roadmap: not in the hackathon build). |
 | [Qwen/Qwen3-1.7B](https://huggingface.co/Qwen/Qwen3-1.7B) | Keep it as a **CPU fallback** if the 4B GGUF is too slow on CPU. The same recipe applies; change `BASE_MODEL`. |
 
 **Why one model and not two:** one training run, one eval, one endpoint, one model card. A task tag in the system prompt (`TASK: IDIOM` or `TASK: STATE`) switches the behaviour.
@@ -654,7 +656,7 @@ coverage depends on the base model; the app always supplies an English translati
 Space: [dullgrey/team-qh-129-bayan-app](https://huggingface.co/spaces/dullgrey/team-qh-129-bayan-app). Serving: Inference Endpoint (vLLM, L4, scale-to-zero) or GGUF (llama.cpp).
 ```
 
-Also add `models: [dullgrey/team-qh-129-bayan]` and `datasets: [dullgrey/team-qh-129-bayan-idioms]` to the Space README metadata, so the Hub links them ([Spaces overview](https://huggingface.co/docs/hub/spaces-overview)).
+Only once the model and dataset actually exist on the Hub (they do not today), add `models: [dullgrey/team-qh-129-bayan]` and `datasets: [dullgrey/team-qh-129-bayan-idioms]` to the Space README metadata, so the Hub links them ([Spaces overview](https://huggingface.co/docs/hub/spaces-overview)).
 
 ---
 

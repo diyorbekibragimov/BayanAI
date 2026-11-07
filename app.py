@@ -1,14 +1,18 @@
 """Bayan AI · HF Space entry point.
 
 Ambient interpretation with FastRTC: no push-to-talk. Silero VAD finds the end of each utterance;
-bayan.consult hears, translates, checks for held prescribing alerts and speaks. The UI is one
-static stage (bayan/ui.py) driven by JSON views pushed from Python.
+bayan.consult hears, translates, runs the rule engine's prescription gate (held sentences) and speaks.
+The clinical brain (bayan.brain: rules, idiom lexicon, smolagents copilot, wrap-up agent) runs beside
+the talk loop; its cards reach the stage through the output pump. The UI is one static stage
+(bayan/ui.py) driven by JSON views pushed from Python.
 
-Run: python app.py  (FastAPI + Gradio on 0.0.0.0:7860; GET /plan/<id> serves the patient's plan)
+Run: python app.py  (FastAPI + Gradio on 0.0.0.0:7860; GET /plan/<id> serves the patient's plan,
+GET /files/<token>/<name> the PDFs of one consultation)
 """
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 import json
 import os
@@ -19,14 +23,17 @@ import gradio as gr
 import numpy as np
 import uvicorn
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastrtc import AdditionalOutputs, AlgoOptions, ReplyOnPause, SileroVadOptions, WebRTC, get_current_context
 
 from bayan import careplan, consult, talk, ui
 from bayan.consult import UI, Speech
+from bayan.outputs import retention
 
 ON_SPACES = bool(os.environ.get("SPACE_ID"))
 ACCESS_CODE = os.environ.get("BAYAN_ACCESS_CODE", "" if ON_SPACES else "local")
+if not ACCESS_CODE:
+    print("BAYAN_ACCESS_CODE is not set: nobody can enter (set the Space secret to open the access gate)", flush=True)
 TURN_KEYS = bool(os.environ.get("CLOUDFLARE_TURN_KEY_ID") and os.environ.get("CLOUDFLARE_TURN_KEY_API_TOKEN"))
 RTC_CONFIG, SERVER_RTC_CONFIG = None, None
 
@@ -147,6 +154,7 @@ def on_act(payload, webrtc_id, sid, request: gr.Request):
     if act == "start" and sess.screen == "start":
         sess.lang = p.get("lang") if p.get("lang") in consult.LANGS else "ne"
         sess.screen, sess.started_at, sess.error, sess.demo = "consent", time.time(), "", False
+        consult.begin(sess)
         sess.consent_native = consult._CONSENT.get(sess.lang, "")
         yield R(), skip
         if not sess.consent_native:
@@ -175,6 +183,7 @@ def on_act(payload, webrtc_id, sid, request: gr.Request):
     elif act == "consent_yes" and sess.screen == "consent":
         sess.screen, sess.live, sess.tint, sess.error = "live", "idle", "n", ""
         sess.pending.clear()
+        consult.record_consent(sess)
         yield R(), skip
     elif act in ("consent_no", "new"):
         consult.reset(sess)
@@ -184,7 +193,7 @@ def on_act(payload, webrtc_id, sid, request: gr.Request):
         for _ in consult.end_visit(sess, _base_url(request)):
             yield R(), skip
     elif act == "approve" and sess.screen == "review":
-        for _ in consult.approve(sess, p.get("text", "")):
+        for _ in consult.approve(sess, p.get("text", ""), p.get("note")):
             yield R(), skip
     elif act == "ask" and sess.screen == "live" and not sess.demo:
         if consult.ask_suggestion(sess, p.get("id", "")):
@@ -233,7 +242,12 @@ def run_demo(sess):
                 break
             yield from say(sp)
 
+    def pause(seconds):  # sleep, but show copilot cards the moment they arrive
+        for _ in consult.wait(s, seconds):
+            yield R(), gr.skip()
+
     s.demo, s.lang, s.screen, s.started_at = True, "ne", "consent", time.time()
+    consult.begin(s)
     s.consent_native = consult.consent_text("ne")
     yield R(), gr.skip()
     time.sleep(1.0)
@@ -242,6 +256,7 @@ def run_demo(sess):
     if not alive() or s.screen != "consent":
         return
     s.screen, s.live, s.tint = "live", "idle", "n"
+    consult.record_consent(s)
     yield R(), gr.skip()
     time.sleep(1.5)
     try:
@@ -251,7 +266,7 @@ def run_demo(sess):
             if role in ("doctor", "patient"):
                 for _ in consult.process_text(s, role, text, "en" if role == "doctor" else "ne"):
                     yield R(), gr.skip()
-                time.sleep(2.2 if role == "doctor" else 3.2)
+                yield from pause(2.2 if role == "doctor" else 3.2)
                 if s.live == "held":
                     continue
                 yield from speak_pending()
@@ -259,8 +274,8 @@ def run_demo(sess):
                 time.sleep(1.0)
                 s.open_notes += 1
                 yield R(), gr.skip()
-                time.sleep(4.0)
-                sug = next((x for x in s.suggestions if x["status"] == "open"), None)
+                yield from pause(4.0)
+                sug = next((x for x in consult.refresh(s) if x["status"] == "open"), None)
                 if sug and alive() and s.screen == "live":
                     consult.ask_suggestion(s, sug["id"])
                     yield R(), gr.skip()
@@ -326,12 +341,12 @@ with gr.Blocks(title="Bayan", head=ui.HEAD, theme=THEME, fill_width=True, analyt
                               interactive=False, streaming=False)
 
     gate.click(on_gate, inputs=[act_box, sid_box], outputs=[gate_col, app_col, sid_box, state_html, gate],
-               js="(a, s) => [window.__bayanAct || '', s]", show_progress="hidden", concurrency_limit=None,
+               js=ui.GATE_INPUTS_JS, show_progress="hidden", concurrency_limit=None,
                trigger_mode="multiple")
     # Don't pass the WebRTC component as an input: before it connects its value is None and fastrtc's
     # preprocess raises "'NoneType' object has no attribute 'root'". on_act maps the connection itself.
     stage.click(on_act, inputs=[act_box, wid_box, sid_box], outputs=[state_html, demo_audio],
-                js="(a, w, s) => [window.__bayanAct || '', '', s]", show_progress="hidden", concurrency_limit=None,
+                js=ui.STAGE_INPUTS_JS, show_progress="hidden", concurrency_limit=None,
                 trigger_mode="multiple")
 
     mic.stream(
@@ -348,14 +363,32 @@ with gr.Blocks(title="Bayan", head=ui.HEAD, theme=THEME, fill_width=True, analyt
     )
 
     async def pump(webrtc_id):
-        """Long-lived: forwards every AdditionalOutputs from the handler to the stage.
+        """Long-lived: forwards every AdditionalOutputs from the handler to the stage, and re-renders when the
+        brain's copilot posts cards in the background (polled every 0.5 s between handler outputs).
         (on_additional_outputs(queue=False) stops updating after a few turns in this version pair.)"""
         if hasattr(webrtc_id, "webrtc_id"):
             webrtc_id = webrtc_id.webrtc_id
         if not webrtc_id:
             return
-        async for out in mic.output_stream(webrtc_id):
-            yield out.args[0]
+        outputs = mic.output_stream(webrtc_id).__aiter__()
+        nxt = asyncio.ensure_future(outputs.__anext__())
+        try:
+            while True:
+                done, _ = await asyncio.wait({nxt}, timeout=0.5)
+                if nxt in done:
+                    try:
+                        out = nxt.result()
+                    except StopAsyncIteration:
+                        return
+                    yield out.args[0]
+                    nxt = asyncio.ensure_future(outputs.__anext__())
+                    continue
+                sess = next((x for x in list(consult.SESS.values()) if x.webrtc_id == webrtc_id), None)
+                html = await asyncio.to_thread(consult.poll_render, sess) if sess is not None else None
+                if html is not None:
+                    yield html
+        finally:
+            nxt.cancel()
 
     mic.state_change(pump, inputs=[mic], outputs=[state_html], queue=True, concurrency_limit=None,
                      show_progress="hidden", trigger_mode="once")
@@ -365,11 +398,26 @@ with gr.Blocks(title="Bayan", head=ui.HEAD, theme=THEME, fill_width=True, analyt
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 
+PRIVATE = {"Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex"}
+
+
 @app.get("/plan/{pid}")
 def plan_page(pid: str):
     code, body = careplan.page_html(pid)
-    return HTMLResponse(body, status_code=code, headers={
-        "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex"})
+    return HTMLResponse(body, status_code=code, headers=PRIVATE)
+
+
+@app.get("/files/{token}/{name}")
+def files(token: str, name: str):
+    """A consultation's PDFs (and care-plan audio) by unguessable token; only whitelisted names, no paths."""
+    got = careplan.open_file(token, name)
+    if got is None:
+        return HTMLResponse("Not found", status_code=404, headers=PRIVATE)
+    data, media = got
+    return Response(data, media_type=media, headers={**PRIVATE, "Content-Disposition": f'inline; filename="{name}"'})
+
+
+retention.start_sweeper()  # deletes consultation folders older than 24 h, even if a session never ends
 
 
 app = gr.mount_gradio_app(app, demo, path="", ssr_mode=False, show_api=False)
