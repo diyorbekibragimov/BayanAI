@@ -25,10 +25,13 @@ from . import LANG_NAMES, RTL_LANGS, labels
 
 FONT_DIR = Path(__file__).resolve().parents[2] / "assets" / "fonts"
 SCRIPT_FONTS = {"deva": "NotoSansDevanagari", "beng": "NotoSansBengali", "mlym": "NotoSansMalayalam",
-                "taml": "NotoSansTamil", "telu": "NotoSansTelugu", "arab": "NotoNaskhArabic"}
+                "taml": "NotoSansTamil", "telu": "NotoSansTelugu", "arab": "NotoNaskhArabic",
+                "hang": "NotoSansKR", "jpan": "NotoSansJP"}
 LANG_FONT = {"ne": "deva", "hi": "deva", "mr": "deva", "bn": "beng", "as": "beng", "ml": "mlym", "ta": "taml",
-             "te": "telu", "ar": "arab", "ur": "arab", "fa": "arab", "ps": "arab"}
-FALLBACKS = ["sans", "deva", "beng", "mlym", "taml", "telu", "arab"]
+             "te": "telu", "ar": "arab", "ur": "arab", "fa": "arab", "ps": "arab", "ko": "hang", "ja": "jpan"}
+FALLBACKS = ["sans", "deva", "beng", "mlym", "taml", "telu", "arab", "hang", "jpan"]
+# Symbols the Noto text fonts lack, written out instead of printing a box.
+_SUBST = {"✓": "Yes", "✔": "Yes", "✗": "No", "✘": "No"}
 
 # palette (the same for both documents)
 BLACK = (31, 35, 40)        # #1F2328 text
@@ -85,6 +88,8 @@ def clean(text) -> str:
     if text is None:
         return ""
     text = str(text).replace("\r\n", "\n").replace("\r", "\n").replace("\t", "    ")
+    for k, v in _SUBST.items():
+        text = text.replace(k, v)
     # no em / en dashes in the documents: number ranges keep a hyphen, other dashes read as commas
     text = re.sub(r"(\d)\s*[–—]\s*(\d)", r"\1-\2", text)
     text = re.sub(r"\s*[—–]\s*", ", ", text)
@@ -630,7 +635,7 @@ def _render_plan(care_plan: dict, Z: float, numbered: bool) -> "_Doc":
         if y + need > pdf.h - pdf.b_margin:
             pdf.add_page()
             y = pdf.get_y()
-        if nat:
+        if nat and native.strip() != english.strip():
             y = pdf.para(X0, y, W, native, fam, "B", 13, color, al, _lh(13, 1.35))
             y = pdf.para(X0, y - 0.3, W, english, "sans", "", 9, color if color != BLACK else GREY, al, 4.2)
         else:
@@ -653,7 +658,7 @@ def _render_plan(care_plan: dict, Z: float, numbered: bool) -> "_Doc":
 
     def sec_header():
         y = MARGIN - 4
-        if nat:
+        if nat and L["title"].strip() != E["title"].strip():
             y1 = pdf.para(X0, y, W, L["title"], fam, "B", 18, BLACK, al, _lh(18, 1.35))
             y1 = pdf.para(X0, y1 - 0.4, W, E["title"], "sans", "", 10, GREY, al, 4.8)
         else:
@@ -837,8 +842,12 @@ def _render_plan(care_plan: dict, Z: float, numbered: bool) -> "_Doc":
             lines([pair(a) for a in items])
 
     def sec_red():
-        heading(L["red_flags"], E["red_flags"], color=RED)
-        lines([pair(f) for f in care_plan.get("red_flags") or []])
+        flags = care_plan.get("red_flags") or []
+        if flags:
+            heading(L["red_flags"], E["red_flags"], color=RED)
+            lines([pair(f) for f in flags])
+        else:  # never an empty "Call 999 if" heading: one plain line instead
+            heading(L["emergency"], E["emergency"], color=RED, need=14)
 
     _safe(pdf, "Header", sec_header)
     _safe(pdf, "Your medicines", sec_meds)
@@ -1051,17 +1060,29 @@ def render_doctor_report(consult, note_md: str, path, care_plan: dict | None = N
             try:
                 who = {"doctor": "Clinician", "patient": "Patient", "bayan": "Interpreter"}.get(
                     t.role, str(t.role).capitalize())
-                en = t.english if t.english and t.english != t.text else (t.text if t.lang == "en" else "")
-                orig = t.text if t.lang != "en" else ""
+                # "Said": the words as spoken. "Interpreted": what the other side got. For the clinician that is the
+                # patient-language translation the patient heard (an audit of the interpretation itself); a held
+                # sentence was never spoken. For the patient (and Bayan's own lines) it is the English rendering.
+                plang = consult.patient_lang
+                if t.role == "doctor":
+                    said, slang = t.text, t.lang
+                    if t.held:
+                        interp, ilang = "Not spoken (held by the safety check).", "en"
+                    else:
+                        interp, ilang = (t.translation or t.english or ""), (plang if t.translation else "en")
+                else:
+                    said, slang = t.text, t.lang
+                    interp, ilang = (t.english if t.english and t.english != t.text else ""), "en"
                 rows.append([Cell((fmt_t(t.t_min), "sans", "", 8.5, BLACK)),
                              Cell((who, "sans", "", 8.5, BLACK), ("Held" if t.held else "", "semi", "", 8.5, BLACK)),
-                             Cell((orig, font_for(t.lang), "", 9, BLACK, _lh(9, 1.5),
-                                   "R" if t.lang in RTL_LANGS else "L")),
-                             Cell((en, "sans", "", 8.5, BLACK, _lh(8.5, 1.35)))])
+                             Cell((said, font_for(slang), "", 9, BLACK, _lh(9, 1.5),
+                                   "R" if slang in RTL_LANGS else "L")),
+                             Cell((interp, font_for(ilang), "", 8.5, BLACK, _lh(8.5, 1.4),
+                                   "R" if ilang in RTL_LANGS else "L"))])
             except Exception as e:  # noqa: BLE001
                 rows.append([Cell(), Cell(), Cell((f"[utterance could not be printed: {type(e).__name__}]", "sans", "",
                                                    8, BLACK)), Cell()])
-        table(pdf, [16, 22, 69, Wd - 107], ["Time", "Speaker", "Original", "English"], rows, pad=1.6)
+        table(pdf, [16, 22, 69, Wd - 107], ["Time", "Speaker", "Said", "Interpreted"], rows, pad=1.6)
 
     _safe(pdf, "Header", header)
     _safe(pdf, "Patient and encounter", encounter)

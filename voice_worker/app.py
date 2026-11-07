@@ -80,6 +80,7 @@ _PREFETCH = {
     WHISPER_ID: ["*.json", "*.txt", "model.safetensors"],
     VOX_ID: None,
     "google/flan-t5-large": _TOK_FILES,  # tokenizer only (Parler's description encoder)
+    "Supertone/supertonic-3": ["onnx/*", "voice_styles/*"],  # CPU voice for Korean (and A/B for Arabic)
 }
 
 
@@ -143,6 +144,37 @@ _pool.shutdown(wait=False)
 t = time.time()
 asr = AutoModel.from_pretrained(CONFORMER_ID, trust_remote_code=True, token=HF_TOKEN)
 _log(f"IndicConformer loaded in {time.time() - t:.1f}s")
+# Voices Indic Parler-TTS lacks: Arabic (doctor side), Filipino/Tagalog and Swahili (patient side).
+# Meta MMS-TTS (VITS, ~36M params each, CC-BY-NC-4.0): fast and cheap; plain but clear voice.
+from transformers import VitsModel  # noqa: E402
+t = time.time()
+MMS = {}
+for _code, _repo in (("ar", "facebook/mms-tts-ara"), ("tl", "facebook/mms-tts-tgl"), ("sw", "facebook/mms-tts-swh")):
+    try:
+        _m = VitsModel.from_pretrained(_repo).to(DEVICE).eval()
+        _m.speaking_rate = float(os.environ.get("MMS_RATE", "0.9"))  # a little slower than default: clearer
+        MMS[_code] = (AutoTokenizer.from_pretrained(_repo), _m)
+    except Exception as _e:  # noqa: BLE001 - boot anyway; the app falls back to text
+        _log(f"MMS {_repo} failed: {type(_e).__name__}: {_e}")
+_log(f"MMS-TTS loaded ({', '.join(MMS)}) in {time.time() - t:.1f}s")
+# Supertonic 3 (ONNX, ~99M params) on CPU: ~0.7 s per sentence, never waits for the GPU lock.
+ST = None
+# Default voice per language: Indic Parler-TTS for Indic languages, MMS for Filipino/Swahili, Supertonic 3 for
+# everything else it speaks (doctor English + Arabic, Korean, Japanese, European languages, Indonesian, Turkish,
+# Vietnamese...). Arabic moved from MMS to Supertonic: drug names survive the ASR round trip better and its licence
+# (OpenRAIL-M) allows commercial use, unlike MMS (CC-BY-NC). engine= still forces any engine for A/B.
+ST_NOT_DEFAULT = {"hi"}
+ST_SPEED = float(os.environ.get("ST_SPEED", "0.9"))  # languages that use it by default; any of supertonic.LANGS on request (engine=)
+try:
+    from supertonic import LANGS as ST_LANGS, REPO as ST_REPO, Supertonic  # noqa: E402
+    _wait_fetch(ST_REPO)
+    t = time.time()
+    ST = Supertonic(snapshot_download(ST_REPO, allow_patterns=["onnx/*", "voice_styles/*"], token=HF_TOKEN),
+                    voice=os.environ.get("ST_VOICE", "F1"), threads=os.cpu_count() or 0)
+    _log(f"Supertonic 3 loaded in {time.time() - t:.1f}s")
+except Exception as _e:  # noqa: BLE001 - boot anyway; Korean falls back to text
+    ST_LANGS = set()
+    _log(f"Supertonic failed: {type(_e).__name__}: {_e}")
 LOAD_SECONDS = round(time.time() - t0, 1)
 
 DOCTOR_LANGS = ("en", "ar")
@@ -160,6 +192,7 @@ _CLEAR = "The recording is of very high quality, with the speaker's voice soundi
 DEFAULT_DESCRIPTIONS = {
     "ne": f"Amrita speaks at a slow, calm pace with a clear voice. {_CLEAR}",
     "hi": f"Divya speaks at a slow, calm pace with a warm, clear voice. {_CLEAR}",
+    "ta": f"Jaya speaks at a slow, calm pace with a clear voice. {_CLEAR}",
     "en": f"A female speaker delivers calm, clear speech at a moderate speed and pitch. {_CLEAR}",
 }
 GENERIC_DESCRIPTION = f"A female speaker delivers calm, clear speech at a slow pace and moderate pitch. {_CLEAR}"
@@ -205,8 +238,30 @@ def _to_mono16k(wav: torch.Tensor, sr: int) -> torch.Tensor:
     return torchaudio.functional.resample(wav, sr, ASR_SR) if sr != ASR_SR else wav
 
 
+_REPEAT_RE = re.compile(r"(.{1,6}?)\1{5,}", re.S)
+
+
+def _degenerate(text: str) -> bool:
+    """Whisper's classic failure: a syllable/word looping ("ماهوهوهو…"). Same zlib ratio test Whisper uses (2.4)."""
+    if not text:
+        return False
+    import zlib  # noqa: PLC0415
+    b = text.encode("utf-8")
+    ratio = len(b) / max(1, len(zlib.compress(b)))
+    return ratio > 2.4 or bool(_REPEAT_RE.search(text))
+
+
+def _whisper_text(feats, lang: str, audio_seconds: float) -> str:
+    out = w_model.generate(
+        feats, language=lang, task="transcribe",
+        max_new_tokens=int(min(220, 16 + 10 * audio_seconds)),  # ~10 tokens/s of speech is generous
+        no_repeat_ngram_size=4,  # blocks the looping failure mode
+    )
+    return w_proc.batch_decode(out, skip_special_tokens=True)[0].strip()
+
+
 @torch.inference_mode()
-def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str) -> dict:
+def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str, doctor_lang: str = "", role_override: str = "") -> dict:
     """Decide doctor vs patient for one utterance, then transcribe it with the right model."""
     t_all = time.time()
     wav16 = _to_mono16k(wav, sr)
@@ -215,40 +270,66 @@ def _hear_wave(wav: torch.Tensor, sr: int, patient_lang: str) -> dict:
 
     # 1) Restricted language ID with VoxLingua107: score only {en, ar, patient_lang}.
     t = time.time()
-    cands = [c for c in (*DOCTOR_LANGS, patient_lang) if c in VOX_INDEX]
+    # If the app tells us the doctor's language, only {doctor_lang, patient_lang} compete (no en/ar guessing).
+    fixed_doc = doctor_lang if doctor_lang in DOCTOR_LANGS else ""
+    doc_langs = (fixed_doc,) if fixed_doc else DOCTOR_LANGS
+    cands = [c for c in (*doc_langs, patient_lang) if c in VOX_INDEX]
     out_prob = lid_model.classify_batch(wav16.to(DEVICE))[0][0]  # log-likelihoods over 107 languages
     probs = torch.softmax(out_prob[[VOX_INDEX[c] for c in cands]].float(), dim=-1).tolist()
     lid = dict(zip(cands, [round(p, 4) for p in probs]))
     lid_seconds = time.time() - t
     # Whisper's opinion, for diagnostics only.
-    w_cands = [c for c in (*DOCTOR_LANGS, patient_lang) if _whisper_lang_id(c) is not None]
+    w_cands = [c for c in (*doc_langs, patient_lang) if _whisper_lang_id(c) is not None]
     w_logits = w_model(
         input_features=feats, decoder_input_ids=torch.tensor([[_W_SOT]], device=DEVICE)
     ).logits[0, -1]
     w_probs = torch.softmax(w_logits[[_whisper_lang_id(c) for c in w_cands]].float(), dim=-1).tolist()
     lid_whisper = dict(zip(w_cands, [round(p, 4) for p in w_probs]))
-    top = max(lid, key=lid.get)
-    role = "doctor" if top in DOCTOR_LANGS else "patient"
+    # Doctor vs patient: VoxLingua107 (reliable for Nepali/Indic, where Whisper's LID is not).
+    # English vs Arabic for the doctor: Whisper's LID (very reliable for en/ar; VoxLingua confused them).
+    doc_p = sum(lid.get(c, 0.0) for c in doc_langs)
+    detected_role = "doctor" if doc_p >= lid.get(patient_lang, 0.0) else "patient"
+    # The app can tell us who is speaking (turn-based UI); detection is then only reported, as a safety check.
+    role_forced = role_override in ("doctor", "patient")
+    role = role_override if role_forced else detected_role
+    doc_lang = fixed_doc or max(DOCTOR_LANGS, key=lambda c: lid_whisper.get(c, lid.get(c, 0.0)))
 
     # 2) Transcribe with the right engine.
     t = time.time()
+    dur = wav16.shape[-1] / ASR_SR
+    unclear = False
     if role == "doctor":
-        lang, engine = top, "whisper-large-v3-turbo"
-        out = w_model.generate(feats, language=lang, task="transcribe", max_new_tokens=220)
-        text = w_proc.batch_decode(out, skip_special_tokens=True)[0].strip()
+        lang, engine = doc_lang, "whisper-large-v3-turbo"
+        text = _whisper_text(feats, lang, dur)
+        if _degenerate(text):  # noise, or (auto mode) the wrong doctor language: retry once, else give up
+            if fixed_doc:
+                text, unclear = "", True
+            else:
+                other = [c for c in DOCTOR_LANGS if c != lang][0]
+                alt = _whisper_text(feats, other, dur)
+                if not _degenerate(alt):
+                    lang, text = other, alt
+                else:
+                    text, unclear = "", True
     elif patient_lang in asr.language_masks:
         lang, engine = patient_lang, "indic-conformer-600m"
         text = asr(wav16, patient_lang, "ctc")
+        if _degenerate(text):
+            text, unclear = "", True
     else:
         lang, engine = patient_lang, "whisper-large-v3-turbo"
-        out = w_model.generate(feats, language=lang, task="transcribe", max_new_tokens=220)
-        text = w_proc.batch_decode(out, skip_special_tokens=True)[0].strip()
+        text = _whisper_text(feats, lang, dur)
+        if _degenerate(text):
+            text, unclear = "", True
     asr_seconds = time.time() - t
 
     return {
         "role": role,
         "lang": lang,
         "text": text,
+        "unclear": unclear,
+        "role_forced": role_forced,
+        "detected_role": detected_role,
         "engine": engine,
         "lid": lid,
         "lid_whisper": lid_whisper,
@@ -357,6 +438,28 @@ _TAU_DEFAULT = 0.020  # measured 16.7 ms (batch 1) to 19.9 ms (batch 8) on the L
 _SENT_SPLIT = re.compile(r"(?<=[।॥.!?؟])\s+")
 _CLAUSE_SPLIT = re.compile(r"(?<=[,،;:])\s+")
 _STOP = object()
+# Each segment is generated separately, so without these the sentences run into each other ("rushing").
+PAUSE_SENTENCE = float(os.environ.get("PAUSE_SENTENCE", "0.55"))  # after . ? ! ।
+PAUSE_CLAUSE = float(os.environ.get("PAUSE_CLAUSE", "0.25"))      # after , ; : when a sentence was cut there
+
+
+def _trim(audio: np.ndarray, sr: int, keep: float = 0.06) -> np.ndarray:
+    """Cut leading/trailing silence (below -40 dBFS), keeping a short natural tail, so pauses are exactly ours."""
+    fr = max(1, int(sr * 0.01))
+    n = len(audio) // fr
+    if n < 3:
+        return audio
+    rms = np.sqrt(np.mean(audio[: n * fr].reshape(n, fr) ** 2, axis=1) + 1e-12)
+    loud = np.flatnonzero(rms > 0.01)
+    if len(loud) == 0:
+        return audio
+    a = max(0, loud[0] * fr - int(keep * sr))
+    b = min(len(audio), (loud[-1] + 1) * fr + int(keep * sr))
+    return audio[a:b]
+
+
+def _pause_after(seg: str) -> float:
+    return PAUSE_SENTENCE if re.search(r"[।॥.!?؟]\W*$", seg.strip()) else PAUSE_CLAUSE
 
 
 def _split_sentences(text: str) -> list:
@@ -542,7 +645,13 @@ def _speak_stream(text: str, lang: str, description: str, opts: dict):
                 first_at = now - t0
                 meta["first"] = True
             last_seg = seg
-            yield _payload(np.asarray(chunk, dtype=np.float32), **meta)
+            audio = np.asarray(chunk, dtype=np.float32)
+            if seg_end and seg < len(segs) - 1:  # natural pause before the next sentence / clause
+                gap = np.zeros(int(_pause_after(segs[seg]) * TTS_SR), dtype=np.float32)
+                audio = np.concatenate([audio, gap])
+                st["play_end"] += len(gap) / TTS_SR
+                generated += len(gap) / TTS_SR
+            yield _payload(audio, **meta)
     total = time.time() - t0
     yield {"done": True, "first_audio_seconds": round(first_at or total, 3), "total_seconds": round(total, 3),
            "audio_seconds": round(generated, 3), "rtf": round(total / max(generated, 1e-6), 3), "chunks": n,
@@ -572,10 +681,74 @@ def _legacy_stream(text: str, lang: str, description: str):
            "rtf": round(total / max(generated, 1e-6), 3), "chunks": n, "fallback": True}
 
 
-def speak_stream(text: str, lang: str = "ne", description: str = ""):
+@torch.inference_mode()
+def _mms_wave(text: str, lang: str) -> np.ndarray:
+    tok, model = MMS[lang]
+    inputs = tok(text, return_tensors="pt").to(DEVICE)
+    torch.manual_seed(0)  # VITS samples noise: fixed seed = the same sentence always sounds the same
+    return model(**inputs).waveform[0].float().cpu().numpy()
+
+
+def _mms_stream(text: str, lang: str):
+    sr = MMS[lang][1].config.sampling_rate
+    t0, n, total = time.time(), 0, 0.0
+    first = None
+    sents = _split_sentences(text) or [text]
+    for k, sent in enumerate(sents):
+        audio = _trim(_mms_wave(sent, lang), sr)
+        if k < len(sents) - 1:
+            audio = np.concatenate([audio, np.zeros(int(_pause_after(sent) * sr), dtype=np.float32)])
+        if first is None:
+            first = time.time() - t0
+        n += 1
+        total += len(audio) / sr
+        pcm = (np.clip(audio, -1, 1) * 32767).astype("<i2").tobytes()
+        yield {"sr": sr, "pcm": base64.b64encode(pcm).decode("ascii"), "audio_seconds": round(len(audio) / sr, 3),
+               "i": n, "first": n == 1, "engine": "mms-tts"}
+    yield {"done": True, "first_audio_seconds": round(first or 0, 3), "total_seconds": round(time.time() - t0, 3),
+           "audio_seconds": round(total, 3), "chunks": n, "engine": "mms-tts"}
+
+
+def _engine_for(lang: str, engine: str = "") -> str:
+    if engine == "supertonic" and ST is not None and lang in ST_LANGS:
+        return "supertonic"
+    if engine == "mms" and lang in MMS:
+        return "mms"
+    if engine == "parler":
+        return "parler"
+    if ST is not None and lang in ST_LANGS and lang not in ST_NOT_DEFAULT:
+        return "supertonic"
+    return "mms" if lang in MMS else "parler"
+
+
+def _st_stream(text: str, lang: str):
+    t0, n, total, first = time.time(), 0, 0.0, None
+    sents = _split_sentences(text) or [text]
+    for k, sent in enumerate(sents):
+        audio = _trim(ST.synth(sent, lang, steps=8, speed=ST_SPEED), ST.sr)
+        if k < len(sents) - 1:
+            audio = np.concatenate([audio, np.zeros(int(_pause_after(sent) * ST.sr), dtype=np.float32)])
+        first = first if first is not None else time.time() - t0
+        n += 1
+        total += len(audio) / ST.sr
+        pcm = (np.clip(audio, -1, 1) * 32767).astype("<i2").tobytes()
+        yield {"sr": ST.sr, "pcm": base64.b64encode(pcm).decode("ascii"), "audio_seconds": round(len(audio) / ST.sr, 3),
+               "i": n, "first": n == 1, "engine": "supertonic-3"}
+    yield {"done": True, "first_audio_seconds": round(first or 0, 3), "total_seconds": round(time.time() - t0, 3),
+           "audio_seconds": round(total, 3), "chunks": n, "engine": "supertonic-3"}
+
+
+def speak_stream(text: str, lang: str = "ne", description: str = "", engine: str = ""):
     """Yield {"sr", "pcm" (base64 int16 LE mono), ...} chunks; the last item has "done": true."""
     if not text or not text.strip():
         raise gr.Error("No text received.")
+    eng = _engine_for(lang, engine)
+    if eng == "supertonic":
+        yield from _st_stream(text, lang)
+        return
+    if eng == "mms":
+        yield from _mms_stream(text, lang)
+        return
     started = False
     try:
         for item in _speak_stream(text, lang, description, {}):
@@ -620,6 +793,12 @@ def tts_probe(opts_json: str = "{}") -> dict:
 def speak(text: str, lang: str = "ne", description: str = ""):
     if not text or not text.strip():
         raise gr.Error("No text received.")
+    if _engine_for(lang) == "supertonic":
+        audio = np.concatenate([ST.synth(s_, lang, speed=ST_SPEED) for s_ in (_split_sentences(text) or [text])])
+        return (ST.sr, audio), {"engine": "supertonic-3"}
+    if lang in MMS:
+        audio = np.concatenate([_mms_wave(s_, lang) for s_ in (_split_sentences(text) or [text])])
+        return (MMS[lang][1].config.sampling_rate, audio), {"engine": "mms-tts"}
     audio, stats = _speak_array(text, lang, description)
     return (TTS_SR, audio), stats
 
@@ -721,5 +900,61 @@ with gr.Blocks(title="Bayan voice worker", delete_cache=(600, 600)) as demo:
 
 demo.queue(default_concurrency_limit=1)  # one GPU job at a time
 
+# ---------------------------------------------------------------- fast HTTP API (no Gradio queue / upload / SSE)
+# Measured from the main app: /hear via gradio_client took ~2.8 s for 0.1 s of GPU work, and /speak_stream added
+# ~1-1.5 s before the first chunk. These plain routes skip the upload + queue + event-stream round trips.
+from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.responses import JSONResponse, StreamingResponse  # noqa: E402
+
+GPU_LOCK = threading.Lock()
+fast = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+
+
+@fast.post("/v1/hear")
+async def v1_hear(request: Request, sr: int = 48000, lang: str = "ne", doctor: str = "", role: str = ""):
+    """Body: raw mono int16 little-endian PCM at `sr` Hz. Returns the same dict as /hear."""
+    body = await request.body()
+    if not body:
+        return JSONResponse({"error": "empty audio"}, status_code=400)
+    pcm = np.frombuffer(body, dtype="<i2").astype(np.float32) / 32768.0
+    wav = torch.from_numpy(pcm).unsqueeze(0)
+
+    def run():
+        with GPU_LOCK:
+            return _hear_wave(wav, sr, lang, doctor, role)
+
+    import anyio  # noqa: PLC0415 - shipped with FastAPI
+    return JSONResponse(await anyio.to_thread.run_sync(run))
+
+
+@fast.post("/v1/speak_stream")
+async def v1_speak_stream(request: Request):
+    """Body: {"text", "lang", "description"}. Streams NDJSON: the same chunk dicts as /speak_stream."""
+    req = await request.json()
+    text, lang, desc = (req.get("text") or "").strip(), req.get("lang") or "ne", req.get("description") or ""
+    engine = req.get("engine") or ""
+    if not text:
+        return JSONResponse({"error": "empty text"}, status_code=400)
+
+    def gen():
+        if _engine_for(lang, engine) == "supertonic":  # CPU: no need to wait for the GPU
+            for item in speak_stream(text, lang, desc, engine):
+                yield json.dumps(item) + "\n"
+            return
+        with GPU_LOCK:
+            for item in speak_stream(text, lang, desc, engine):
+                yield json.dumps(item) + "\n"
+
+    return StreamingResponse(gen(), media_type="application/x-ndjson", headers={"Cache-Control": "no-store"})
+
+
+@fast.get("/v1/ping")
+def v1_ping():
+    return {"ok": True}
+
+
+app = gr.mount_gradio_app(fast, demo, path="/")
+
 if __name__ == "__main__":
-    demo.launch()
+    import uvicorn  # noqa: PLC0415
+    uvicorn.run(app, host="0.0.0.0", port=7860, log_level="warning")

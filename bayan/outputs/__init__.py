@@ -8,7 +8,12 @@ from __future__ import annotations
 
 LANG_NAMES = {
     "en": "English", "ar": "Arabic", "ne": "Nepali", "hi": "Hindi", "ur": "Urdu", "bn": "Bengali",
-    "ml": "Malayalam", "tl": "Filipino (Tagalog)", "ta": "Tamil", "te": "Telugu",
+    "ml": "Malayalam", "tl": "Filipino (Tagalog)", "ta": "Tamil", "te": "Telugu", "sw": "Swahili",
+    "ko": "Korean", "ja": "Japanese", "es": "Spanish", "fr": "French", "pt": "Portuguese", "id": "Indonesian",
+    "tr": "Turkish", "vi": "Vietnamese", "ru": "Russian", "uk": "Ukrainian", "de": "German", "it": "Italian",
+    "nl": "Dutch", "pl": "Polish", "ro": "Romanian", "el": "Greek", "cs": "Czech", "sk": "Slovak",
+    "hu": "Hungarian", "bg": "Bulgarian", "hr": "Croatian", "sl": "Slovenian", "sv": "Swedish", "da": "Danish",
+    "fi": "Finnish", "et": "Estonian", "lv": "Latvian", "lt": "Lithuanian",
 }
 
 EN_LABELS = {
@@ -21,6 +26,7 @@ EN_LABELS = {
     "avoid": "Do not take",
     "other": "Other instructions",
     "red_flags": "Call 999 or come back now if",
+    "emergency": "In an emergency, call 999.",
     "scan": "Scan to listen",
     "footer": "Translated by machine from your doctor's words. If anything is unclear, ask a nurse or doctor.",
     "date": "Date",
@@ -180,6 +186,17 @@ LABELS: dict[str, dict[str, str]] = {
 RTL_LANGS = {"ar", "ur", "fa", "ps"}
 
 
+# Machine-drafted sheet labels for the other languages (data/sheet_labels.json, generated once with gpt-oss-120b,
+# checked for 999/digits; a native speaker should still review them, like every patient-facing string).
+try:
+    import json as _json
+    from pathlib import Path as _Path
+
+    _EXTRA = _json.loads((_Path(__file__).resolve().parents[2] / "data" / "sheet_labels.json").read_text("utf-8"))
+except (OSError, ValueError):
+    _EXTRA = {}
+
+
 def labels(lang: str) -> dict[str, str]:
     """Native labels for a language (English for any missing key or unknown language)."""
-    return {**EN_LABELS, **LABELS.get(lang, {})}
+    return {**EN_LABELS, **_EXTRA.get(lang, {}), **LABELS.get(lang, {})}

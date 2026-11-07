@@ -1,10 +1,11 @@
 """Bayan AI · HF Space entry point.
 
-Ambient interpretation with FastRTC: no push-to-talk. Silero VAD finds the end of each utterance;
-bayan.consult hears, translates, runs the rule engine's prescription gate (held sentences) and speaks.
-The clinical brain (bayan.brain: rules, idiom lexicon, smolagents copilot, wrap-up agent) runs beside
-the talk loop; its cards reach the stage through the output pump. The UI is one static stage
-(bayan/ui.py) driven by JSON views pushed from Python.
+Tap-to-talk interpretation: the doctor taps the pearl (or presses Space), someone speaks, they tap
+again. The browser sends that one utterance as 16 kHz PCM; bayan.consult works out who spoke (voice
+worker), translates, runs the rule engine's prescription gate (held sentences) and streams the reply to the
+page's WebAudio player. The clinical brain (bayan.brain: rules, idiom lexicon, smolagents copilot, wrap-up agent)
+runs beside the talk loop; its cards reach the stage through a 1 s poll (gr.Timer -> consult.poll_render).
+The UI is one static stage (bayan/ui.py, bayan/web/) driven by JSON views from Python.
 
 Run: python app.py  (FastAPI + Gradio on 0.0.0.0:7860; GET /plan/<id> serves the patient's plan,
 GET /files/<token>/<name> the PDFs of one consultation)
@@ -12,11 +13,9 @@ GET /files/<token>/<name> the PDFs of one consultation)
 
 from __future__ import annotations
 
-import asyncio
-import hmac
+import base64
 import json
 import os
-import threading
 import time
 
 import gradio as gr
@@ -24,32 +23,14 @@ import numpy as np
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, Response
-from fastrtc import AdditionalOutputs, AlgoOptions, ReplyOnPause, SileroVadOptions, WebRTC, get_current_context
 
 from bayan import careplan, consult, talk, ui
+from bayan.brain import llm as brain_llm
 from bayan.consult import UI, Speech
 from bayan.outputs import retention
 
-ON_SPACES = bool(os.environ.get("SPACE_ID"))
-ACCESS_CODE = os.environ.get("BAYAN_ACCESS_CODE", "" if ON_SPACES else "local")
-if not ACCESS_CODE:
-    print("BAYAN_ACCESS_CODE is not set: nobody can enter (set the Space secret to open the access gate)", flush=True)
-TURN_KEYS = bool(os.environ.get("CLOUDFLARE_TURN_KEY_ID") and os.environ.get("CLOUDFLARE_TURN_KEY_API_TOKEN"))
-RTC_CONFIG, SERVER_RTC_CONFIG = None, None
-
-if ON_SPACES and TURN_KEYS:
-    # Our own Cloudflare TURN key. hf_token="" forces the Cloudflare-key path: FastRTC otherwise
-    # prefers HF's shared relay (turn.fastrtc.org), whose TLS certificate expired on 2026-10-05.
-    from fastrtc import get_cloudflare_turn_credentials, get_cloudflare_turn_credentials_async
-
-    async def RTC_CONFIG():  # noqa: N802 - called per browser connection
-        return await get_cloudflare_turn_credentials_async(hf_token="")
-
-    try:
-        SERVER_RTC_CONFIG = get_cloudflare_turn_credentials(hf_token="", ttl=86_400)  # Cloudflare rejected 360_000
-    except Exception as e:  # noqa: BLE001 - boot anyway and say why audio may not connect
-        RTC_CONFIG = None
-        print(f"TURN unavailable: {e}", flush=True)
+MAX_SECONDS = 60
+SR = 16000
 
 
 # ------------------------------------------------------------------ voice worker status (demo uses it)
@@ -69,51 +50,49 @@ def worker_up() -> bool:
     return up
 
 
-# ------------------------------------------------------------------ live audio turn (FastRTC handler)
-def _out(sess, ev):
-    if ev == UI:
-        return AdditionalOutputs(consult.render(sess))
-    return ev  # (sample_rate, int16 pcm)
-
-
-def turn(audio, *args):
-    sess = consult.find(args)
-    if sess is None:  # not past the access gate: ignore
-        return
-    if hasattr(audio, "audio"):  # WebRTCData wrapper
-        audio = audio.audio
-    sr, arr = audio
-    arr = np.asarray(arr).reshape(-1)
-    sess.webrtc_id = get_current_context().webrtc_id
-    sess.busy = True
+# ------------------------------------------------------------------ speech out (one clip at a time)
+def drain(sess, voice_on: bool = True):
+    """Speak everything queued for this visit, one clip after another. Only one generator speaks at a
+    time; anything queued meanwhile (Say it again, Slower) is picked up by the one already speaking."""
+    with sess.lock:
+        if sess.busy:
+            return
+        sess.busy = True
     try:
-        if arr.size >= int(0.3 * sr) and sess.screen == "live" and not sess.demo:
-            for ev in consult.process_audio(sess, sr, arr):
-                yield _out(sess, ev)
-        while sess.screen in ("consent", "live"):
+        while consult.SESS.get(sess.sid) is sess and sess.screen in ("consent", "live"):
             sp = consult.pop_pending(sess)
             if sp is None:
                 break
-            for ev in consult.speak_live(sess, sp):
-                yield _out(sess, ev)
-    except Exception as e:  # noqa: BLE001 - never kill the stream on one bad turn
-        print(f"[turn] {type(e).__name__}: {e}", flush=True)
-        sess.error = "Bayan could not process that. Please say it again."
-        yield AdditionalOutputs(consult.render(sess))
+            sess.processing = sess.processing or sp.kind != "consent"
+            yield consult.render(sess), gr.skip()
+            for ev in consult.speak_clip(sess, sp, voice_on):
+                if ev == UI:
+                    yield consult.render(sess), gr.skip()
+                else:
+                    yield consult.render(sess), (ev[1] if ev[1] is not None else gr.skip())
+            if consult.SESS.get(sess.sid) is not sess or sess.screen not in ("consent", "live"):
+                break
     finally:
-        sess.busy = False
+        with sess.lock:
+            sess.busy = False
+            sess.processing = False
+    yield consult.render(sess), gr.skip()
 
 
-def kick(sess):
-    """Run the stream handler now (speaks queued speech). Retried once: a trigger that lands while
-    a turn is finishing is cleared by ReplyOnPause.reset()."""
-    def _t():
-        h = mic.handlers.get(sess.webrtc_id) if sess.webrtc_id else None
-        if h is not None and hasattr(h, "trigger_response") and sess.pending and not sess.busy:
-            h.trigger_response()
-    _t()
-    threading.Timer(1.5, _t).start()
-    threading.Timer(4.0, _t).start()
+def _wait_idle(sess, timeout: float = 5.0) -> bool:
+    """A recording that started during the post-speech pause arrives while that pause is ending."""
+    t0 = time.time()
+    while sess.busy and time.time() - t0 < timeout:
+        time.sleep(0.05)
+    return not sess.busy
+
+
+def decode_pcm(p: dict) -> np.ndarray | None:
+    try:
+        a = np.frombuffer(base64.b64decode(p.get("pcm") or ""), dtype="<i2")
+    except Exception:  # noqa: BLE001
+        return None
+    return a[: MAX_SECONDS * SR] if a.size else None
 
 
 # ------------------------------------------------------------------ actions from the stage
@@ -128,33 +107,33 @@ def _base_url(request: gr.Request | None) -> str:
         return "http://127.0.0.1:7860"
 
 
-def _queue_consent(sess):
-    if sess.screen == "consent" and sess.consent_native and not sess.consent_queued and sess.webrtc_id and not sess.demo:
-        sess.consent_queued = True
-        sess.pending.append(Speech(sess.consent_native, sess.lang, "patient", False, consult.CONSENT_EN, kind="consent"))
-        kick(sess)
-
-
-def on_act(payload, webrtc_id, sid, request: gr.Request):
+def on_act(payload, _wid, sid, request: gr.Request):
     sess = consult.get(sid)
+    skip = gr.skip()
     if not payload or sess is None:
-        yield gr.skip(), gr.skip()
+        yield skip, skip
         return
     try:
         p = json.loads(payload)
     except json.JSONDecodeError:
-        yield gr.skip(), gr.skip()
+        yield skip, skip
         return
     act = p.get("act", "")
-    skip = gr.skip()
+    if act not in ("lang", "") and p.get("n") is not None:  # one action, one effect (never process a payload twice)
+        if p.get("n") == sess.last_n and act == sess.last_act:
+            yield skip, skip
+            return
+        sess.last_n, sess.last_act = p.get("n"), act
 
     def R():
         return consult.render(consult.SESS.get(sess.sid, sess))
 
     if act == "start" and sess.screen == "start":
         sess.lang = p.get("lang") if p.get("lang") in consult.LANGS else "ne"
+        if p.get("doc") in ("en", "ar"):
+            sess.doc_lang = p["doc"]
         sess.screen, sess.started_at, sess.error, sess.demo = "consent", time.time(), "", False
-        consult.begin(sess)
+        consult.begin(sess)  # a fresh brain consultation on the visit clock (doctor's language set above)
         sess.consent_native = consult._CONSENT.get(sess.lang, "")
         yield R(), skip
         if not sess.consent_native:
@@ -164,26 +143,58 @@ def on_act(payload, webrtc_id, sid, request: gr.Request):
                 print(f"[consent] {e}", flush=True)
                 sess.consent_native = consult.CONSENT_EN
             yield R(), skip
-        _queue_consent(sess)
-    elif act == "connected":
-        if isinstance(webrtc_id, str) and webrtc_id:
-            sess.webrtc_id = webrtc_id
-        elif not sess.webrtc_id:  # fallback: the one live connection no other tab has claimed
-            claimed = {s.webrtc_id for s in consult.SESS.values() if s is not sess}
-            free = [k for k in list(mic.connections) if k not in claimed]
-            if len(free) == 1:
-                sess.webrtc_id = free[0]
-        print(f"[connected] sid={sess.sid[:6]} webrtc={(sess.webrtc_id or '')[:8]}", flush=True)
-        sess.error = ""
-        _queue_consent(sess)
+        sess.pending.append(Speech(sess.consent_native, sess.lang, "patient", False, kind="consent"))
+        yield from drain(sess)
+    elif act == "settle_skip":  # a tap or key during the 3 s pause after Bayan spoke: move on now
+        sess.settle_cancel = True
+        yield skip, skip
+    elif act == "audio":
+        sess.audio_ack = p.get("n")  # the page unlocks the pearl only once it sees this id (never on unrelated renders)
+        ok = sess.screen == "live" and not sess.demo and not sess.held and not sess.confirm and _wait_idle(sess)
+        pcm = decode_pcm(p) if ok else None
+        if not ok:
+            yield R(), skip
+            return
+        if pcm is None or pcm.size < int(0.4 * SR):
+            consult.notify(sess, consult.NOT_CAUGHT)
+            yield R(), skip
+            return
+        print(f"[audio] sid={sess.sid[:6]} {pcm.size / SR:.1f}s", flush=True)
+        sess.processing, sess.error = True, ""
         yield R(), skip
-    elif act == "mic_failed" and sess.screen in ("consent", "live") and not sess.demo:
-        sess.error = "Microphone not connected. Allow the microphone and start again."
+        try:
+            for _ in consult.process_audio(sess, SR, pcm, p.get("speaker", "")):
+                yield R(), skip
+        except Exception as e:  # noqa: BLE001
+            print(f"[audio] {type(e).__name__}: {e}", flush=True)
+            sess.error = "err_process"
+        sess.processing = bool(sess.pending)
         yield R(), skip
+        yield from drain(sess)
+    elif act in ("confirm_other", "confirm_keep") and sess.confirm and not sess.busy:
+        try:
+            for _ in consult.resolve_confirm(sess, act == "confirm_other"):
+                yield R(), skip
+        except Exception as e:  # noqa: BLE001
+            print(f"[confirm] {type(e).__name__}: {e}", flush=True)
+            sess.error = "err_process"
+        sess.processing = bool(sess.pending)
+        yield R(), skip
+        yield from drain(sess)
+    elif act == "doclang" and sess.screen == "start":
+        if p.get("id") in ("en", "ar"):
+            sess.doc_lang = p["id"]
+        yield R(), skip
+    elif act == "home":  # the wordmark: drop the visit, keep the doctor's language
+        if p.get("lang") in ("en", "ar"):
+            sess.doc_lang = p["lang"]
+        consult.reset(sess)
+        yield R(), ""
     elif act == "consent_yes" and sess.screen == "consent":
         sess.screen, sess.live, sess.tint, sess.error = "live", "idle", "n", ""
         sess.pending.clear()
         consult.record_consent(sess)
+        consult.set_turn(sess, "doctor")  # the doctor speaks first
         yield R(), skip
     elif act in ("consent_no", "new"):
         consult.reset(sess)
@@ -193,22 +204,27 @@ def on_act(payload, webrtc_id, sid, request: gr.Request):
         for _ in consult.end_visit(sess, _base_url(request)):
             yield R(), skip
     elif act == "approve" and sess.screen == "review":
-        for _ in consult.approve(sess, p.get("text", ""), p.get("note")):
+        for _ in consult.approve(sess, p.get("text", ""), None, force=bool(p.get("force"))):
             yield R(), skip
-    elif act == "ask" and sess.screen == "live" and not sess.demo:
-        if consult.ask_suggestion(sess, p.get("id", "")):
-            yield R(), skip
-            kick(sess)
+    elif act == "ask" and sess.screen == "live" and not sess.demo and not sess.busy:
+        sess.processing = True
+        yield R(), skip
+        try:
+            consult.ask_suggestion(sess, p.get("id", ""))
+        except Exception as e:  # noqa: BLE001
+            print(f"[ask] {type(e).__name__}: {e}", flush=True)
+            sess.error = "err_ask"
+        yield from drain(sess)
     elif act == "held_else" and sess.held:
         consult.held_else(sess)
         yield R(), skip
     elif act == "held_anyway" and sess.held and not sess.demo:
         consult.held_anyway(sess)
         yield R(), skip
-        kick(sess)
+        yield from drain(sess)
     elif act in ("again", "slower") and sess.screen == "live" and not sess.demo:
         consult.again(sess, slow=act == "slower")
-        kick(sess)
+        yield from drain(sess)
     elif act == "demo" and sess.screen == "start":
         yield from run_demo(sess)
     else:
@@ -229,11 +245,11 @@ def run_demo(sess):
         return consult.render(s)
 
     def say(sp):
-        for ev in consult.speak_demo(s, sp, voice):
+        for ev in consult.speak_clip(s, sp, voice):
             if ev == UI:
                 yield R(), gr.skip()
             else:
-                yield gr.skip(), ev[1]
+                yield R(), (ev[1] if ev[1] is not None else gr.skip())
 
     def speak_pending():
         while alive() and s.screen == "live":
@@ -295,26 +311,40 @@ def run_demo(sess):
                         yield R(), gr.skip()
     except Exception as e:  # noqa: BLE001
         print(f"[demo] {type(e).__name__}: {e}", flush=True)
-        s.error = "The demo hit a problem. Please try again."
+        s.error = "err_demo"
         yield R(), gr.skip()
 
 
-# ------------------------------------------------------------------ access gate
-def on_gate(payload, _sid=None):
-    nothing = (gr.skip(),) * 5
-    try:
-        p = json.loads(payload or "{}")
-    except json.JSONDecodeError:
-        return nothing
-    if p.get("act") != "unlock":
-        return nothing
-    code = (p.get("code") or "").strip()
-    ok = bool(ACCESS_CODE) and hmac.compare_digest(code.encode(), ACCESS_CODE.encode())
-    if not ok:
-        time.sleep(0.8)  # slow down guessing
-        return gr.skip(), gr.skip(), gr.skip(), gr.skip(), ui.gate_html(error=True)
+# ------------------------------------------------------------------ warm-up (first calls are 2-4 s slower)
+def _warm_up():
+    import threading as _th
+
+    def ping(name, fn):
+        try:
+            t0 = time.time(); fn(); print(f"[warm] {name} {time.time() - t0:.2f}s", flush=True)
+        except Exception as e:  # noqa: BLE001
+            print(f"[warm] {name} failed: {type(e).__name__}: {e}", flush=True)
+
+    def run():
+        # Keep the LLM connection warm (a cold call costs ~3 s). Ping the GPU worker only while the app is in use
+        # (a session touched in the last 15 min), so the keep-warm never keeps the GPU awake on its own.
+        while True:
+            ping("llm", lambda: brain_llm.chat_text("Reply with ok.", "ok", max_tokens=8))
+            recent = any(time.time() - getattr(x, "touched", 0) < 900 for x in list(consult.SESS.values()))
+            if recent:
+                ping("worker", lambda: talk.http().get("/v1/ping", timeout=60))
+            time.sleep(50)
+
+    _th.Thread(target=run, daemon=True).start()
+
+
+_warm_up()
+
+
+# ------------------------------------------------------------------ session start (no access gate)
+def on_load():
     sid = consult.new_sid()
-    return gr.update(visible=False), gr.update(visible=True), sid, consult.render(consult.SESS[sid]), gr.skip()
+    return sid, consult.render(consult.SESS[sid])
 
 
 # ------------------------------------------------------------------ UI
@@ -327,71 +357,28 @@ with gr.Blocks(title="Bayan", head=ui.HEAD, theme=THEME, fill_width=True, analyt
     sid_box = gr.Textbox(visible=False)
     act_box = gr.Textbox(visible=False)
     wid_box = gr.Textbox(visible=False)
-    with gr.Column(visible=True) as gate_col:
-        gate = gr.HTML(ui.gate_html(), padding=False)
-    with gr.Column(visible=False) as app_col:  # WebRTC is not on the page until the gate is passed
+    with gr.Column(visible=True) as app_col:
         stage = gr.HTML(ui.STAGE_HTML, padding=False)
         state_html = gr.HTML("", elem_id="bayan-state", padding=False)
-        mic = WebRTC(
-            elem_id="mic", show_label=False, mode="send-receive", modality="audio",
-            rtc_configuration=RTC_CONFIG, server_rtc_configuration=SERVER_RTC_CONFIG, full_screen=False,
-            button_labels={"start": "Bayan start", "stop": "Bayan stop", "waiting": "Bayan connecting"},
-        )
-        demo_audio = gr.Audio(type="numpy", autoplay=True, elem_id="demo-audio", show_label=False,
-                              interactive=False, streaming=False)
+        # Bayan's voice: TTS chunks as base64 PCM, appended per chunk; the page plays them gaplessly with
+        # WebAudio. (gr.Audio(streaming=True) transcodes every chunk with ffmpeg; this has no gaps or extra hop.)
+        voice_html = gr.HTML("", elem_id="bayan-voice", padding=False)
 
-    gate.click(on_gate, inputs=[act_box, sid_box], outputs=[gate_col, app_col, sid_box, state_html, gate],
-               js=ui.GATE_INPUTS_JS, show_progress="hidden", concurrency_limit=None,
-               trigger_mode="multiple")
-    # Don't pass the WebRTC component as an input: before it connects its value is None and fastrtc's
-    # preprocess raises "'NoneType' object has no attribute 'root'". on_act maps the connection itself.
-    stage.click(on_act, inputs=[act_box, wid_box, sid_box], outputs=[state_html, demo_audio],
+    demo.load(on_load, inputs=None, outputs=[sid_box, state_html], show_progress="hidden")
+
+    # Copilot cards arrive from the background think run (and timer rules re-fire): poll once a second while the
+    # visit is live and push a fresh view only when the brain's cards (or their Arabic translations) changed.
+    cards_timer = gr.Timer(1.0)
+
+    def poll_cards(sid):
+        html = consult.poll_render(consult.SESS.get(sid) if isinstance(sid, str) else None)
+        return html if html is not None else gr.skip()
+
+    cards_timer.tick(poll_cards, inputs=[sid_box], outputs=[state_html], show_progress="hidden",
+                     concurrency_limit=None, trigger_mode="always_last")
+    stage.click(on_act, inputs=[act_box, wid_box, sid_box], outputs=[state_html, voice_html],
                 js=ui.STAGE_INPUTS_JS, show_progress="hidden", concurrency_limit=None,
                 trigger_mode="multiple")
-
-    mic.stream(
-        ReplyOnPause(
-            turn,
-            can_interrupt=False,  # don't listen to our own voice while speaking
-            algo_options=AlgoOptions(audio_chunk_duration=0.6, started_talking_threshold=0.2, speech_threshold=0.1),
-            model_options=SileroVadOptions(threshold=0.5, min_silence_duration_ms=600),
-        ),
-        inputs=[mic, sid_box],
-        outputs=[mic],
-        time_limit=3600,
-        concurrency_limit=6,  # FastRTC default is ONE connection server-wide
-    )
-
-    async def pump(webrtc_id):
-        """Long-lived: forwards every AdditionalOutputs from the handler to the stage, and re-renders when the
-        brain's copilot posts cards in the background (polled every 0.5 s between handler outputs).
-        (on_additional_outputs(queue=False) stops updating after a few turns in this version pair.)"""
-        if hasattr(webrtc_id, "webrtc_id"):
-            webrtc_id = webrtc_id.webrtc_id
-        if not webrtc_id:
-            return
-        outputs = mic.output_stream(webrtc_id).__aiter__()
-        nxt = asyncio.ensure_future(outputs.__anext__())
-        try:
-            while True:
-                done, _ = await asyncio.wait({nxt}, timeout=0.5)
-                if nxt in done:
-                    try:
-                        out = nxt.result()
-                    except StopAsyncIteration:
-                        return
-                    yield out.args[0]
-                    nxt = asyncio.ensure_future(outputs.__anext__())
-                    continue
-                sess = next((x for x in list(consult.SESS.values()) if x.webrtc_id == webrtc_id), None)
-                html = await asyncio.to_thread(consult.poll_render, sess) if sess is not None else None
-                if html is not None:
-                    yield html
-        finally:
-            nxt.cancel()
-
-    mic.state_change(pump, inputs=[mic], outputs=[state_html], queue=True, concurrency_limit=None,
-                     show_progress="hidden", trigger_mode="once")
 
 
 # ------------------------------------------------------------------ FastAPI: patient plan page + Gradio
@@ -409,7 +396,8 @@ def plan_page(pid: str):
 
 @app.get("/files/{token}/{name}")
 def files(token: str, name: str):
-    """A consultation's PDFs (and care-plan audio) by unguessable token; only whitelisted names, no paths."""
+    """A consultation's PDFs (and care-plan audio) by unguessable token; only whitelisted names, no paths.
+    inline + filename: iOS Safari and Android Chrome open the PDF viewer (with save/share)."""
     got = careplan.open_file(token, name)
     if got is None:
         return HTMLResponse("Not found", status_code=404, headers=PRIVATE)

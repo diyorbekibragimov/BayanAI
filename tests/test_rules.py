@@ -356,7 +356,7 @@ def test_check_prescription_only_reports_rules_involving_the_candidate(engine):
 
 # ============================================================================ engine semantics
 def test_engine_loads_all_rules_and_every_node_is_evaluable(engine):
-    assert len(engine.rules) == 81
+    assert len(engine.rules) == 82
     assert engine.unevaluable == []
 
 
@@ -530,9 +530,9 @@ def test_work_chest_04_requires_chest_symptom(engine):
     assert "kabag" in f["message"] and f["key"] == "WORK-CHEST-04|tgl-002"
     merge_delta(st, {"investigations": ["ecg"]})
     assert "WORK-CHEST-04" not in ids(engine.evaluate(st, 1))
-    # the JSON keeps its formatting: 2-space indent, CRLF, non-ASCII unescaped
-    text = RULES_PATH.read_bytes()
-    assert text == json.dumps(raw, indent=2, ensure_ascii=False).replace("\n", "\r\n").encode("utf-8")
+    # the JSON keeps its formatting: 2-space indent, non-ASCII unescaped (line endings depend on git's autocrlf)
+    text = RULES_PATH.read_bytes().replace(b"\r\n", b"\n")
+    assert text.rstrip(b"\n") == json.dumps(raw, indent=2, ensure_ascii=False).encode("utf-8")
 
 
 # ============================================================================ merge semantics

@@ -28,6 +28,24 @@ from .outputs import RTL_LANGS, labels
 from .web import fill, read
 
 PLAN_TTL = 24 * 3600
+# Links on the patient's page are absolute to the Space's public URL (a phone opens them from the QR page).
+PUBLIC_BASE = f"https://{os.environ['SPACE_HOST']}" if os.environ.get("SPACE_HOST") else ""
+DOWNLOAD = {"ne": "PDF डाउनलोड गर्नुहोस्", "hi": "PDF डाउनलोड करें", "ur": "PDF ڈاؤن لوڈ کریں", "bn": "PDF ডাউনলোড করুন",
+            "ml": "PDF ഡൗൺലോഡ് ചെയ്യുക", "tl": "I-download ang PDF", "ta": "PDF பதிவிறக்கவும்", "sw": "Pakua PDF",
+            "ar": "تنزيل ملف PDF"}
+
+
+from .langs import MORE as _MORE  # noqa: E402 - the "More…" languages bring their own button text
+
+DOWNLOAD.update({code: v["download"] for code, v in _MORE.items()})
+
+
+def download_button(pdf_url: str, lang: str) -> str:
+    """A big "Download PDF" button: the patient's language first, English beneath."""
+    native = DOWNLOAD.get(lang, "")
+    d = " dir='rtl'" if lang in RTL_LANGS or lang == "ar" else ""
+    inner = (f"<span lang='{lang}'{d}>{_e(native)}</span><small>Download PDF</small>" if native else "Download PDF")
+    return f"<p><a class='btn' href='{_e(pdf_url)}' download='care_plan.pdf' type='application/pdf'>{inner}</a></p>"
 PLANS: dict[str, dict] = {}
 FILES: dict[str, dict] = {}   # token -> {"dir": Path, "names": set, "blobs": {name: bytes}, "expires": float}
 _LOCK = threading.Lock()
@@ -78,6 +96,49 @@ def plan_text(plan: dict) -> str:
     if not plan.get("red_flags"):
         out.append(f"- Call {plan.get('emergency') or '999'}.")
     return "\n".join(out).strip()
+
+
+# ------------------------------------------------------------------ doctor edits (the doctor gives the plan)
+TRANSLATE_PLAN_SYSTEM = """Translate this patient care plan faithfully into {lang}, in its native script.
+Keep the same layout: one item per line, headings on their own lines, blank lines kept, lines starting with "- " kept.
+Keep every drug name recognisable and every number, dose, unit and frequency exact, written with Western digits.
+Use simple everyday words. Return only the translation."""
+
+LOCALIZE_PLAN_SYSTEM = """This care plan text mixes English lines with lines in the patient's language. Rewrite ONLY the
+English parts into formal Modern Standard Arabic for the doctor; copy every line that is in another language unchanged.
+Keep the layout, the "- " bullets, every drug name (Arabic script as Gulf doctors write it), every number, dose, unit and
+frequency exactly, with Western digits. Return only the text."""
+
+
+def translate_plan(text: str, lang: str) -> str:
+    """The doctor's own plan text in another language (patient's language, or Arabic for the doctor)."""
+    from .brain import llm
+    from .talk import LANG_NAMES
+    if not (text or "").strip() or lang == "en":
+        return text
+    return llm.chat_text(TRANSLATE_PLAN_SYSTEM.format(lang=LANG_NAMES.get(lang, lang)), text, max_tokens=2500).strip()
+
+
+def plan_text_for(plan: dict, doc_lang: str) -> str:
+    """plan_text() for the doctor's language: English review lines become Arabic in Arabic mode."""
+    from .brain import llm
+    text = plan_text(plan)
+    if doc_lang != "ar" or not text.strip():
+        return text
+    try:
+        out = llm.chat_text(LOCALIZE_PLAN_SYSTEM, text, max_tokens=2500).strip()
+        return out or text
+    except Exception as e:  # noqa: BLE001 - the English review text is still correct
+        print(f"[plan ar] {type(e).__name__}: {e}", flush=True)
+        return text
+
+
+def set_text(pid: str, doc_text: str, native_text: str, doc_lang: str) -> None:
+    """The doctor edited the plan: their text (and its translation) replaces the structured plan on /plan."""
+    with _LOCK:
+        rec = PLANS.get(pid)
+        if rec:
+            rec.update(text_doc=doc_text, text_native=native_text, doc_lang=doc_lang, edited=True)
 
 
 # ------------------------------------------------------------------ store
@@ -261,7 +322,7 @@ def _plan_html(plan: dict, pdf_url: str | None) -> str:
         parts.append(f"<section class='card'>{head('other')}{items(other)}</section>")
     parts.append(f"<section class='card'>{head('red_flags', red=True)}{items(plan.get('red_flags') or [])}</section>")
     if pdf_url:
-        parts.append(f"<p><a class='btn' href='{_e(pdf_url)}' download='care_plan.pdf'>Download PDF</a></p>")
+        parts.append(download_button(pdf_url, lang))
     parts.append("<p class='foot'>From your visit today. This page is private and is deleted after 24 hours.</p>")
     return "".join(parts)
 
@@ -273,8 +334,38 @@ def page_html(pid: str) -> tuple[int, str]:
     if not rec["approved"]:
         return 200, _page(_PENDING, "en")
     token = rec.get("token")
-    pdf_url = f"/files/{token}/care_plan.pdf" if token and open_file(token, "care_plan.pdf") else None
+    pdf_url = f"{PUBLIC_BASE}/files/{token}/care_plan.pdf" if token and open_file(token, "care_plan.pdf") else None
+    if rec.get("edited"):
+        return 200, _page(_text_html(rec, pdf_url), rec["lang"])
     return 200, _page(_plan_html(rec["plan"], pdf_url), rec["lang"])
+
+
+def _text_sections(text: str, lang: str) -> str:
+    d = " dir='rtl'" if lang in RTL_LANGS or lang == "ar" else " dir='auto'"
+    out = []
+    for block in re.split(r"\n\s*\n", (text or "").strip()):
+        lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
+        if not lines:
+            continue
+        items = "".join(f"<li>{_e(ln[2:].strip())}</li>" for ln in lines if ln.startswith(("- ", "• ", "* ")))
+        paras = "".join(f"<p>{_e(ln)}</p>" for ln in lines if not ln.startswith(("- ", "• ", "* ")))
+        out.append(f"<section lang='{lang}'{d}>{paras}{f'<ul>{items}</ul>' if items else ''}</section>")
+    return "".join(out)
+
+
+def _text_html(rec: dict, pdf_url: str | None) -> str:
+    """A plan the doctor wrote or corrected: the patient's language first, then the doctor's own words."""
+    lang, dl = rec["lang"], rec.get("doc_lang", "en")
+    L = labels(lang)
+    parts = [f"<h1 lang='{lang}'>{_e(L['title'])}</h1>"]
+    if rec.get("text_native") and lang != dl:
+        parts.append(_text_sections(rec["text_native"], lang))
+        parts.append(f"<p class='h1en'>{'العربية' if dl == 'ar' else 'English'}</p>")
+    parts.append(_text_sections(rec.get("text_doc") or "", dl))
+    if pdf_url:
+        parts.append(download_button(pdf_url, lang))
+    parts.append("<p class='foot'>From your visit today. This page is private and is deleted after 24 hours.</p>")
+    return "".join(parts)
 
 
 def _page(body: str, lang: str) -> str:

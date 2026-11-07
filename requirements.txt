@@ -1,4 +1,3 @@
-fastrtc[vad]==0.0.34
 soundfile
 numpy
 segno==1.6.6

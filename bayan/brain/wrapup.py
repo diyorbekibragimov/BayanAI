@@ -1057,7 +1057,7 @@ def _md_and_txt(consult: Consultation, sec: dict[str, list[str]], tabs: dict, fa
         "plan": sec.get("plan", []),
         "medication_changes": [_med_change_line(m) for m in tabs["med_changes"]],
         "information_given": list(sec.get("information_given", [])) +
-                             [f"Care plan given in {lang} (printed/WhatsApp)."],
+                             [f"Care plan given in {LANG_NAME(lang)} (QR code to the plan page and PDF)."],
         "safety_alerts": list(tabs["safety_alerts"]),
     }
     md = ["# Consultation note", "", head, ""]
@@ -1659,9 +1659,6 @@ def render_outputs(consult: Consultation, note_md: str, plan: dict, speak_fn: Ca
     except Exception as e:  # noqa: BLE001
         res["audio_wav"] = None
         warns.append(f"Audio failed: {e}")
-    if res["audio_wav"] is None and plan.get("lang") != "en":
-        warns.append(f"Audio not available for {plan.get('lang_name', plan.get('lang'))} — explain verbally or call "
-                     "an interpreter.")
     res["pdf_url"] = f"{base}/care_plan.pdf" if base else None
     res["audio_url"] = f"{base}/care_plan.wav" if base and res["audio_wav"] else None
     if clinic:

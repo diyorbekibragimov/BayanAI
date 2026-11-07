@@ -23,7 +23,7 @@ QUESTION = "Is there sweating, breathlessness, nausea, or pain going to the arm,
 DEMO_TR = {
     "Do you have any allergies to medicines?": {
         "translation": "के तपाईंलाई कुनै औषधिको एलर्जी छ?", "drugs": [], "allergies": [], "tests": []},
-    "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर सुन्नियो।": {
+    "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर फुलेर आयो।": {
         "translation": "Once, when I had a penicillin injection, my body swelled up.",
         "english": "Once, when I had a penicillin injection, my body swelled up.",
         "drugs": [{"name": "penicillin", "intent": "mention"}],
@@ -125,6 +125,11 @@ def _new():
     return s
 
 
+
+def _to_patient(s):
+    """Speech queued for the patient. (The patient's own words are also read to the doctor: to="doctor".)"""
+    return [p.kind for p in s.pending if p.to == "patient"]
+
 def _say(s, role, text):
     return list(consult.process_text(s, role, text, "en" if role == "doctor" else "ne"))
 
@@ -153,17 +158,18 @@ def test_translate_uses_schema_context_and_normalises_intent():
 
 def test_actually_no_amoxicillin_is_not_held():
     s = _new()
-    _say(s, "patient", "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर सुन्नियो।")
+    _say(s, "patient", "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर फुलेर आयो।")
     assert s.brain.state["allergies"][0]["substance"] == "penicillin"
     _say(s, "doctor", "Actually, no amoxicillin.")
     assert s.held is None and s.live == "doctor"
-    assert [p.kind for p in s.pending] == ["turn"]          # spoken to the patient
+    assert _to_patient(s) == ["turn"]                        # spoken to the patient
+    assert [(p.to, p.lang) for p in s.pending if p.to == "doctor"] == [("doctor", "en")]  # the patient's words, to the doctor
     assert not any(c["severity"] == "critical" for c in s.brain.cards.all_cards())
 
 
 def test_penicillin_allergy_holds_amoxicillin_and_say_something_else_discards_it():
     s = _new()
-    _say(s, "patient", "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर सुन्नियो।")
+    _say(s, "patient", "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर फुलेर आयो।")
     _say(s, "doctor", "Amoxicillin 500 three times a day, and you can go home.")
     h = s.held
     assert s.live == "held" and h["rule"] == "ALG-PEN-01" and h["drug"] == "amoxicillin"
@@ -171,11 +177,11 @@ def test_penicillin_allergy_holds_amoxicillin_and_say_something_else_discards_it
     assert "penicillin injection" in h["pq"] and h["dq"].startswith("Amoxicillin 500")
     v = _view(s)
     assert {k: v["held"][k] for k in ("headline", "pq", "drug", "rule")} == {k: h[k] for k in ("headline", "pq", "drug", "rule")}
-    assert not s.pending                                     # nothing spoken
+    assert not _to_patient(s)                                # nothing spoken to the patient
     turn = s.brain.turn_by_id(h["utt"])
     assert turn.held and any(m["drug"] == "amoxicillin" for m in s.brain.state["prescribed_meds"])
     consult.held_else(s)
-    assert s.held is None and s.live == "idle" and not s.pending
+    assert s.held is None and s.live == "idle" and not _to_patient(s)
     assert turn.kind == "system" and turn.held               # discarded: never interpreted, never extracted
     assert not any(m["drug"] == "amoxicillin" for m in s.brain.state["prescribed_meds"])
     card = s.brain.cards.get(h["cards"][0])
@@ -185,11 +191,11 @@ def test_penicillin_allergy_holds_amoxicillin_and_say_something_else_discards_it
 
 def test_speak_it_anyway_is_an_audited_override():
     s = _new()
-    _say(s, "patient", "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर सुन्नियो।")
+    _say(s, "patient", "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर फुलेर आयो।")
     _say(s, "doctor", "Amoxicillin 500 three times a day, and you can go home.")
     h = s.held
     consult.held_anyway(s)
-    assert s.held is None and [p.kind for p in s.pending] == ["override"]
+    assert s.held is None and _to_patient(s) == ["override"]
     assert s.brain.cards.get(h["cards"][0])["status"] == "overridden"
     assert any(a["action"] == "override" and a["reason"] == "spoken anyway by clinician" for a in s.brain.audit)
     assert not s.brain.turn_by_id(h["utt"]).held             # it was interpreted after all
@@ -211,7 +217,7 @@ def test_idiom_turn_gives_explanation_and_red_flag_first_suggestion_from_cards()
     assert s.brain.cards.get(sug["id"])["status"] == "accepted"
     t = s.brain.turns[-1]
     assert (t.role, t.kind, t.text) == ("bayan", "ask", QUESTION) and t.translation
-    assert [p.kind for p in s.pending] == ["ask"]
+    assert _to_patient(s) == ["ask"]
     assert _view(s)["badge"] == 0 and not consult.ask_suggestion(s, sug["id"])   # asked once
 
 
@@ -274,7 +280,7 @@ def test_end_visit_produces_pdfs_and_plan_page_from_the_structured_plan():
     pid = r["plan_id"]
     code, body = careplan.page_html(pid)
     assert code == 200 and "almost ready" in body                       # not before approval
-    token = r["patient_pdf"].split("/")[2]
+    token = r["patient_pdf"].split("/files/")[1].split("/")[0]   # links are absolute (phones open them)
     assert careplan.open_file(token, "care_plan.pdf")[0][:5] == b"%PDF-"
     assert careplan.open_file(token, "doctor_report.pdf") is None       # the patient token cannot reach it
 
@@ -289,7 +295,7 @@ def test_end_visit_produces_pdfs_and_plan_page_from_the_structured_plan():
     assert "almost ready" not in body and "<script" not in body
 
     # session reset erases the consultation (folder, doctor token); the approved patient PDF stays with the plan
-    dtoken = r["doctor_pdf"].split("/")[2]
+    dtoken = r["doctor_pdf"].split("/files/")[1].split("/")[0]
     folder = __import__("pathlib").Path(out["out_dir"])
     consult.reset(s)
     assert not folder.exists() and careplan.open_file(dtoken, "doctor_report.pdf") is None

@@ -1,13 +1,20 @@
-
-<div class="bz-frame" id="bayan">
+<style>.bz-frame{position:fixed;left:0;top:0;width:1280px;height:800px;overflow:hidden;transform-origin:0 0}</style>
+<div class="bz-frame" id="bayan" style="visibility:hidden">
   <div id="bz-glow" aria-hidden="true">{glow}</div>
   <div id="bz-rings" aria-hidden="true"><span class="ring"></span><span class="ring r2"></span><span class="ring r3"></span></div>
 
-  <div id="bz-wordmark">{wordmark}</div>
+  <button type="button" id="bz-wordmark" data-act="home" data-ta="home_aria" aria-label="Go to home">{wordmark}</button>
+  <div id="bz-confirm" role="alertdialog" aria-modal="false" aria-labelledby="bz-confirm-q">
+    <p id="bz-confirm-q" data-t="home_q" style="font-size:16px;font-weight:500;line-height:1.4">End this consultation and start over?</p>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button type="button" id="bz-confirm-yes" data-act="home_yes" data-t="home_yes" style="height:44px;padding:0 18px;border-radius:14px;border:none;background:#173430;color:#FFFFFF;font-size:15px;font-weight:500">Start over</button>
+      <button type="button" data-act="home_no" data-t="home_no" style="height:44px;padding:0 18px;border-radius:14px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;font-size:15px">Keep going</button>
+    </div>
+  </div>
 
   <div id="bz-hright">
     <span id="bz-clock" style="font-size:15px;color:#5B6B69;font-variant-numeric:tabular-nums">0:00</span>
-    <button type="button" data-act="end" style="height:44px;padding:0 20px;border-radius:14px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;font-size:15px;font-weight:500">End consultation</button>
+    <button type="button" data-act="end" data-t="end_btn" style="height:44px;padding:0 20px;border-radius:14px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;font-size:15px;font-weight:500">End consultation</button>
   </div>
 
   <div id="bz-status">
@@ -16,55 +23,68 @@
     </div>
     <p id="bz-st-title" style="font-size:22px;font-weight:500">Ready</p>
     <p id="bz-st-sub" style="margin-top:6px;font-size:15px;line-height:1.5;color:#5B6B69"></p>
+    <div id="bz-spk" class="segs" role="radiogroup" data-ta="spk_aria" aria-label="Who is speaking" style="margin-top:16px">
+      <button type="button" class="seg" data-act="spk" data-id="doctor" role="radio" data-t="spk_doctor">Doctor</button>
+      <button type="button" class="seg" data-act="spk" data-id="patient" role="radio" data-t="spk_patient">Patient</button>
+    </div>
+  </div>
+
+  <div id="bz-doclang" class="segs" role="radiogroup" data-ta="doclang_aria" aria-label="Doctor’s language">
+    <button type="button" class="seg" data-act="doclang" data-id="en" role="radio" lang="en">English</button>
+    <button type="button" class="seg" data-act="doclang" data-id="ar" role="radio" lang="ar">العربية</button>
   </div>
 
   <section id="L-start">
-    <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:640px">
-      <h1 style="font-size:36px;font-weight:600;line-height:1.2">New consultation</h1>
-      <p style="font-size:18px;line-height:1.5;color:#5B6B69">Choose the language the patient speaks. Bayan listens from here on, so nobody needs to press anything.</p>
+    <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:22px;max-width:680px">
+      <h1 data-t="start_title" style="font-size:36px;font-weight:600;line-height:1.2">New consultation</h1>
+      <p data-t="start_sub" style="font-size:18px;line-height:1.5;color:#5B6B69">Choose the language the patient speaks.</p>
       <div id="bz-chips" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
-        {chip_ne}
-        {chip_hi}
-        {chip_ur}
-        {chip_bn}
-        {chip_ml}
-        {chip_tl}
+        {chips}
       </div>
       <div style="display:flex;align-items:center;gap:18px">
-        <button type="button" data-act="start" class="btn-dark">Start consultation</button>
-        <button type="button" data-act="demo" class="link">Play demo</button>
+        <button type="button" data-act="start" class="btn-dark" data-t="start_btn">Start consultation</button>
       </div>
     </div>
   </section>
 
+  <aside id="bz-more" role="dialog" aria-modal="false" aria-labelledby="bz-more-title">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-block:16px 12px;padding-inline:22px 12px">
+      <span id="bz-more-title" data-t="more_title" style="font-size:17px;font-weight:600;color:#173430">More languages</span>
+      <button type="button" data-act="more-close" data-ta="more_close" aria-label="Close" style="width:44px;height:44px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center">{svg_close}</button>
+    </div>
+    <div style="padding:0 22px 12px"><input id="bz-more-q" type="search" autocomplete="off" spellcheck="false" data-tp="more_search" placeholder="Search languages" aria-label="Search languages"></div>
+    <div id="bz-more-list" role="listbox" aria-labelledby="bz-more-title"></div>
+    <p id="bz-more-none" data-t="more_none" style="display:none;padding:12px 22px;font-size:15px;color:#5B6B69">No language matches.</p>
+  </aside>
+
   <section id="L-consent">
     <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:18px;max-width:690px">
-      <span class="lbl" style="color:#0E8A6F">Bayan is saying to the patient</span>
+      <span class="lbl" data-t="consent_label" style="color:#0E8A6F">Bayan is saying to the patient</span>
       <p id="bz-consent-native" dir="auto" style="line-height:1.6;font-weight:500"></p>
-      <p id="bz-consent-en" style="font-size:17px;line-height:1.5;color:#5B6B69"></p>
+      <p id="bz-consent-en" dir="auto" style="font-size:17px;line-height:1.5;color:#5B6B69"></p>
       <div style="display:flex;gap:16px;margin-top:10px">
-        <button type="button" data-act="consent_yes" style="width:230px;height:84px;border-radius:22px;border:none;background:#0E8A6F;color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span id="bz-yes" style="font-size:25px;font-weight:500"></span><span style="font-size:15px">Yes</span></button>
-        <button type="button" data-act="consent_no" style="width:180px;height:84px;border-radius:22px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span id="bz-no" style="font-size:25px;font-weight:500"></span><span style="font-size:15px;color:#5B6B69">No</span></button>
+        <button type="button" data-act="consent_yes" style="width:230px;height:84px;border-radius:22px;border:none;background:#0E8A6F;color:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span id="bz-yes" style="font-size:25px;font-weight:500"></span><span data-t="yes" style="font-size:15px">Yes</span></button>
+        <button type="button" data-act="consent_no" style="width:180px;height:84px;border-radius:22px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span id="bz-no" style="font-size:25px;font-weight:500"></span><span data-t="no" style="font-size:15px;color:#5B6B69">No</span></button>
       </div>
     </div>
   </section>
 
   <section id="L-idle">
     <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:14px;max-width:640px">
-      <p style="font-size:30px;font-weight:500;line-height:1.3">Bayan is listening</p>
-      <p style="font-size:18px;line-height:1.5;color:#5B6B69">Speak naturally. Bayan works out who is talking and translates for both of you.</p>
+      <p data-t="idle_title" style="font-size:30px;font-weight:500;line-height:1.3">Ready when you are</p>
+      <p data-t="idle_sub" style="font-size:18px;line-height:1.5;color:#5B6B69">Tap the pearl and speak, then tap it again. Bayan works out who is talking and translates for both of you. The space bar works too.</p>
     </div>
   </section>
 
   <section id="L-doctor">
     <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:34px;max-width:690px">
       <div style="display:flex;flex-direction:column;gap:10px">
-        <span class="lbl" style="color:#1F6FB2">You are saying</span>
+        <span class="lbl" data-t="you_say" style="color:#1F6FB2">You are saying</span>
         <p id="bz-doc-en" dir="auto" style="line-height:1.3;font-weight:500"></p>
       </div>
-      <div style="height:1px;background:linear-gradient(90deg,#D3E2F2,rgba(211,226,242,0))"></div>
+      <div class="bz-div" style="height:1px;background:linear-gradient(90deg,#D3E2F2,rgba(211,226,242,0))"></div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <span class="lbl" style="color:#0E8A6F">Patient will hear</span>
+        <span class="lbl" data-t="will_hear" style="color:#0E8A6F">Patient will hear</span>
         <p id="bz-doc-native" class="emerge" dir="auto" style="line-height:1.6;font-weight:500"></p>
       </div>
     </div>
@@ -73,36 +93,36 @@
   <section id="L-patient">
     <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:26px;max-width:700px">
       <div style="display:flex;flex-direction:column;gap:10px">
-        <span class="lbl" style="color:#0E8A6F">Patient is saying</span>
+        <span class="lbl" data-t="pat_say" style="color:#0E8A6F">Patient is saying</span>
         <p id="bz-pat-native" dir="auto" style="line-height:1.65;font-weight:500;transition:font-size .55s"></p>
       </div>
-      <div style="height:1px;background:linear-gradient(90deg,#CFE7E1,rgba(207,231,225,0))"></div>
+      <div class="bz-div" style="height:1px;background:linear-gradient(90deg,#CFE7E1,rgba(207,231,225,0))"></div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <span class="lbl" style="color:#1F6FB2">For you, in English</span>
-        <p id="bz-pat-en" class="emerge" lang="en" style="line-height:1.35;font-weight:500;transition:font-size .55s"></p>
+        <span class="lbl" data-t="for_you" style="color:#1F6FB2">For you, in English</span>
+        <p id="bz-pat-en" class="emerge" lang="en" dir="auto" style="line-height:1.35;font-weight:500;transition:font-size .55s"></p>
         <p id="bz-pat-note" style="margin-top:4px;display:none;align-items:flex-start;gap:10px;font-size:16px;line-height:1.5;color:#4A3A78">{svg_book}<span id="bz-pat-note-t"></span></p>
       </div>
     </div>
   </section>
 
-  <button type="button" id="bz-notebtn" data-act="notes" aria-label="Notes and suggestions">
+  <button type="button" id="bz-notebtn" data-act="notes" data-ta="notes_aria" aria-label="Notes and suggestions">
     {svg_note}
-    <span id="bz-badge" style="position:absolute;top:-4px;right:-4px;min-width:24px;height:24px;padding:0 6px;border-radius:999px;border:2px solid #FFFFFF;background:#0E8A6F;color:#FFFFFF;font-size:12px;font-weight:600;align-items:center;justify-content:center;display:none"></span>
+    <span id="bz-badge" style="position:absolute;top:-4px;inset-inline-end:-4px;min-width:24px;height:24px;padding:0 6px;border-radius:999px;border:2px solid #FFFFFF;background:#0E8A6F;color:#FFFFFF;font-size:12px;font-weight:600;align-items:center;justify-content:center;display:none"></span>
   </button>
 
-  <aside id="bz-panel" aria-label="Notes and suggestions">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 12px 12px 22px;border-bottom:1px solid #EEF3F3">
-      <span style="font-size:17px;font-weight:600;color:#173430">Notes</span>
-      <button type="button" data-act="notes-close" aria-label="Close notes" style="width:44px;height:44px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center">{svg_close}</button>
+  <aside id="bz-panel" data-ta="notes_aria" aria-label="Notes and suggestions">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-block:16px 12px;padding-inline:22px 12px;border-bottom:1px solid #EEF3F3">
+      <span data-t="notes" style="font-size:17px;font-weight:600;color:#173430">Notes</span>
+      <button type="button" data-act="notes-close" data-ta="close_notes" aria-label="Close notes" style="width:44px;height:44px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center">{svg_close}</button>
     </div>
     <div style="height:calc(100% - 73px);overflow-y:auto">
       <div style="padding:18px 22px 10px;display:flex;flex-direction:column;gap:12px">
-        <span style="font-size:13px;color:#5B6B69">Noted in this visit</span>
+        <span data-t="noted" style="font-size:13px;color:#5B6B69">Noted in this visit</span>
         <div id="bz-noted" style="display:flex;flex-direction:column;gap:12px"></div>
       </div>
       <div id="bz-sugsec" style="display:none">
         <div style="height:1px;margin:8px 22px 0;background:#EEF3F3"></div>
-        <span style="display:block;padding:18px 22px 0;font-size:13px;color:#5B6B69">Suggestions</span>
+        <span data-t="suggestions" style="display:block;padding:18px 22px 0;font-size:13px;color:#5B6B69">Suggestions</span>
         <div id="bz-suglist"></div>
       </div>
     </div>
@@ -112,68 +132,71 @@
     <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:26px;max-width:700px">
       <h2 id="bz-held-h" style="font-size:30px;line-height:1.3;font-weight:600"></h2>
       <div style="display:flex;flex-direction:column;gap:14px">
-        <p style="font-size:19px;line-height:1.5;color:#173430"><span style="font-weight:600">Patient: </span><span id="bz-held-pq"></span></p>
-        <p style="font-size:19px;line-height:1.5;color:#173430"><span style="font-weight:600">You: </span><span id="bz-held-dq"></span></p>
+        <p style="font-size:19px;line-height:1.5;color:#173430"><span data-t="held_patient" style="font-weight:600">Patient: </span><span id="bz-held-pq"></span></p>
+        <p style="font-size:19px;line-height:1.5;color:#173430"><span data-t="held_you" style="font-weight:600">You: </span><span id="bz-held-dq"></span></p>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <button type="button" data-act="held_else" style="height:58px;padding:0 24px;border-radius:16px;border:none;background:#173430;color:#FFFFFF;font-size:17px;font-weight:500">Say something else</button>
-        <button type="button" data-act="held_anyway" style="height:58px;padding:0 22px;border-radius:16px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;font-size:17px">Speak it anyway</button>
+        <button type="button" data-act="held_else" style="height:58px;padding:0 24px;border-radius:16px;border:none;background:#173430;color:#FFFFFF;font-size:17px;font-weight:500" data-t="held_else">Say something else</button>
+        <button type="button" data-act="held_anyway" style="height:58px;padding:0 22px;border-radius:16px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;font-size:17px" data-t="held_anyway">Speak it anyway</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="L-confirm">
+    <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:24px;max-width:640px">
+      <h2 id="bz-cf-q" style="font-size:28px;line-height:1.35;font-weight:600"></h2>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button type="button" id="bz-cf-yes" data-act="confirm_other" style="height:58px;padding:0 24px;border-radius:16px;border:none;background:#173430;color:#FFFFFF;font-size:17px;font-weight:500"></button>
+        <button type="button" id="bz-cf-no" data-act="confirm_keep" style="height:58px;padding:0 22px;border-radius:16px;border:1px solid #D5DEDD;background:#FFFFFF;color:#173430;font-size:17px"></button>
       </div>
     </div>
   </section>
 
   <section id="L-wrap">
     <div style="height:100%;display:flex;flex-direction:column;justify-content:center;gap:28px;max-width:640px">
-      <p style="font-size:38px;line-height:1.3;font-weight:500">Consultation ended</p>
+      <p data-t="wrap_title" style="font-size:38px;line-height:1.3;font-weight:500">Consultation ended</p>
       <div id="bz-steps" style="display:flex;flex-direction:column;gap:16px;font-size:18px"></div>
     </div>
   </section>
 
   <section id="L-revLeft">
-    <div style="display:flex;align-items:baseline;gap:22px;flex-wrap:wrap">
-      <button type="button" id="bz-tab-plan" data-act="revtab" data-id="plan" style="border:none;background:none;padding:0;font-size:20px;font-weight:600;color:#173430">Patient’s care plan</button>
-      <button type="button" id="bz-tab-note" data-act="revtab" data-id="note" style="border:none;background:none;padding:0;font-size:20px;font-weight:500;color:#5B6B69">Doctor’s note</button>
-      <span style="flex:1"></span>
-      <a id="bz-pdf-patient" class="link" target="_blank" rel="noopener" style="display:none">Patient PDF</a>
-      <a id="bz-pdf-doctor" class="link" target="_blank" rel="noopener" style="display:none">Doctor PDF</a>
-    </div>
+    <label for="careplan" data-t="rev_label" style="font-size:20px;font-weight:600">Patient’s care plan</label>
     <p id="bz-warn" style="display:none;font-size:16px;line-height:1.45;color:#C2410C"></p>
     <div style="flex:1;min-height:0;border-radius:26px;background:#FFFFFF;border:1px solid #E3EAE9;padding:24px 26px;display:flex">
-      <textarea id="careplan" spellcheck="false" readonly aria-label="Patient’s care plan" placeholder="No care plan was produced for this visit." style="flex:1;resize:none;border:none;padding:0;font-family:inherit;font-size:17px;line-height:1.7;color:#173430;background:transparent"></textarea>
-      <textarea id="bz-note" spellcheck="false" aria-label="Doctor’s note" style="display:none;flex:1;resize:none;border:none;padding:0;font-family:inherit;font-size:15px;line-height:1.6;color:#173430;background:transparent"></textarea>
+      <textarea id="careplan" dir="auto" spellcheck="false" data-tp="rev_placeholder" placeholder="Write the plan for the patient here." style="flex:1;resize:none;border:none;padding:0;font-family:inherit;font-size:17px;line-height:1.7;color:#173430;background:transparent"></textarea>
     </div>
+    <a id="bz-report" class="link" target="_blank" rel="noopener" data-t="report_pdf" style="display:none;align-self:flex-start;padding:4px 0">Download report (PDF)</a>
   </section>
 
   <section id="L-revRight">
     <div style="height:100%;display:flex;flex-direction:column;align-items:center;padding:40px 44px 40px">
-      <div style="align-self:stretch;height:48px;display:flex;align-items:center;padding-left:62px">
+      <div style="align-self:stretch;height:48px;display:flex;align-items:center;padding-inline-start:62px">
         <p id="bz-rev-title" style="font-size:18px;font-weight:600">For the patient</p>
       </div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center">
-        <div style="padding:22px;border-radius:26px;background:#FFFFFF"><div id="bz-qr" role="img" aria-label="QR code to open the care plan" style="width:232px;height:232px"></div></div>
+        <div style="padding:22px;border-radius:26px;background:#FFFFFF"><div id="bz-qr" role="img" data-ta="qr_aria" aria-label="QR code to open the care plan" style="width:232px;height:232px"></div></div>
       </div>
       <button type="button" id="bz-approve" data-act="approve" style="align-self:stretch;height:60px;border-radius:18px;border:none;background:#0E8A6F;color:#FFFFFF;font-size:17px;font-weight:500;transition:background .5s">Approve and send</button>
-      <a id="bz-wa" class="link" target="_blank" rel="noopener" style="display:none;margin-top:6px">Send the PDF link by WhatsApp</a>
-      <button type="button" id="bz-new" data-act="new" style="align-self:stretch;margin-top:12px;height:52px;border-radius:16px;border:1px solid #BFE3D8;background:#FFFFFF;color:#0B6E59;font-size:16px;font-weight:500;transition:opacity .5s;opacity:0;pointer-events:none">Start a new consultation</button>
+      <button type="button" id="bz-new" data-act="new" style="align-self:stretch;margin-top:12px;height:52px;border-radius:16px;border:1px solid #BFE3D8;background:#FFFFFF;color:#0B6E59;font-size:16px;font-weight:500;transition:opacity .5s;opacity:0;pointer-events:none" data-t="new">Start a new consultation</button>
     </div>
   </section>
 
   <section id="L-caption">
-    <div style="position:absolute;left:146px;top:36px">
-      <p style="font-size:18px;font-weight:500;color:#0E8A6F">Speaking to the patient</p>
+    <div style="position:absolute;inset-inline-start:146px;top:36px">
+      <p data-t="cap_title" style="font-size:18px;font-weight:500;color:#0E8A6F">Speaking to the patient</p>
       <p id="bz-cap-in" dir="auto" style="margin-top:2px;font-size:15px;color:#5B6B69"></p>
     </div>
     <div style="position:absolute;left:96px;right:96px;top:130px;bottom:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px">
       <p id="bz-cap-native" dir="auto" style="text-align:center;line-height:1.55;font-weight:600"></p>
-      <p id="bz-cap-en" lang="en" style="max-width:820px;text-align:center;font-size:20px;line-height:1.5;color:#5B6B69"></p>
+      <p id="bz-cap-en" lang="en" dir="auto" style="max-width:820px;text-align:center;font-size:20px;line-height:1.5;color:#5B6B69"></p>
     </div>
     <div style="position:absolute;left:0;right:0;bottom:48px;display:flex;justify-content:center;gap:16px">
-      <button type="button" class="pill" data-act="again">{svg_again}<span id="bz-again" style="font-size:20px"></span><span style="font-size:15px;color:#5B6B69">Say it again</span></button>
-      <button type="button" class="pill" data-act="slower">{svg_slower}<span id="bz-slower" style="font-size:20px"></span><span style="font-size:15px;color:#5B6B69">Slower</span></button>
+      <button type="button" class="pill" data-act="again">{svg_again}<span id="bz-again" style="font-size:20px"></span><span data-t="again" style="font-size:15px;color:#5B6B69">Say it again</span></button>
+      <button type="button" class="pill" data-act="slower">{svg_slower}<span id="bz-slower" style="font-size:20px"></span><span data-t="slower" style="font-size:15px;color:#5B6B69">Slower</span></button>
     </div>
   </section>
 
-  <div id="bz-pearl-wrap">{pearl}</div>
+  <button type="button" id="bz-pearl-wrap" data-act="talk" aria-label="Tap to speak">{pearl}</button>
   <div id="bz-toast" role="status" style="position:absolute;left:50%;bottom:28px;z-index:9;transform:translateX(-50%);max-width:640px;padding:12px 20px;border-radius:999px;background:#FFF4EC;color:#9A3412;font-size:15px;opacity:0;transition:opacity .4s;pointer-events:none"></div>
   <button type="button" id="bz-send" data-act="__send" hidden aria-hidden="true" tabindex="-1"></button>
 </div>

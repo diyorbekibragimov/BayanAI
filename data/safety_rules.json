@@ -2641,6 +2641,58 @@
       "change_note": "2026-11-07: added the chest-pain-group symptom clause (the same codes as WORK-CHEST-01..03: chest_pain, chest_discomfort, chest_pressure, chest_burning, epigastric_pain_exertional, jaw_arm_pain). Previously any idiom tagged 'acs' fired with no ECG; 16 of 59 lexicon entries carry that tag (e.g. 'kabag' = gas pain/infant colic, 'masakit ang sikmura' = stomach hurts, 'man bhaari' = heavy heart-mind), which would alert on most consultations. The rule now needs the acs-tagged idiom AND a chest/epigastric-location symptom. Golden-path step 2 (gyastrik + chest_burning) still fires."
     },
     {
+      "id": "WORK-CHEST-05",
+      "family": "missing_workup",
+      "severity": "caution",
+      "trigger": {
+        "all": [
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "chest_pain",
+                "chest_discomfort",
+                "chest_pressure",
+                "chest_burning",
+                "epigastric_pain_exertional"
+              ]
+            }
+          },
+          {
+            "exists_in": "symptoms",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "jaw_arm_pain"
+              ]
+            }
+          },
+          {
+            "none_in": "investigations",
+            "where": {
+              "fact": "code",
+              "op": "in",
+              "value": [
+                "ecg_12lead"
+              ]
+            }
+          }
+        ]
+      },
+      "message_en": "Chest pain spreading to the arm or jaw ({symptom.evidence}). Possible acute coronary syndrome: consider a 12-lead ECG now.",
+      "rationale": "Radiation to the arm or jaw raises the likelihood of acute coronary syndrome. The 2021 AHA/ACC guideline and 2023 ESC ACS guideline recommend a 12-lead ECG within 10 minutes of arrival; this card fires at once instead of waiting for WORK-CHEST-01's 10-minute timer.",
+      "source_urls": [
+        "https://doi.org/10.1161/CIR.0000000000001029",
+        "https://doi.org/10.1093/eurheartj/ehad191"
+      ],
+      "fire_on": "state_change",
+      "verification": "label_or_guideline_checked",
+      "change_note": "Added 2026-11-07: immediate ECG prompt for chest pain with arm/jaw radiation (WORK-CHEST-01 only fires after 10 min)."
+    },
+    {
       "id": "WORK-HEAT-01",
       "family": "missing_workup",
       "trigger": {

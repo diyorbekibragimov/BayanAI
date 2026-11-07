@@ -1,8 +1,9 @@
 """Bayan consultation state machine (one Consult per browser tab, keyed by an unguessable sid).
 
 The UI is a static stage (bayan/ui.py) driven by a JSON view rendered here. Every pipeline step
-mutates the Consult and yields UI; speech goes out through the live WebRTC stream (live mode)
-or a hidden audio player (demo mode).
+mutates the Consult and yields UI. Tap-to-talk: the browser records one utterance per tap (the doctor
+picks whose turn it is) and sends 16 kHz PCM; every reply is streamed to the page's WebAudio player.
+The doctor works in English or Arabic (s.doc_lang); the whole doctor-facing text follows it.
 
 The clinical engine underneath is bayan.brain: every interpreted turn goes into the Consult's
 brain Consultation (`s.brain`); doctor prescriptions pass the rule engine's prescription gate
@@ -27,8 +28,11 @@ from pathlib import Path
 
 import numpy as np
 
-from . import careplan, copilot, talk
+from . import careplan, copilot, talk, ui
+from .langs import MORE
 from .brain import copilot as brain
+from .brain import llm as brain_llm
+from .brain.idioms import default_index as idiom_index
 from .brain import wrapup
 from .brain.state import Consultation, empty_state
 from .outputs import retention
@@ -36,7 +40,6 @@ from .web import fill, read
 
 UI = "ui"  # sentinel event: re-render the stage
 
-DOCTOR_VOICE = os.environ.get("BAYAN_DOCTOR_VOICE", "0") == "1"  # speak the patient's English to the doctor (Kokoro)
 # Read the care plan aloud into a WAV at the end of the visit (one worker TTS call per line: slow, off by default).
 PLAN_AUDIO = os.environ.get("BAYAN_PLAN_AUDIO", "off").strip().lower() in ("1", "on", "true", "yes")
 CONTEXT_TURNS = 4  # earlier turns sent with each translation (pronouns, "yes" answers)
@@ -49,18 +52,55 @@ LANGS = {
     "bn": {"name": "Bengali", "native": "বাংলা"},
     "ml": {"name": "Malayalam", "native": "മലയാളം"},
     "tl": {"name": "Filipino", "native": "Filipino"},
+    "ta": {"name": "Tamil", "native": "தமிழ்"},
+    "sw": {"name": "Swahili", "native": "Kiswahili"},
+    **{code: {"name": v["en"], "native": v["native"]} for code, v in MORE.items()},   # the "More…" sheet (incl. Korean)
 }
-CHARS_PER_SEC = {"ne": 11.0, "hi": 12.0, "ur": 12.0, "bn": 12.0, "ml": 10.0, "tl": 13.0, "en": 14.0}
+CHARS_PER_SEC = {"ne": 11.0, "hi": 12.0, "ur": 12.0, "bn": 12.0, "ml": 10.0, "tl": 13.0, "ta": 10.0, "sw": 13.0,
+                 "en": 14.0, "ar": 12.0, **{code: v["cps"] for code, v in MORE.items()}}
 SLOW_DESCRIPTION = ("A female speaker speaks very slowly and calmly, pausing a little between words, with a very "
                     "clear voice. The recording is very clear with no background noise.")
 
 # Bayan does not store audio: consent is to processing only (other languages are translated from CONSENT_EN at
 # runtime and cached in memory per process; the spoken audio is synthesised fresh each visit, never cached).
-CONSENT_EN = ("Hello, I am Bayan. I translate between you and the doctor. "
-              "Your voice is processed to translate it and is not stored. Do you agree?")
+# One source: the brain record / PDF transcript use exactly the consent sentence the doctor's screen shows.
+CONSENT_EN = ui.t("en", "consent_doc")
 # Nepali: machine draft, native check pending.
-_CONSENT = {"ne": "नमस्ते। म बयान हुँ। म तपाईं र डाक्टरको कुरा अनुवाद गर्छु। के तपाईं आफ्नो आवाज प्रशोधन गर्न सहमति दिनुहुन्छ?"}
+_CONSENT = {
+    "ne": "नमस्ते। म बयान हुँ। म तपाईं र डाक्टरको कुरा अनुवाद गर्छु। के तपाईं आफ्नो आवाज प्रशोधन गर्न सहमति दिनुहुन्छ?",
+    # gpt-oss drafts, hand-corrected (Swahili, Korean); native check pending.
+    "ta": "வணக்கம், நான் பயான். நான் உங்களுக்கும் மருத்துவருக்கும் இடையில் மொழிபெயர்க்கிறேன். உங்கள் குரல் மொழிபெயர்ப்புக்காக மட்டுமே செயலாக்கப்படுகிறது, சேமிக்கப்படாது. நீங்கள் ஒப்புக்கொள்கிறீர்களா?",
+    "sw": "Habari, mimi ni Bayan. Ninatafsiri kati yako na daktari. Sauti yako inachakatwa ili kutafsiriwa tu, na haihifadhiwi. Je, unakubali?",
+    **{code: v["consent"] for code, v in MORE.items()},
+}
 _CONSENT_LOCK = threading.Lock()
+
+# Whisper's stock outputs for non-speech (tones, breath, room noise). Dropped instead of translated.
+HALLUCINATIONS = {
+    "اشتركوا في القناة", "ترجمة نانسي قنقر", "شكرا للمشاهدة", "شكرا لكم على المشاهدة", "شكرا على المشاهدة",
+    "thanks for watching", "thank you for watching", "please subscribe", "subscribe to the channel",
+    "subtitles by the amara.org community", "you",
+}
+
+
+_LOOP_RE = re.compile(r"(.{1,6}?)\1{5,}", re.S)
+NOT_CAUGHT = "not_caught"  # UI string key (bayan/ui.py STRINGS)
+
+
+def _hallucinated(text: str) -> bool:
+    t = re.sub(r"[\s.!?،,…]+", " ", text.lower()).strip()
+    return t in HALLUCINATIONS
+
+
+def garbled(text: str) -> bool:
+    """Repetition loops ("ماهوهوهو…") and other degenerate transcripts: never translate or show them.
+    Same rule as Whisper's own fallback: zlib compression ratio > 2.4, or a short unit repeated 6+ times."""
+    import zlib
+    if not text:
+        return False
+    raw = text.encode("utf-8")
+    return len(raw) / max(1, len(zlib.compress(raw))) > 2.4 or bool(_LOOP_RE.search(text))
+
 
 END_RE = re.compile(r"\bend\W+(?:the\W+|this\W+)?(?:consultation|consult|visit|session)\b", re.I)
 
@@ -95,12 +135,24 @@ class Speech:
 class Consult:
     sid: str
     lang: str = "ne"
+    doc_lang: str = "en"         # doctor's language, chosen on the start screen: en | ar (UI follows it)
+    next_speaker: str = "doctor" # whose turn it is; flips after each completed turn (the page can override)
+    turn_seq: int = 0
+    confirm: dict | None = None  # speaker mismatch waiting for the doctor's decision
+    confirm_pcm: tuple | None = None
+    settling: bool = False       # the 3 s pause after Bayan spoke (caption stays; any tap ends it)
+    settle_cancel: bool = False
+    last_n: object = None        # last action id from the page (dedupe)
+    audio_ack: object = None     # id of the last recording the server took (the page waits for it)
+    last_act: str = ""
+    shown: dict = field(default_factory=dict)  # brain turn id -> that turn as the doctor saw it (doctor's language)
+    loc_seen: int = -1           # localisation version the stage last showed
     screen: str = "start"        # start | consent | live | wrap | review | sent
-    live: str = "idle"           # idle | doctor | patient | held | caption
+    live: str = "idle"           # idle | doctor | patient | held | caption | confirm
     tint: str = "n"
     speaking: bool = False
+    processing: bool = False     # recording received: hearing / translating / preparing the voice
     started_at: float | None = None
-    webrtc_id: str | None = None
     demo: bool = False
     consent_native: str = ""
     consent_spoken: bool = False
@@ -119,7 +171,8 @@ class Consult:
     pending: list = field(default_factory=list)
     last_speech: Speech | None = None
     busy: bool = False
-    error: str = ""
+    error: str = ""                # a UI string key (bayan/ui.py STRINGS)
+    notice: dict = field(default_factory=lambda: {"id": 0, "text": ""})
     steps: list = field(default_factory=list)
     review: dict = field(default_factory=dict)
     open_notes: int = 0
@@ -156,7 +209,7 @@ def find(args) -> Consult | None:
 
 
 def reset(sess: Consult) -> Consult:
-    fresh = Consult(sid=sess.sid, lang=sess.lang, seq=sess.seq + 1)
+    fresh = Consult(sid=sess.sid, lang=sess.lang, doc_lang=sess.doc_lang, seq=sess.seq + 1)
     SESS[sess.sid] = fresh
     erase(sess)
     return fresh
@@ -170,8 +223,8 @@ def _gc():
             erase(old)
 
 
-def _new_brain(lang: str, started_at: float | None = None) -> Consultation:
-    b = Consultation(patient_lang=lang, doctor_lang="en")
+def _new_brain(lang: str, started_at: float | None = None, doc_lang: str = "en") -> Consultation:
+    b = Consultation(patient_lang=lang, doctor_lang=doc_lang)
     if started_at:
         b.started_at = started_at
     brain.attach(b)
@@ -182,7 +235,7 @@ def begin(s: Consult) -> None:
     """A new visit starts (Start consultation / Play demo): a fresh brain consultation on the visit clock."""
     with s.lock:
         old = s.brain
-        s.brain = _new_brain(s.lang, s.started_at)
+        s.brain = _new_brain(s.lang, s.started_at, s.doc_lang)
         s.cards_seen, s.card_notes, s.last_tick = -1, [], time.time()
     if old.turns or old.outputs:
         _purge_brain(old)
@@ -222,25 +275,25 @@ def erase(sess: Consult) -> None:
 
 # ------------------------------------------------------------------ view
 def status(s: Consult) -> list:
-    name = LANGS.get(s.lang, {}).get("name", s.lang)
+    """[title, subtitle, colour] in the doctor's language."""
+    dl = s.doc_lang
+    T = lambda k, **kw: ui.t(dl, k, **kw)  # noqa: E731
+    name, doc_name = T("lang_" + s.lang), T("lang_" + dl)
     if s.screen == "start":
-        return ["Ready", "", INK]
+        return [T("st_ready"), "", INK]
     if s.screen == "consent":
-        return ["Speaking to the patient", "Asking for consent", GREEN]
+        return [T("st_speaking_patient"), T("st_consent"), GREEN]
     if s.screen == "wrap":
-        return ["Writing it up", "This takes a few seconds.", INK]
+        return [T("st_writing"), T("st_writing_sub"), INK]
     if s.live == "held":
-        return ["Sentence held", "", AMBER]
-    if s.live in ("doctor", "patient") and s.tint == "n" and not s.speaking:
-        return ["Listening", f"English and {name}", INK]
-    if s.live == "doctor":
-        return ["Speaking to the patient" if s.speaking else "Listening to you", name if s.speaking else "English",
-                GREEN if s.speaking else BLUE]
-    if s.live == "patient":
-        if s.speaking:
-            return ["Speaking to you", "English", BLUE]
-        return ["Listening to the patient", name, GREEN]
-    return ["Listening", f"English and {name}", INK]
+        return [T("st_held"), "", AMBER]
+    if s.processing:
+        return [T("st_translating"), "", INK]
+    if s.speaking and s.live == "patient":
+        return [T("st_speaking_you"), doc_name, BLUE]
+    if s.speaking:
+        return [T("st_speaking_patient"), name, GREEN]
+    return [T("st_tap"), T("st_or", a=doc_name, b=name), INK]
 
 
 def _sync_cards(s: Consult) -> None:
@@ -272,25 +325,43 @@ def view(s: Consult) -> dict:
     s.seq += 1
     _sync_cards(s)
     st = status(s)
-    if s.error:
-        st = [st[0], s.error, st[2]]
+    err = ui.t(s.doc_lang, s.error) if s.error else ""
+    if err:
+        st = [st[0], err, st[2]]
     open_sugs = [x for x in s.suggestions if x["status"] == "open"]
+    card_notes = [{"kind": n["kind"], "text": n["text"]} for n in s.card_notes]
+    pv = dict(s.patient_view)
+    # Card-derived text (suggestions, rule/agent notes, the idiom explanation) in the doctor's language: from the
+    # cache when ready, else English now and the stage refreshes when the translation lands (never blocks).
+    if s.doc_lang != "en":
+        texts = [x["text"] for x in open_sugs] + [n["text"] for n in card_notes] + ([pv["note"]] if pv.get("note") else [])
+        out = loc_soon(s, texts)
+        k = 0
+        open_sugs = [{**x, "text": out[k + i]} for i, x in enumerate(open_sugs)]
+        k += len(open_sugs)
+        card_notes = [{**n, "text": out[k + i]} for i, n in enumerate(card_notes)]
+        k += len(card_notes)
+        if pv.get("note"):
+            pv["note"] = out[k]
+    s.loc_seen = _LOC_VERSION[0]
     v = {
         "seq": s.seq, "screen": s.screen, "live": s.live, "tint": s.tint, "lang": s.lang,
         "langName": LANGS.get(s.lang, {}).get("name", s.lang),
         "elapsed": round(time.time() - s.started_at, 1) if s.started_at else 0,
-        "listen": s.screen == "live" and s.live in ("idle", "doctor", "patient") and not s.speaking,
-        "speak": s.speaking, "status": st, "demo": s.demo,
+        "docLang": s.doc_lang, "settle": s.settling, "ack": s.audio_ack, "turn": s.next_speaker,
+        "turnSeq": s.turn_seq,
+        "confirm": ({"detected": s.confirm["detected"], "selected": s.confirm["selected"]} if s.confirm else None),
+        "speak": s.speaking, "processing": s.processing, "status": st, "demo": s.demo, "notice": s.notice,
         "consent": {"native": s.consent_native, "en": CONSENT_EN},
-        "doctor": s.doctor_view, "patient": s.patient_view, "caption": s.caption, "held": s.held,
-        "notes": s.notes + [{"kind": n["kind"], "text": n["text"]} for n in s.card_notes],
+        "doctor": s.doctor_view, "patient": pv, "caption": s.caption, "held": s.held,
+        "notes": s.notes + card_notes,
         "suggestions": open_sugs, "badge": len(open_sugs),
-        "toast": s.error if s.screen in ("start", "wrap", "review", "sent") else "",
+        "toast": err if s.screen in ("start", "wrap", "review", "sent") else "",
         "steps": s.steps, "openNotes": s.open_notes, "closeNotes": s.close_notes, "autoEnd": s.auto_end, "stopMic": s.stop_mic,
     }
     if s.review:
-        v["review"] = {k: s.review.get(k) for k in ("plan_id", "plan_en", "note", "qr", "warnings", "sending",
-                                                    "doctor_pdf", "patient_pdf", "wa")}
+        v["review"] = {k: s.review.get(k) for k in ("plan_id", "plan", "plan_en", "note", "qr", "warnings", "sending",
+                                                    "doctor_pdf", "patient_pdf", "confirm")}
     return v
 
 
@@ -309,7 +380,7 @@ def poll_render(s: Consult | None) -> str | None:
     if now - s.last_tick >= TICK_S:
         s.last_tick = now
         brain.tick(s.brain)
-    if s.brain.cards.version == s.cards_seen:
+    if s.brain.cards.version == s.cards_seen and _LOC_VERSION[0] == s.loc_seen:
         return None
     return render(s)
 
@@ -324,6 +395,63 @@ def wait(s: Consult, seconds: float):
         time.sleep(min(0.25, left))
         if s.screen == "live" and s.brain.cards is not None and s.brain.cards.version != s.cards_seen:
             yield UI
+
+
+def notify(s: Consult, key: str):
+    """One-off toast on the stage (shown once per id), in the doctor's language."""
+    s.notice = {"id": s.notice["id"] + 1, "text": ui.t(s.doc_lang, key)}
+
+
+# App-generated English (notes, held headline, idiom notes, suggestions) -> the doctor's language.
+_LOC: dict[str, str] = {}
+_LOC_LOCK = threading.Lock()
+LOC_SYSTEM = """Translate each English string into formal Modern Standard Arabic for a doctor's screen in a clinic in Qatar.
+Rules: keep it short and clear; use the standard Arabic medical term; write medicine names in the Arabic script
+doctors in the Gulf use (for example: البنسلين، أموكسيسيلين، باراسيتامول); keep every number, dose and unit exactly,
+with Western digits (500 mg -> 500 ملغ); never add, drop or soften information.
+Return ONLY a JSON object {"ar": [...]} with exactly one translation per input string, in the same order."""
+
+
+def loc(s: Consult, texts: list[str]) -> list[str]:
+    """Strings in the doctor's language (LLM once per string, cached for every visit). English: unchanged."""
+    if s.doc_lang == "en":
+        return list(texts)
+    with _LOC_LOCK:
+        need = [x for x in dict.fromkeys(texts) if x and x not in _LOC]
+    if need:
+        try:
+            out = brain_llm.chat_json(LOC_SYSTEM, json.dumps(need, ensure_ascii=False), max_tokens=1500).get("ar")
+            if isinstance(out, list) and len(out) == len(need):
+                with _LOC_LOCK:
+                    _LOC.update({k: str(v).strip() or k for k, v in zip(need, out)})
+        except Exception as e:  # noqa: BLE001 - fall back to English rather than block the visit
+            print(f"[loc] {type(e).__name__}: {e}", flush=True)
+    with _LOC_LOCK:
+        return [_LOC.get(x, x) for x in texts]
+
+
+_LOC_VERSION = [0]   # bumped whenever background translations land (poll_render re-renders)
+_LOC_PENDING: set = set()
+
+
+def loc_soon(s: Consult, texts: list[str]) -> list[str]:
+    """Non-blocking loc(): cached translations now, English for the rest while a background call fills the cache."""
+    if s.doc_lang == "en":
+        return list(texts)
+    with _LOC_LOCK:
+        need = [x for x in dict.fromkeys(texts) if x and x not in _LOC and x not in _LOC_PENDING]
+        _LOC_PENDING.update(need)
+        out = [_LOC.get(x, x) for x in texts]
+    if need:
+        def work():
+            try:
+                loc(s, need)
+            finally:
+                with _LOC_LOCK:
+                    _LOC_PENDING.difference_update(need)
+                _LOC_VERSION[0] += 1
+        threading.Thread(target=work, name="bayan-loc", daemon=True).start()
+    return out
 
 
 # ------------------------------------------------------------------ notes
@@ -353,7 +481,7 @@ def _held_payload(s: Consult, hits: list[dict], drugs: list[dict], english: str,
     key = str(h.get("key") or "")
     drug = key.split("|", 1)[1] if "|" in key else next(
         (d["name"] for d in drugs if d.get("intent") == "prescribe"), "this medicine")
-    head, pq = "", ""
+    head, pq, allergies = "", "", []
     if h.get("family") == "drug_allergy" or str(h.get("rule_id", "")).startswith("ALG-"):
         d_cls = set(classes_of(drug))
         with s.brain.lock:
@@ -375,6 +503,13 @@ def _held_payload(s: Consult, hits: list[dict], drugs: list[dict], english: str,
             if t is not None and t.role == "patient":
                 pq = e.get("quote") or t.english
                 break
+    if s.doc_lang != "en":  # the patient's words as the doctor saw them; the headline in the doctor's language
+        for a in allergies if head else []:
+            for e in a.get("evidence") or []:
+                if e.get("utt") in s.shown:
+                    pq = s.shown[e["utt"]]
+                    break
+        head = loc(s, [head])[0]
     return {"headline": head, "pq": pq, "drug": drug, "rule": h.get("rule_id", ""), "dq": english,
             "translation": translation, "utt": utt, "cards": brain.held_card_ids(s.brain, hits)}
 
@@ -396,31 +531,112 @@ def _discard_held(s: Consult, reason: str) -> None:
 
 
 # ------------------------------------------------------------------ one turn
-def process_audio(s: Consult, sr: int, arr: np.ndarray):
+def set_turn(s: Consult, who: str):
+    s.next_speaker = who
+    s.turn_seq += 1
+
+
+def _hear(s: Consult, sr: int, arr: np.ndarray, role: str = "") -> dict | None:
+    """Worker ASR; None (and a gentle notice) when nothing usable was heard."""
     try:
-        heard = talk.hear(sr, arr, s.lang)
+        heard = talk.hear(sr, arr, s.lang, s.doc_lang, role)
     except Exception as e:  # noqa: BLE001
         print(f"[hear] {type(e).__name__}: {e}", flush=True)
-        s.error = "Voice service is offline or starting. Please try again in a minute."
+        s.error = "err_voice_service"
+        return None
+    text = (heard.get("text") or "").strip()
+    if heard.get("unclear") or (text and (_hallucinated(text) or garbled(text))):
+        print(f"[hear] unclear={bool(heard.get('unclear'))} dropped: {text[:80]!r}", flush=True)
+        text = ""
+    if not text:
+        with s.lock:
+            s.processing = False
+            if s.live in ("doctor", "patient"):
+                s.tint = "n"
+        notify(s, NOT_CAUGHT)
+        return None
+    heard["text"] = text
+    return heard
+
+
+def _confidence(s: Consult, heard: dict, role: str) -> float:
+    lid = heard.get("lid") or {}
+    if role == "patient":
+        return float(lid.get(s.lang, 0.0))
+    return float(sum(v for k, v in lid.items() if k in ("en", "ar")))
+
+
+def process_audio(s: Consult, sr: int, arr: np.ndarray, speaker: str = ""):
+    """One tapped recording. `speaker` is whose turn the doctor selected; the worker transcribes with that
+    role forced. Its own language ID is only a safety check: a confident disagreement asks the doctor first."""
+    speaker = speaker if speaker in ("doctor", "patient") else ""
+    heard = _hear(s, sr, arr, speaker)
+    if heard is None:
         yield UI
         return
-    text = (heard.get("text") or "").strip()
-    if not text:
-        return
     role = heard.get("role", "patient")
+    detected = heard.get("detected_role") or role
+    if speaker:
+        if detected != speaker and _confidence(s, heard, detected) >= 0.9:
+            with s.lock:
+                s.confirm = {"selected": speaker, "detected": detected, "forced": bool(heard.get("role_forced")),
+                             "engine_role": role, "text": heard["text"], "lang": heard.get("lang")}
+                s.confirm_pcm = (sr, arr)
+                s.live, s.tint, s.processing = "confirm", "n", False
+            print(f"[hear] speaker mismatch: selected={speaker} detected={detected} lid={heard.get('lid')}", flush=True)
+            yield UI
+            return
+        role = speaker
     src = heard.get("lang") or ("en" if role == "doctor" else s.lang)
-    yield from process_text(s, role, text, src)
+    if role == "doctor" and src not in ("en", "ar"):
+        src = s.doc_lang
+    yield from process_text(s, role, heard["text"], src)
+
+
+def resolve_confirm(s: Consult, take_detected: bool):
+    """The doctor answered the mismatch question. Re-transcribe with the chosen role unless the first pass
+    already used that role's engine."""
+    c, pcm = s.confirm, s.confirm_pcm
+    with s.lock:
+        s.confirm, s.confirm_pcm = None, None
+        s.live, s.processing = "idle", True
+    if not c:
+        s.processing = False
+        yield UI
+        return
+    role = c["detected"] if take_detected else c["selected"]
+    yield UI
+    if role == c["engine_role"]:
+        text, src = c["text"], c["lang"]
+    else:
+        heard = _hear(s, pcm[0], pcm[1], role)
+        if heard is None:
+            yield UI
+            return
+        text, src = heard["text"], heard.get("lang")
+    if role == "doctor" and src not in ("en", "ar"):
+        src = s.doc_lang
+    yield from process_text(s, role, text, src or (s.doc_lang if role == "doctor" else s.lang))
+
+
+def _cap(x: str) -> str:
+    return x[:1].upper() + x[1:]
 
 
 def process_text(s: Consult, role: str, text: str, src: str | None = None):
-    """Translate one utterance, update the stage, and queue what Bayan should say."""
+    """Translate one utterance, update the stage, and queue what Bayan should say.
+    The doctor sees everything in their own language (s.doc_lang); the patient hears theirs (s.lang)."""
     s.error = ""
+    if not text.strip() or garbled(text):  # safety net: nothing degenerate reaches the translator or the screen
+        notify(s, NOT_CAUGHT)
+        yield UI
+        return
     if s.held:  # a new turn while a sentence is held: the held sentence is not spoken
         _discard_held(s, "not spoken: the conversation moved on")
     if role == "doctor":
-        src = src or "en"
+        src = src if src in ("en", "ar") else s.doc_lang
         s.brain.doctor_lang = src
-        if END_RE.search(text):
+        if END_RE.search(text) or "إنهاء الاستشارة" in text:
             s.auto_end += 1
             yield UI
             return
@@ -433,39 +649,47 @@ def process_text(s: Consult, role: str, text: str, src: str | None = None):
             tr = talk.translate(text, "doctor", src, s.lang, context=_context(s))
         except Exception as e:  # noqa: BLE001
             print(f"[translate] {type(e).__name__}: {e}", flush=True)
-            s.error, s.doctor_view["pending"] = "Could not translate that. Please say it again.", False
+            s.error, s.doctor_view["pending"] = "err_translate", False
             yield UI
             return
         english = text if src == "en" else (tr.get("english") or text)
         turn = s.brain.add_turn("doctor", src, text, english=english, translation=tr["translation"])
+        s.shown[turn.id] = text
         tests = [t for t in tr.get("tests", []) if isinstance(t, str) and t.strip()]
         drugs = tr.get("drugs", [])
         hits = brain.prescription_gate(s.brain, drugs, english, turn.id) if drugs else []
         reason = _held_payload(s, hits, drugs, english, tr["translation"], turn.id) if hits else None
+        if reason:
+            reason["dq"] = text  # the doctor's own words
+        en_notes = [("test", f"{_cap(_join(tests))} ordered")] if tests else []
+        if reason:
+            en_notes.append(("held", f"{_cap(reason['drug'])}: held, not said to the patient"))
+        else:
+            for d in drugs:
+                name = (d.get("name") or "").strip()
+                if not name or d.get("intent") == "mention":
+                    continue
+                if d.get("intent") == "stop":
+                    en_notes.append(("drug", f"{_cap(name)} stopped"))
+                    continue
+                dose = d.get("dose") or (f"{d['dose_mg']:g} mg" if isinstance(d.get("dose_mg"), (int, float)) else "")
+                en_notes.append(("drug", _cap(name) + (f" {dose}" if dose else "")))
+        shown = loc(s, [n for _, n in en_notes])
         with s.lock:
             s.doctor_view = {"en": text, "native": tr["translation"], "pending": False}
-            if tests:
-                add_note(s, "test", f"{_join(tests)[:1].upper()}{_join(tests)[1:]} ordered")
+            for (kind, _), txt in zip(en_notes, shown):
+                add_note(s, kind, txt)
             if reason:
                 turn.held = True
                 s.held = reason
                 s.live, s.tint = "held", "h"
-                add_note(s, "held", f"{reason['drug'][:1].upper()}{reason['drug'][1:]} held back")
             else:
-                for d in drugs:
-                    name = (d.get("name") or "").strip()
-                    if not name or d.get("intent") == "mention":
-                        continue
-                    if d.get("intent") == "stop":
-                        add_note(s, "drug", f"{name[:1].upper()}{name[1:]} stopped")
-                        continue
-                    dose = d.get("dose") or (f"{d['dose_mg']:g} mg" if isinstance(d.get("dose_mg"), (int, float)) else "")
-                    add_note(s, "drug", f"{name[:1].upper()}{name[1:]}" + (f" {dose}" if dose else ""))
+                set_turn(s, "patient")
         yield UI
         if not reason:
             brain.on_turn(s.brain, turn)  # a held sentence waits for the doctor's choice
             if tr["translation"].strip():
-                s.pending.append(Speech(tr["translation"], s.lang, "patient", True, english, kind="turn"))
+                s.pending.append(Speech(tr["translation"], s.lang, "patient", True, text, kind="turn"))
         return
 
     # patient
@@ -474,30 +698,43 @@ def process_text(s: Consult, role: str, text: str, src: str | None = None):
         s.live, s.tint = "patient", "p"
         s.patient_view = {"native": text, "en": "", "idiom": None, "note": "", "pending": True}
     yield UI
-    tgt = s.brain.doctor_lang if s.brain.doctor_lang in ("en",) else "en"
+    tgt = s.doc_lang
+    hint = ""
+    try:  # a lexicon idiom in the patient's words: keep it as said so the doctor sees it (the card explains it)
+        hits = idiom_index().match(text, "", s.lang)
+        pre = hits[0]["entry"] if hits else None
+    except Exception:  # noqa: BLE001
+        pre = None
+    if pre:
+        hint = (f"the patient uses the cultural idiom '{pre.get('native')}' ({pre.get('romanized')}, literally "
+                f"{pre.get('literal_en')}). Keep it in the translation as \"{pre.get('romanized')}\" so the doctor sees it; "
+                f"do not translate it as a body part or object.")
     try:
-        tr = talk.translate(text, "patient", s.lang, tgt, context=_context(s))
+        tr = talk.translate(text, "patient", s.lang, tgt, context=_context(s), hint=hint)
     except Exception as e:  # noqa: BLE001
         print(f"[translate] {type(e).__name__}: {e}", flush=True)
-        s.error, s.patient_view["pending"] = "Could not translate that. Please say it again.", False
+        s.error, s.patient_view["pending"] = "err_translate", False
         yield UI
         return
-    english = (tr.get("english") or tr.get("translation") or "").strip()
+    shown_text = (tr.get("translation") or tr.get("english") or "").strip()  # in the doctor's language
+    english = (tr.get("english") or shown_text).strip()                      # the record, rules and care plan
     turn = s.brain.add_turn("patient", s.lang, text, english=english, translation=english)
+    s.shown[turn.id] = shown_text
     allergies = tr.get("allergies", [])
     if allergies:
         brain.record_allergies(s.brain, allergies, english, turn.id)
     brain.post_idioms(s.brain, turn)  # sync lexicon: idiom note + one red-flag-first "Ask next"
+    subs = [(a.get("substance") or "").strip().lower() for a in allergies]
+    shown = loc(s, [f"{_cap(x)} allergy" for x in subs if x])
     with s.lock:
-        for a in allergies:
-            sub = (a.get("substance") or "").strip().lower()
-            if sub:
-                add_note(s, "allergy", f"{sub[:1].upper()}{sub[1:]} allergy")
-        s.patient_view = {"native": text, "en": english, "idiom": None, "note": "", "pending": False, "utt": turn.id}
+        for txt in shown:
+            add_note(s, "allergy", txt)
+        s.patient_view = {"native": text, "en": shown_text, "idiom": None, "note": "", "pending": False, "utt": turn.id}
+        set_turn(s, "doctor")
     brain.on_turn(s.brain, turn)
     yield UI
-    if DOCTOR_VOICE and english:
-        s.pending.append(Speech(english, "en", "doctor", False, english, kind="turn"))
+    if shown_text:  # the doctor hears the patient's words in their own language (worker voice; text stays on screen)
+        s.pending.append(Speech(shown_text, s.doc_lang, "doctor", False, shown_text, kind="turn"))
 
 
 # ------------------------------------------------------------------ actions
@@ -517,14 +754,16 @@ def ask_suggestion(s: Consult, sug_id: str) -> bool:
         tr = talk.translate(q, "doctor", "en", s.lang, context=_context(s))
     except Exception as e:  # noqa: BLE001
         print(f"[translate] {type(e).__name__}: {e}", flush=True)
-        s.error = "Could not translate that. Please ask it yourself."
+        s.error = "err_ask"
         return True
     with s.lock:
         sug["status"] = "asked"
         turn = s.brain.add_turn("bayan", "en", q, english=q, translation=tr["translation"], kind="ask")
-        s.doctor_view = {"en": q, "native": tr["translation"], "pending": False}
+        shown_q = loc(s, [q])[0]
+        s.doctor_view = {"en": shown_q, "native": tr["translation"], "pending": False}
         s.live, s.tint, s.held = "doctor", "d", None
-        s.pending.append(Speech(tr["translation"], s.lang, "patient", True, q, kind="ask"))
+        s.pending.append(Speech(tr["translation"], s.lang, "patient", True, shown_q, kind="ask"))
+        set_turn(s, "patient")
     brain.on_turn(s.brain, turn)
     return True
 
@@ -535,6 +774,7 @@ def held_else(s: Consult):
     with s.lock:
         s.held = None
         s.live, s.tint = "idle", "n"
+        set_turn(s, "doctor")
 
 
 def held_anyway(s: Consult):
@@ -546,10 +786,11 @@ def held_anyway(s: Consult):
         s.held = None
     brain.override_turn(s.brain, h.get("utt", ""), h.get("cards") or [], "spoken anyway by clinician")
     with s.lock:
-        add_note(s, "override", f"{h['drug'][:1].upper()}{h['drug'][1:]} spoken anyway")
+        add_note(s, "override", loc(s, [f"{_cap(h['drug'])} spoken anyway"])[0])
         print(f"[audit] override {h['rule']} sid={s.sid[:6]} drug={h['drug']}", flush=True)
         s.live, s.tint = "doctor", "d"
         s.pending.append(Speech(h["translation"], s.lang, "patient", True, h["dq"], kind="override"))
+        set_turn(s, "patient")
 
 
 def again(s: Consult, slow: bool):
@@ -569,13 +810,13 @@ def _est_seconds(text: str, lang: str, slow: bool) -> float:
     return 0.8 + len(text) / (CHARS_PER_SEC.get(lang, 11.0) * (0.65 if slow else 1.0))
 
 
-def _begin_speech(s: Consult, sp: Speech):
+def _begin_speech(s: Consult, sp: Speech, dur: float | None, audio: bool = True):
     with s.lock:
-        s.speaking = True
+        s.speaking, s.processing = True, False
         s.last_speech = sp if sp.to == "patient" else s.last_speech
         if sp.caption and sp.to == "patient":
-            s.caption = {"native": sp.text, "en": sp.en, "key": uuid.uuid4().hex[:8],
-                         "rate": CHARS_PER_SEC.get(sp.lang, 11.0) * (0.65 if sp.slow else 1.0)}
+            rate = (len(sp.text) / max(0.6, dur - 0.7)) if dur else 13.0 * (0.65 if sp.slow else 1.0)
+            s.caption = {"native": sp.text, "en": sp.en, "key": uuid.uuid4().hex[:8], "rate": round(rate, 2), "audio": audio}
             s.live, s.tint = "caption", "p"
 
 
@@ -590,64 +831,122 @@ def _end_speech(s: Consult, sp: Speech):
             s.tint = "n"
 
 
-def speak_live(s: Consult, sp: Speech):
-    """Stream speech into the WebRTC call. Yields UI or (sr, int16 pcm). Holds the mic until playback ends."""
-    t_first, played = None, 0.0
-    desc = SLOW_DESCRIPTION if sp.slow else ""
-    try:
-        for out_sr, f32 in talk.speak_chunks(sp.text, sp.lang, desc) if sp.lang != "en" else _doctor_voice(sp.text):
-            if t_first is None:
-                t_first = time.time()
-                _begin_speech(s, sp)
-                yield UI
-            played += len(f32) / out_sr
-            yield out_sr, (np.clip(f32, -1, 1) * 32767).astype(np.int16).reshape(1, -1)
-    except Exception as e:  # noqa: BLE001 - keep the visit going in text
-        print(f"[speak] failed: {type(e).__name__}: {e}", flush=True)
-        s.error = "Voice is offline. Showing text only."
-    if t_first is None:  # text only: show the caption long enough to read
-        if sp.to == "patient":
-            _begin_speech(s, sp)
-            yield UI
-            time.sleep(min(8.0, _est_seconds(sp.text, sp.lang, sp.slow)))
-    else:  # do not let the mic hear Bayan's own voice (echo tail 300 ms)
-        time.sleep(max(0.0, t_first + played - time.time()) + 0.3)
-    _end_speech(s, sp)
-    yield UI
+# ------------------------------------------------------------------ speech out (streamed to the page)
+_CLIPS: "OrderedDict[tuple, tuple]" = None  # (text, lang, slow) -> (sr, int16): consent and repeats play instantly
+_CLIPS_LOCK = threading.Lock()
 
 
-def _doctor_voice(text: str):
-    voiced = talk.speak(text, "en")
-    if voiced is not None:
-        yield voiced
+def _clip_cache():
+    global _CLIPS
+    if _CLIPS is None:
+        from collections import OrderedDict
+        _CLIPS = OrderedDict()
+    return _CLIPS
 
 
-def speak_demo(s: Consult, sp: Speech, voice_on: bool):
-    """Demo: synthesize the whole utterance, hand it to the page's audio player, wait for playback.
-    Yields UI or ("wav", (sr, int16))."""
-    wav = None
-    if voice_on and (sp.lang in talk.WORKER_TTS_LANGS or (sp.lang == "en" and DOCTOR_VOICE)):
-        try:
-            wav = talk.speak(sp.text, sp.lang, SLOW_DESCRIPTION if sp.slow else "")
-        except Exception as e:  # noqa: BLE001
-            print(f"[demo speak] failed: {type(e).__name__}: {e}", flush=True)
-    if wav is None and sp.to == "doctor":
+def _to_i16(f32) -> np.ndarray:
+    return (np.clip(np.asarray(f32, dtype=np.float32).reshape(-1), -1, 1) * 32767).astype(np.int16)
+
+
+def _half_rate(sr: int, pcm: np.ndarray) -> tuple[int, np.ndarray]:
+    """44.1/48 kHz speech -> half rate (pairwise mean): half the bytes to the browser, no audible loss."""
+    if sr < 32000:
+        return sr, pcm
+    n = pcm.size // 2 * 2
+    return sr // 2, ((pcm[:n:2].astype(np.int32) + pcm[1:n:2].astype(np.int32)) // 2).astype(np.int16)
+
+
+def voice_chunks(text: str, lang: str, slow: bool = False):
+    """(sr, int16) chunks as the voice worker produces them; cached once complete."""
+    key = (text, lang, slow)
+    with _CLIPS_LOCK:
+        hit = _clip_cache().get(key)
+    if hit:
+        sr, pcm = hit
+        step = sr  # 1 s pieces
+        for i in range(0, pcm.size, step):
+            yield sr, pcm[i:i + step]
         return
-    _begin_speech(s, sp)
-    yield UI
-    if wav is not None:
-        sr, f32 = wav
-        f32 = np.asarray(f32).reshape(-1)
-        yield "wav", (sr, (np.clip(f32, -1, 1) * 32767).astype(np.int16))
-        time.sleep(len(f32) / sr + 0.4)
+    parts, out_sr = [], None
+    if lang not in talk.WORKER_TTS_LANGS:
+        return
+    # Parler-TTS takes a voice description (slower); Supertonic / MMS ignore it.
+    src = ((sr, _to_i16(f)) for sr, f in talk.speak_chunks(text, lang, SLOW_DESCRIPTION if slow else ""))
+    for sr, pcm in src:
+        sr, pcm = _half_rate(sr, pcm)
+        out_sr = sr
+        parts.append(pcm)
+        yield sr, pcm
+    if parts:
+        with _CLIPS_LOCK:
+            c = _clip_cache()
+            c[key] = (out_sr, np.concatenate(parts))
+            while len(c) > 48:
+                c.popitem(last=False)
+
+
+def _audio_item(key: str, i: int, sr: int, pcm: np.ndarray) -> str:
+    import base64
+    return (f"<i class='bz-au' data-k='{key}' data-i='{i}' data-sr='{sr}' "
+            f"data-p='{base64.b64encode(pcm.astype('<i2').tobytes()).decode('ascii')}'></i>")
+
+
+def speak_clip(s: Consult, sp: Speech, voice_on: bool = True):
+    """Stream one utterance to the page's WebAudio player. Yields UI, or ("say", audio_html) when the
+    stage and the (cumulative, append-only) audio must go out together. Returns after playback ends."""
+    key = uuid.uuid4().hex[:10]
+    audio_html, t_first, total, i = "", None, 0.0, 0
+    if voice_on:
+        try:
+            for sr, pcm in voice_chunks(sp.text, sp.lang, sp.slow):
+                if s.screen not in ("consent", "live") or SESS.get(s.sid) is not s:
+                    return  # the visit ended while we were synthesising: say nothing
+                if pcm.size == 0:
+                    continue
+                audio_html += _audio_item(key, i, sr, pcm)
+                i += 1
+                total += pcm.size / sr
+                if t_first is None:
+                    t_first = time.time()
+                    _begin_speech(s, sp, None)
+                yield "say", audio_html
+        except Exception as e:  # noqa: BLE001 - keep the visit going in text
+            print(f"[speak] {type(e).__name__}: {e}", flush=True)
+            s.error = "err_voice_off"
+    if t_first is None:
+        if sp.to == "doctor" or s.screen not in ("consent", "live"):
+            return
+        _begin_speech(s, sp, None, audio=False)
+        yield "say", None
+        time.sleep(min(8.0, _est_seconds(sp.text, sp.lang, sp.slow)))
     else:
-        time.sleep(min(7.0, _est_seconds(sp.text, sp.lang, sp.slow)))
+        audio_html += f"<i class='bz-au' data-k='{key}' data-i='{i}' data-end='1' data-dur='{total:.3f}'></i>"
+        yield "say", audio_html
+        # The page starts ~0.15 s after the first chunk lands; keep the stage in "speaking" until it is done.
+        time.sleep(max(0.0, t_first + total + 0.35 - time.time()))
+    yield from _settle(s)
     _end_speech(s, sp)
     yield UI
+
+
+SETTLE_SECONDS = 3.0
+
+
+def _settle(s: Consult):
+    """Breathing room: the caption stays up for 3 s after Bayan finishes, then the stage moves on.
+    Ends early on any tap/key (settle_skip), queued speech (Say it again), or the visit ending."""
+    with s.lock:
+        s.settling, s.settle_cancel = True, False
+    yield UI
+    t_end = time.time() + SETTLE_SECONDS
+    while (time.time() < t_end and not s.settle_cancel and not s.pending
+           and SESS.get(s.sid) is s and s.screen in ("consent", "live")):
+        time.sleep(0.05)
+    with s.lock:
+        s.settling = False
 
 
 # ------------------------------------------------------------------ end of visit
-STEP_LABELS = ["Care plan, in English", "Care plan, in {lang}", "Checking the plan against the safety rules"]
 # wrap-up trace lines (bayan.brain.wrapup -> consult.log) that complete steps 1 and 2; step 3 ends with the run
 _STEP_DONE = [("care_plan_llm", "build_care_plan"), ("build_care_plan",)]
 
@@ -681,15 +980,15 @@ def _review_warnings(out: dict) -> list[str]:
 
 def end_visit(s: Consult, base_url: str):
     """Generator: wrap screen with a live checklist (copilot flush + agentic wrap-up), then the review screen."""
-    name = LANGS.get(s.lang, {}).get("name", s.lang)
-    labels = [STEP_LABELS[0], STEP_LABELS[1].format(lang=name), STEP_LABELS[2]]
     if s.held:
         _discard_held(s, "not spoken: the consultation ended")
     with s.lock:
         s.screen, s.live, s.tint, s.speaking, s.held, s.error = "wrap", "idle", "n", False, None, ""
         s.pending.clear()
-        s.steps = [{"label": labels[0], "state": "doing"}, {"label": labels[1], "state": "todo"},
-                   {"label": labels[2], "state": "todo"}]
+        s.processing, s.settling = False, False
+        # labels are built on the page in the doctor's language: "Care plan, in <lang>", "Checking ... safety rules"
+        s.steps = [{"k": "plan", "lang": s.doc_lang, "state": "doing"}, {"k": "plan", "lang": s.lang, "state": "todo"},
+                   {"k": "safety", "state": "todo"}]
     yield UI
     b = s.brain
     b.ended = True
@@ -716,14 +1015,16 @@ def end_visit(s: Consult, base_url: str):
         return
     if "err" in box or not out:
         print(f"[wrapup] failed: {box.get('err')}", flush=True)
-        s.error = "Could not write the plan. Please explain it to the patient."
+        s.error = "err_plan"
     _advance_steps(s, b.trace[start:])
+    plan = out.get("care_plan") or {"lang": s.lang, "medicines": [], "avoid": [], "red_flags": [], "advice": [],
+                                     "follow_up": {}, "emergency": "999"}
+    plan_doc = careplan.plan_text_for(plan, s.doc_lang)  # Arabic review text in Arabic mode (one LLM call)
+    warnings = loc(s, _review_warnings(out))
     for st in s.steps:
         st["state"] = "done"
     yield UI
     time.sleep(0.6)
-    plan = out.get("care_plan") or {"lang": s.lang, "medicines": [], "avoid": [], "red_flags": [], "advice": [],
-                                     "follow_up": {}, "emergency": "999"}
     token = out.get("token") or secrets.token_urlsafe(16)
     dtoken = secrets.token_urlsafe(16)
     if out.get("out_dir"):
@@ -733,31 +1034,95 @@ def end_visit(s: Consult, base_url: str):
     pid = careplan.create(s.lang, plan, token=token if out.get("patient_pdf") else None)
     url = f"{base}/plan/{pid}"
     with s.lock:
-        s.review = {"plan_id": pid, "plan_en": careplan.plan_text(plan), "note": out.get("note_md") or "",
-                    "url": url, "qr": careplan.qr_svg(url), "warnings": _review_warnings(out), "sending": False,
-                    "doctor_pdf": f"/files/{dtoken}/doctor_report.pdf" if out.get("doctor_pdf") else "",
-                    "patient_pdf": f"/files/{token}/care_plan.pdf" if out.get("patient_pdf") else "",
-                    "wa": out.get("wa_link") or ""}
+        s.review = {"plan_id": pid, "plan": plan_doc, "plan_en": careplan.plan_text(plan), "note": out.get("note_md") or "",
+                    "url": url, "qr": careplan.qr_svg(url), "warnings": warnings, "sending": False, "confirm": False,
+                    "doctor_pdf": f"{base}/files/{dtoken}/doctor_report.pdf" if out.get("doctor_pdf") else "",
+                    "patient_pdf": f"{base}/files/{token}/care_plan.pdf" if out.get("patient_pdf") else ""}
         s.screen = "review"
     yield UI
 
 
-def approve(s: Consult, text: str = "", note: str | None = None):
-    """Approve and send: the (possibly edited) clinic note is saved and the doctor PDF re-rendered; the patient's
-    plan page goes live. The care plan itself is the rule-checked structured plan (read-only on the review
-    screen), so `text` is not used."""
+def _plan_conflicts(s: Consult, text: str) -> list[str]:
+    """Cheap re-check of an edited plan: medicines in it that share a class with a recorded allergy."""
+    from .brain.vocab import classes_of
+    try:
+        drugs = talk.translate(text, "doctor", s.doc_lang, "en").get("drugs") or []
+    except Exception as e:  # noqa: BLE001
+        print(f"[plan check] {type(e).__name__}: {e}", flush=True)
+        return []
+    with s.brain.lock:
+        allergies = list(s.brain.state.get("allergies") or [])
+    out = []
+    for d in drugs:
+        if d.get("intent") == "stop":
+            continue
+        name = d["name"]
+        d_cls = set(classes_of(name)) | {name}
+        for a in allergies:
+            sub = str(a.get("substance") or "").lower()
+            if sub and d_cls & (set(a.get("class") or []) | set(classes_of(sub)) | {sub}):
+                out.append(f"The edited plan has {name}; the patient reported {_article(sub)} {sub} allergy.")
+    return loc(s, list(dict.fromkeys(out)))
+
+
+def _to_english(text: str, lang: str) -> str:
+    if lang == "en" or not text.strip():
+        return text
+    try:
+        return brain_llm.chat_text(careplan.TRANSLATE_PLAN_SYSTEM.format(lang="English"), text, max_tokens=2500).strip()
+    except Exception:  # noqa: BLE001
+        return text
+
+
+def approve(s: Consult, text: str = "", note: str | None = None, force: bool = False):
+    """Approve and send. The doctor gives the plan: if they edited the review text, their text becomes the plan
+    (re-translated for the patient, digits and drug names exact; /plan and the patient PDF are rendered from it and
+    the doctor PDF records the edit). Unchanged: the wrap-up agent's structured, rule-checked plan goes out as is.
+    An edited plan is re-checked against recorded allergies first; a conflict asks for a second tap."""
     if s.screen != "review" or not s.review:
         return
+    text = (text or "").replace("\r\n", "\n").strip()
+    edited = bool(text) and text != (s.review.get("plan") or "").strip()
     s.review["sending"] = True
     yield UI
     b = s.brain
+    with b.lock:
+        out_dir = b.outputs.get("out_dir")
+    if edited:
+        if not force:
+            conflicts = _plan_conflicts(s, text)
+            if conflicts:
+                s.review.update(warnings=conflicts, confirm=True, sending=False)
+                yield UI
+                return
+        try:
+            native = careplan.translate_plan(text, s.lang) if s.lang != s.doc_lang else text
+        except Exception as e:  # noqa: BLE001
+            print(f"[approve translate] {type(e).__name__}: {e}", flush=True)
+            native = ""
+        careplan.set_text(s.review["plan_id"], text, native, s.doc_lang)
+        english = _to_english(text, s.doc_lang)
+        with b.lock:
+            base_note = (b.outputs.get("note_md") or s.review.get("note") or "").rstrip()
+        note = base_note + "\n\n## Care plan (edited by the doctor before sending)\n" + english
+        if out_dir:
+            try:
+                from .outputs.report import render_plain_pdf
+                title = ui.t("en", "rev_label")
+                render_plain_pdf(title, (native + "\n\n" if native and native != text else "") + text,
+                                 Path(out_dir) / "care_plan.pdf")
+            except Exception as e:  # noqa: BLE001
+                print(f"[approve] patient PDF re-render failed: {type(e).__name__}: {e}", flush=True)
+        s.review["plan"] = text
     note = (note or "").replace("\r\n", "\n").strip()
     with b.lock:
         if note and note != (b.outputs.get("note_md") or "").strip():
             b.outputs["note_md"], b.outputs["note_edited"] = note, True
             s.review["note"] = note
+        if edited:
+            b.outputs["plan_edited_by_doctor"] = True
         b.outputs["approved_at"] = datetime.now().isoformat(timespec="seconds")
-        note_md, plan, out_dir = b.outputs.get("note_md") or "", b.outputs.get("care_plan"), b.outputs.get("out_dir")
+        note_md, plan = b.outputs.get("note_md") or "", b.outputs.get("care_plan")
     if out_dir:
         try:
             from .outputs.report import render_doctor_report
@@ -767,7 +1132,7 @@ def approve(s: Consult, text: str = "", note: str | None = None):
             print(f"[approve] doctor PDF re-render failed: {type(e).__name__}: {e}", flush=True)
     careplan.approve(s.review["plan_id"])
     with s.lock:
-        s.review["sending"] = False
+        s.review["sending"], s.review["confirm"] = False, False
         s.screen, s.tint = "sent", "p"
     yield UI
 
@@ -775,7 +1140,7 @@ def approve(s: Consult, text: str = "", note: str | None = None):
 # ------------------------------------------------------------------ demo (golden path, text turns)
 DEMO_SCRIPT = [
     ("doctor", "Do you have any allergies to medicines?"),
-    ("patient", "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर सुन्नियो।"),
+    ("patient", "एकपटक पेनिसिलिन सुई लगाउँदा मेरो शरीर फुलेर आयो।"),
     ("patient", "मेरो छाती ग्यास्ट्रिकले जस्तो पोलेको छ, काम गर्दा झन् बढ्छ।"),
     ("ask", None),
     ("doctor", "Amoxicillin 500 three times a day, and you can go home."),
