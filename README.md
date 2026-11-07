@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://dullgrey-team-qh-129-bayan-app.hf.space"><img src="https://img.shields.io/badge/Live_app-hf.space-0E8A6F?style=flat&logo=huggingface&logoColor=white&labelColor=173430" alt="Live app"></a>
-  <a href="assets/readme/demo.mp4"><img src="https://img.shields.io/badge/Demo_video-87_s-0E8A6F?style=flat&labelColor=173430" alt="Demo video"></a>
+  <a href="assets/readme/demo.mp4"><img src="https://img.shields.io/badge/Demo_video-42_s-0E8A6F?style=flat&labelColor=173430" alt="Demo video"></a>
   <a href="docs/pitch/Bayan-pitch.pdf"><img src="https://img.shields.io/badge/Pitch_deck-PDF-0E8A6F?style=flat&labelColor=173430" alt="Pitch deck (PDF)"></a>
   <a href="#team"><img src="https://img.shields.io/badge/Built_for-Qai_%C3%97_Hugging_Face_Hackathon-FFD21E?style=flat&logo=huggingface&logoColor=white&labelColor=173430" alt="Built for the Qai × Hugging Face Hackathon"></a>
 </p>
@@ -32,7 +32,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/readme/demo.gif" width="100%" alt="Bayan on the live Space: Nepali consent, the patient's Nepali translated for the doctor, an idiom note for 'gyastrik', the copilot's suggested question asked in Nepali, and amoxicillin held after a reported penicillin allergy.">
+  <img src="assets/readme/demo.gif" width="100%" alt="Bayan on the live Space: Nepali consent, the patient's Nepali translated for the doctor, an idiom note for 'gyastrik', the copilot's suggested question asked in Nepali, and amoxicillin paused after a reported penicillin allergy.">
   <br>
   <sub>Scripted Nepali consultation on the live Space, sped up. <a href="assets/readme/demo.mp4">Full video (MP4)</a>.</sub>
 </p>
@@ -43,12 +43,12 @@ About 94% of Qatar's workforce is not Qatari. Many patients speak Nepali, Hindi,
 
 | Interprets | Reasons | Flags | Suggests |
 |---|---|---|---|
-| 37 patient languages. The doctor speaks English or Arabic. Tap the pearl, speak, tap again. | Keeps a running case summary and reviews it after every turn with a smolagents agent. | Allergies, doses, interactions, missed workup, plans that don't fit the complaint, patient confusion. A dangerous instruction is held before the patient hears it. | One next question at a time, asked in the patient's language with one tap. |
+| 37 patient languages. The doctor speaks English or Arabic. Tap the pearl, speak, tap again. | Keeps a running case summary and reviews it after every turn with a smolagents agent. | Allergies, doses, interactions, missed workup, plans that don't fit the complaint, patient confusion. A dangerous or contradictory instruction is paused before the patient hears it. | One next question at a time, asked in the patient's language with one tap. |
 
 <table>
   <tr>
     <td width="50%"><img src="assets/readme/screen-live.webp" alt="Live screen: the patient's Nepali, the English for the doctor, an idiom note for gyastrik, and the Notes panel with two suggested questions"></td>
-    <td width="50%"><img src="assets/readme/screen-held.webp" alt="Sentence held: the patient reported a penicillin allergy; amoxicillin is a penicillin"></td>
+    <td width="50%"><img src="assets/readme/screen-held.webp" alt="Paused: the patient reported a penicillin allergy; amoxicillin is a penicillin"></td>
   </tr>
   <tr>
     <td><sub><b>Live.</b> The patient's words, the English, an idiom note (<i>gyastrik</i> can hide cardiac pain) and the copilot's Notes. Cards appear on the doctor's screen only.</sub></td>
@@ -104,7 +104,7 @@ Scripted consultations played as text through the real engine with `gpt-oss-120b
 
 | 99% | 0 of 44 | 477 of 477 | 8 of 12 | 0 |
 |:---:|:---:|:---:|:---:|:---:|
-| of 727 rule checks passed | false-alarm traps tripped | PDF checks: native script, held drug never on the patient sheet | expected clinical concerns flagged, one run | false caution alerts on 6 quiet visits |
+| of 727 rule checks passed | false-alarm traps tripped | PDF checks: native script, paused drug never on the patient sheet | expected clinical concerns flagged, one run | false caution alerts on 6 quiet visits |
 
 - **Safety rules:** 38 consultations in 14 languages ([summary](reports/sim/gptoss120b-full/summary.md)).
 - **Clinical review:** 16 consultations in 9 languages: 7 with a plan that doesn't fit, 6 quiet visits, 3 repeats of rule cases ([summary](reports/sim/coherence-r2/summary.md)). Smaller reruns caught 4 of 7 and 2 of 5.

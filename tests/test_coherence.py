@@ -167,7 +167,7 @@ def test_confident_hold_shows_the_held_screen_with_reason_and_quotes(fake):
                                                                                   "consistency")
     assert [e["utt"] for e in card["evidence"]] == ["u002", "u003"]
     assert not any(n["text"] == card["title"] for n in _view(s)["notes"])
-    assert any("Sentence held" in n["text"] for n in s.notes)
+    assert any("Paused, not said" in n["text"] for n in s.notes)
 
 
 def test_below_threshold_is_spoken_normally(fake):

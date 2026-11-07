@@ -220,7 +220,7 @@ def chart_arch() -> str:
     talk = [("Speaker check", ["VoxLingua107"], A_GREY, INK, 1.6),
             ("Speech-to-text", ["Whisper, IndicConformer, MMS"], A_GREY, INK, 1.6),
             ("Translate + extract", ["gpt-oss-120b"], A_GREY, INK, 1.6),
-            ("Prescription gate", ["83 rules, no LLM"], A_VERM, HELD, 2.4),
+            ("Safety gate", ["83 rules + coherence check"], A_VERM, HELD, 2.4),
             ("Text-to-speech", ["Parler, MMS, Supertonic, Piper"], A_GREY, INK, 1.6)]
     for i, (t, sub, fill, st, sw) in enumerate(talk):
         out.append(blk(ix, R[i], iw, 68, t, sub, fill, st, sw))
@@ -330,7 +330,7 @@ def chart_arch_overview() -> str:
     out.append(nlabel(48, 560, "N×", ["each", "turn"]))
     talk = [("Hear", ["speaker check, speech-to-text", "Whisper, IndicConformer, MMS"], A_GREY, INK, 1.8),
             ("Interpret", ["translate with gpt-oss-120b"], A_GREY, INK, 1.8),
-            ("Safety gate", ["83 rules"], A_VERM, HELD, 2.6),
+            ("Safety gate", ["83 rules + coherence check"], A_VERM, HELD, 2.6),
             ("Speak", ["voice in the listener's language"], A_GREY, INK, 1.8)]
     for i, (t, sub, fill, st, sw) in enumerate(talk):
         out.append(blk(ix, R[i], iw, bh, t, sub, fill, st, sw))
@@ -431,7 +431,7 @@ def slides() -> list[str]:
     S.append(f'''
 <section class="slide s-title" data-title="Title">
   <div class="title">
-    <h1><span>Bayan AI</span><span class="ar" lang="ar">بيان</span></h1>
+    <h1><span class="ar" lang="ar">بيان</span><span>Bayan AI</span></h1>
     <p class="tag">A clinical AI system that interprets between doctors and patients in Qatar, reasons about the consultation, and flags what gets missed.</p>
     <p class="meta"><span>Team QH-129</span><span>Qai × Hugging Face Hackathon O1</span><span>Doha, 5–7 Nov 2026</span></p>
   </div>
@@ -442,15 +442,14 @@ def slides() -> list[str]:
     S.append(f'''
 <section class="slide s-anurag" data-title="Anurag">
   {brand()}
+  <img class="anurag-img" src="../assets/anurag.png" alt="Illustration of Anurag, a construction worker in a hard hat">
   <h2>Meet Anurag</h2>
   <p class="lede">29, a Nepali construction worker in Doha</p>
-  <ol class="three">
-    <li><p class="k">Anurag says</p><p class="q">“My chest is burning. It’s just <i>gyastrik</i>.”</p>
-      <p class="g"><span lang="ne">ग्यास्ट्रिक</span> (gyastrik) is Nepali for “gastric”</p></li>
-    <li><p class="k">The doctor hears</p><p class="q">A stomach problem, like reflux</p></li>
-    <li class="alarm"><p class="k">It could be</p><p class="q">His heart</p></li>
-  </ol>
-  {foot(2, "Illustrative persona. In Nepal only 23.8% of STEMI patients thought their pain was cardiac (Prajapati, JNHRC 2022); gyastrik is entry npi-005 in data/idiom_lexicon.json.")}
+  <p class="aq">“My chest is burning. It’s just <i>gyastrik</i>.”</p>
+  <p class="ag"><span lang="ne">ग्यास्ट्रिक</span>, Nepali for “gastric”</p>
+  <p class="ah">The doctor hears reflux.</p>
+  <p class="ar2">It could be his heart.</p>
+  <span class="pg">{{PG}}</span>
 </section>''')
 
     # 2 Qatar
@@ -516,7 +515,7 @@ def slides() -> list[str]:
   {brand()}
   <h2>Check before it is said</h2>
   <div class="pausewrap"><img src="../assets/screens/07-held-penicillin-amoxicillin.png" alt="Bayan paused the doctor's sentence: the patient reported a penicillin allergy; amoxicillin is a penicillin"></div>
-  <p class="heldcap">The patient does not hear the sentence until the doctor decides. Rule ALG-PEN-01 found it in about 3 ms, with no language model involved. The doctor can say something else, or speak it anyway, which is logged.</p>
+  <p class="heldcap">The patient mentioned a penicillin allergy, and the doctor then prescribed amoxicillin. Bayan paused the sentence before the patient heard it, so the doctor can say something else or speak it anyway.</p>
   <span class="pg">{{PG}}</span>
 </section>''')
 
@@ -727,6 +726,15 @@ h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-heigh
 
 /* 2 anurag */
 .s-anurag .lede{position:absolute;left:128px;top:262px;font-size:34px;color:var(--muted)}
+.s-anurag .anurag-img{position:absolute;right:0;top:0;width:1080px;height:1080px;object-fit:cover;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 22%);mask-image:linear-gradient(90deg,transparent 0,#000 22%)}
+.s-anurag h2,.s-anurag .lede{z-index:2}
+.s-anurag .pg{display:none}
+.s-anurag .aq{position:absolute;left:128px;top:400px;width:760px;margin:0;font-size:56px;line-height:1.18;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.s-anurag .ag{position:absolute;left:128px;top:560px;margin:0;font-size:26px;color:var(--muted)}
+.s-anurag .ag span{font-family:'Noto Sans Devanagari',sans-serif;color:var(--ink);text-decoration:underline dotted #8E7CC3;text-underline-offset:8px}
+.s-anurag .ah{position:absolute;left:128px;top:690px;margin:0;font-size:40px;font-weight:500;color:var(--ink)}
+.s-anurag .ar2{position:absolute;left:128px;top:756px;margin:0;font-size:40px;font-weight:600;color:var(--held)}
 .three{position:absolute;left:128px;top:470px;width:1664px;list-style:none;display:grid;grid-template-columns:620px 560px 380px;column-gap:52px}
 .three li{border-top:1px solid var(--rule);padding-top:30px}
 .three .k{font-size:26px;color:var(--muted)}
@@ -789,10 +797,9 @@ body.still .screen .poster{display:block}
 
 /* 5 held */
 .bleed{position:absolute;inset:0;width:1920px;height:1080px}
-.pausewrap{position:absolute;left:128px;top:292px;width:1520px;height:630px;overflow:hidden;border-radius:22px;background:var(--bg);
-  box-shadow:0 0 0 1px var(--rule),0 50px 90px -60px rgba(23,52,48,.45)}
-.pausewrap img{display:block;width:1520px;height:auto}
-.heldcap{position:absolute;left:128px;top:946px;width:1520px;font-size:24px;line-height:1.45;color:var(--muted)}
+.pausewrap{position:absolute;left:128px;top:330px;width:1120px;height:464px;overflow:hidden;border-radius:16px;background:var(--bg);border:1px solid var(--rule);box-sizing:content-box}
+.pausewrap img{display:block;width:1120px;height:auto}
+.heldcap{position:absolute;left:1316px;top:330px;width:476px;height:464px;display:flex;align-items:center;margin:0;font-size:30px;line-height:1.5;color:var(--ink)}
 
 /* 6 outputs */
 .outs{position:absolute;left:128px;top:300px;display:flex;align-items:flex-start;gap:58px}
@@ -913,7 +920,7 @@ JS = r"""
   function fit(){const s=Math.min(innerWidth/1920,innerHeight/1080);
     deck.style.transform=`translate(${(innerWidth-1920*s)/2}px,${(innerHeight-1080*s)/2}px) scale(${s})`;}
   function video(on){ if(!vid||document.body.classList.contains('still')) return;
-    if(on){ try{vid.currentTime=22;}catch(e){} vid.playbackRate=1.5; vid.play().catch(()=>{}); } else vid.pause(); }
+    if(on){ try{vid.currentTime=0;}catch(e){} vid.playbackRate=1; vid.play().catch(()=>{}); } else vid.pause(); }
   function go(n){ i=Math.max(0,Math.min(slides.length-1,n));
     slides.forEach((el,k)=>el.classList.toggle('on',k===i));
     history.replaceState(null,'','#'+(i+1)); video(slides[i].classList.contains('s-demo')); }

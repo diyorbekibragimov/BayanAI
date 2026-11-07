@@ -850,8 +850,8 @@ def process_text(s: Consult, role: str, text: str, src: str | None = None):
                 return
         en_notes = [("test", f"{_cap(_join(tests))} ordered")] if tests else []
         if reason:
-            en_notes.append(("held", f"{_cap(reason['drug'])}: held, not said to the patient" if reason.get("drug")
-                             else "Sentence held, not said to the patient"))
+            en_notes.append(("held", f"{_cap(reason['drug'])}: paused, not said to the patient" if reason.get("drug")
+                             else "Paused, not said to the patient"))
         else:
             for d in drugs:
                 name = (d.get("name") or "").strip()

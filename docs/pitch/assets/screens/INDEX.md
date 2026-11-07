@@ -26,7 +26,8 @@ Shots 15/15b come from a live Korean session. Each turn sent 16 kHz PCM made by 
 | `10-sent-qr.png` | Sent state: "Sent to the patient", QR for the patient's phone, "Start a new consultation" | Patient leaves with a plan in their language |
 | `15-ko-live-caption.png` | Korean consultation: the doctor's English question shown as a large Korean caption ("약에 알레르기가 있나요?") | Same flow in any language (Korean) |
 | `15b-ko-consent.png` | Consent spoken and shown in Korean with 예 / 아니요 buttons | (alternate) |
-| `../demo.webm` | 88 s screen recording of the scripted Nepali demo, from the start screen to the held screen (1920×1080, VP9, no audio). The HF Spaces badge shows top-right for about the first second. | Live demo backup video |
+| `../demo.webm` | 89.5 s screen recording of the scripted Nepali demo, from the start screen to the paused screen ("Paused: please check"), cut from `demo-master.mp4` (1920×1080, 30 fps, VP9, no audio, HF badge hidden). | Live demo backup video |
+| `../demo-master.mp4` | 124.8 s master of the same run, from the splash pearl through the doctor's choice to the review screen (1920×1080, 60 fps CFR, H.264 CRF 14, no audio). Captured frame by frame with CDP screencast (JPEG q97). | Source for the narrated video |
 
 ## Not captured (HF credit freeze, all consultation runs stopped)
 
