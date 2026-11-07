@@ -24,7 +24,7 @@
 | `bayan/brain/merge.py` | Brain | Validator: drug normalisation (brand → generic, classes), units, daily dose, earliest first mention, never overwrites known with unknown |
 | `bayan/brain/vocab.py` | Brain | Controlled vocabularies harvested from the rules, so extraction can only emit codes the rules know |
 | `bayan/brain/rules.py` | Brain | Deterministic engine over `data/safety_rules.json` (81 rules), including `check_prescription` for the gate. No LLM |
-| `bayan/brain/idioms.py` | Brain | Lexicon matcher over `data/idiom_lexicon.json` (59 entries): native script, romanized, English loanwords. No LLM |
+| `bayan/brain/idioms.py` | Brain | Lexicon matcher over `data/idiom_lexicon.json` (98 entries): native script, romanized, English loanwords. No LLM |
 | `bayan/brain/checklist.py` | Brain | Presenting-complaint workup checklists derived from the state |
 | `bayan/brain/cards.py` | Brain | Card store with guardrails in code, dedupe, doctor actions, append-only audit |
 | `bayan/brain/agentkit.py` | Brain | smolagents 1.26.0 plumbing: `InferenceClientModel` on Cerebras, compact system prompt, hard timeout, no extra final-answer call |

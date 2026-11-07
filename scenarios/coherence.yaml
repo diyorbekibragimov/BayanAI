@@ -1,0 +1,133 @@
+# "Does this make sense?" The general clinical review (bayan.brain.copilot + curator) must notice consultations that
+# do not add up, whatever the complaint, without a rule, idiom or checklist item for it. Expectations are THEMES:
+# a theme is caught if any card shown during the visit (title, body or ask text) matches its keyword families
+# (`all`: every group must match in the same card; `any`: one group). `dimension` documents which review dimension
+# should catch it (safety / history / plan / communication / consistency); scoring is on the words only.
+# Pass mark for the suite: >= 80% of themes caught.
+
+- id: coh-01-nasal-spray-butt
+  title: "The user's live test: buttock pain after cold tiles and low mood; doctor prescribes nasal spray, patient asks if it goes in the butt, doctor claims a high temperature never measured"
+  patient_lang: ru
+  turns:
+    - {role: patient, text: "Здравствуйте, доктор. У меня попа болит."}
+    - {role: patient, text: "Я посидел на холодной плитке и, наверное, застудил попу."}
+    - {role: patient, text: "И ещё на сердце как-то холодно, кажется, у меня совсем нет настроения."}
+    - {role: doctor, text: "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner."}
+    - {role: patient, text: "А зачем мне это? Мне что, в попу его брызгать?"}
+    - {role: doctor, text: "You are not cold, you are very hot and have a really high temperature."}
+  expect:
+    themes:
+      - name: treatment does not fit the complaint
+        dimension: plan
+        all: [[nasal, nose, spray], [butt, buttock, gluteal, complaint, "fit", match, unrelated, indication, reason, rationale, "not address", "doesn't address", "does not address", mismatch, inappropriate, wrong, "unclear why"]]
+      - name: prescription incomplete (no drug name, strength or dose)
+        dimension: plan
+        any: [dose, strength, "drug name", "no name", unnamed, "which spray", "what spray", unspecified, "not specified", incomplete, "medication name", "medicine name", "name of"]
+      - name: patient confused about how / where to use it
+        dimension: communication
+        any: [confus, misunderst, understand, clarif, teach, "how to use", "where to use", "in the butt", "in my butt", "use it in", "asks whether", "asks if", "asking if", "apply it"]
+      - name: temperature claim not backed by a measurement / contradicts the patient
+        dimension: consistency
+        all: [[temperature, fever, " hot", febrile, temp], [measur, record, check, "no reading", "not taken", unsupported, without, contradict, basis, evidence, thermometer, documented, unverified, claim, stated, inconsistent, conflict]]
+      - name: low mood said in passing, not followed up
+        dimension: communication
+        any: [mood, depress, emotion, psycholog, mental, " sad", hopeless, "feeling down", wellbeing, well-being]
+    must_not_flag: [{severity: critical, source: agent}]
+
+- id: coh-02-antibiotic-viral-cold
+  title: Runny nose and sneezing for two days without fever; doctor gives "an antibiotic" with no name, dose or reason
+  patient_lang: hi
+  turns:
+    - {role: doctor, text: "Hello, what's the problem?"}
+    - {role: patient, text: "डॉक्टर साहब, दो दिन से नाक बह रही है, छींकें आ रही हैं और गला थोड़ा खराब है। बुखार नहीं है।"}
+    - {role: doctor, text: "Any allergies to medicines?"}
+    - {role: patient, text: "नहीं, कोई एलर्जी नहीं।"}
+    - {role: doctor, text: "It's a cold. I'll give you an antibiotic, take it for a week."}
+    - {role: patient, text: "ठीक है डॉक्टर, धन्यवाद।"}
+  expect:
+    themes:
+      - name: antibiotic not indicated for a viral cold
+        dimension: plan
+        all: [[antibiotic], [viral, virus, "not indicated", unnecessary, "not needed", "no bacterial", "no evidence", rationale, indication, stewardship, inappropriate, "no reason", "not justified", unjustified]]
+      - name: prescription incomplete (no drug name or dose)
+        dimension: plan
+        any: [dose, "drug name", "no name", unnamed, "which antibiotic", "what antibiotic", unspecified, "not specified", incomplete, "how often", frequency, strength, "name of", "not named"]
+
+- id: coh-03-bp-fine-not-measured
+  title: Headache and dizziness; doctor says "your blood pressure is fine" though no blood pressure was taken
+  patient_lang: bn
+  turns:
+    - {role: doctor, text: "What brings you in?"}
+    - {role: patient, text: "ডাক্তার সাহেব, তিন দিন ধরে মাথা ব্যথা করছে, আর মাঝে মাঝে মাথা ঘোরে।"}
+    - {role: doctor, text: "Do you take any medicines? Any allergies?"}
+    - {role: patient, text: "না, কোনো ওষুধ খাই না। এলার্জিও নেই।"}
+    - {role: doctor, text: "Your blood pressure is fine, it's just stress. Take paracetamol 1 g up to three times a day if needed."}
+    - {role: patient, text: "আচ্ছা, ধন্যবাদ।"}
+  expect:
+    themes:
+      - name: blood pressure stated but never measured
+        dimension: consistency
+        all: [["blood pressure", " bp", pressure], [measur, "not taken", "no reading", record, check, unverified, without, documented, claim, basis, stated, "no value", unsupported]]
+
+- id: coh-04-uti-diagnosis-vs-lifting-history
+  title: Sharp low back pain after lifting cement, urine normal and no fever; doctor diagnoses a urine infection
+  patient_lang: tl
+  turns:
+    - {role: doctor, text: "What's the problem?"}
+    - {role: patient, text: "Doc, sumakit po ang ibabang likod ko kahapon pagkatapos kong magbuhat ng mga sako ng semento. Matalas po ang sakit pag yumuyuko ako."}
+    - {role: doctor, text: "Any pain or burning when you pass urine? Any fever? Any allergies?"}
+    - {role: patient, text: "Wala po, normal po ang ihi ko at wala po akong lagnat. Wala rin po akong allergy."}
+    - {role: doctor, text: "This is a urine infection. Take nitrofurantoin 100 mg twice a day for five days."}
+    - {role: patient, text: "Sige po, salamat doc."}
+  expect:
+    themes:
+      - name: diagnosis contradicts the history (mechanical strain, no urinary symptoms)
+        dimension: consistency
+        all: [[urin, uti, infection, nitrofurantoin, diagnos], [lift, strain, muscul, mechanical, denied, denies, "no urinary", "normal urine", contradict, inconsistent, "not consistent", "does not fit", "doesn't fit", "not supported", "no fever", history, "no evidence", unsupported]]
+
+- id: coh-05-metformin-misunderstood
+  title: Metformin twice a day with meals; the patient repeats it back as all tablets at once on an empty stomach and the doctor says "good"
+  patient_lang: ur
+  turns:
+    - {role: doctor, text: "Your sugar test shows diabetes. Any allergies to medicines?"}
+    - {role: patient, text: "نہیں ڈاکٹر صاحب، کوئی الرجی نہیں۔"}
+    - {role: doctor, text: "Take metformin 500 mg, one tablet twice a day with breakfast and dinner."}
+    - {role: patient, text: "ٹھیک ہے، تو میں صبح خالی پیٹ ساری گولیاں ایک ساتھ کھا لوں؟"}
+    - {role: doctor, text: "Good. See you in one month."}
+  expect:
+    themes:
+      - name: patient misunderstood the instructions; not corrected
+        dimension: communication
+        any: [misunderst, confus, understand, clarif, teach, "all at once", "all the tablets", "all tablets", together, "empty stomach", "repeat back", "not understood", "wrong way", correct]
+
+- id: coh-06-hopeless-in-passing
+  title: Back pain from carrying loads; in passing "what is the point of living like this"; the doctor treats the back only
+  patient_lang: ne
+  turns:
+    - {role: doctor, text: "What brings you in?"}
+    - {role: patient, text: "ढाड दुखेको छ डाक्टर साब, एक हप्ता भयो, साइटमा भारी बोक्दा। कहिलेकाहीँ त यसरी बाँच्नुको के अर्थ भन्ने लाग्छ, तर ढाड चाहिँ साह्रै दुख्छ।"}
+    - {role: doctor, text: "Any allergies? Any numbness in the legs?"}
+    - {role: patient, text: "एलर्जी छैन। खुट्टा झमझम हुँदैन।"}
+    - {role: doctor, text: "Take paracetamol 1 g three times a day if needed and rest your back for a few days."}
+    - {role: patient, text: "हुन्छ, धन्यवाद।"}
+  expect:
+    themes:
+      - name: hopelessness voiced in passing, not explored
+        dimension: communication
+        any: [mood, hopeless, "no point", "point of living", "worth living", suicid, self-harm, "self harm", "harm yourself", wellbeing, mental, depress, "living like this", "end your life"]
+
+- id: coh-07-leg-swelling-ignored
+  title: Indigestion and a swollen painful calf mentioned twice; the doctor treats the stomach and discharges
+  patient_lang: sw
+  turns:
+    - {role: doctor, text: "What is the problem today?"}
+    - {role: patient, text: "Daktari, tumbo linaniuma na kujaa gesi baada ya kula. Pia mguu wangu wa kushoto umevimba na unauma."}
+    - {role: doctor, text: "Do you eat spicy food? Any allergies?"}
+    - {role: patient, text: "Ndiyo, pilipili kidogo. Sina mzio. Lakini daktari, mguu wangu bado umevimba sana, ndama inauma."}
+    - {role: doctor, text: "It's indigestion. Take omeprazole 20 mg once a day before breakfast for two weeks. You can go home."}
+    - {role: patient, text: "Sawa, asante."}
+  expect:
+    themes:
+      - name: a symptom raised twice (swollen painful calf) not addressed
+        dimension: safety
+        any: [leg, calf, dvt, thrombo, clot, "swollen limb"]

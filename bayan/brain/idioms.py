@@ -45,6 +45,7 @@ _LANG = {
     "am": "amh", "amh": "amh", "amharic": "amh",
     "pa": "pan", "pan": "pan", "punjabi": "pan",
     "en": "eng", "eng": "eng", "english": "eng",
+    "sw": "swh", "swa": "swh", "swh": "swh", "swahili": "swh", "kiswahili": "swh",
 }
 # English loanwords / code-mixed forms, matched in the patient's text AND in the English rendering.
 LOANWORDS = {

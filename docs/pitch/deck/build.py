@@ -163,76 +163,111 @@ def _arrow(points: list[tuple[float, float]], color: str = INK, width: float = 2
 
 
 def chart_arch() -> str:
+    """Transformer-figure style: per-turn interpretation stack (left), reasoning loop (centre, focus), wrap-up (right)."""
     W, H = 1664, 770
-    R = [612, 508, 404, 300, 196]          # block centres, bottom to top
-    bh = 68
     out = ['<defs>'
            f'<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{INK}"/></marker>'
            f'<marker id="ahv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{HELD}"/></marker>'
            '</defs>']
 
-    def container(x0, x1, top, label_x, big, small_lines):
-        s = f'<rect x="{x0}" y="{top}" width="{x1 - x0}" height="{660 - top}" rx="22" fill="{A_BOX}" stroke="{A_BOX_LINE}" stroke-width="1.6"/>'
-        s += text(label_x, 552, big, 30, INK, 600, "middle")
-        for k, line in enumerate(small_lines):
-            s += text(label_x, 578 + 20 * k, line, 16, MUTED, 400, "middle")
+    def blk(cx, cy, w, h, title, subs, fill, stroke=INK, sw=1.6, tsize=22):
+        s = (f'<rect x="{cx - w / 2:.0f}" y="{cy - h / 2:.0f}" width="{w:.0f}" height="{h:.0f}" rx="12" fill="{fill}" '
+             f'stroke="{stroke}" stroke-width="{sw}"/>')
+        n = len(subs)
+        ty = cy - 3 - 10 * n + (10 if n <= 1 else 0)
+        s += text(cx, ty, title, tsize, INK, 600, "middle")
+        for k, sub in enumerate(subs):
+            s += text(cx, ty + 24 + 20 * k, sub, 17, MUTED, 400, "middle")
         return s
 
-    # talk loop (every turn, foreground)
-    tx = 300
-    out.append(container(100, 500, 128, 50, "N×", ["each", "turn"]))
-    talk = [("Speaker check", "VoxLingua107", A_GREY, INK),
-            ("Speech-to-text", "Whisper, IndicConformer, MMS", A_GREY, INK),
-            ("Translate + extract", "gpt-oss-120b", A_GREY, INK),
-            ("Prescription gate", "83 rules, no LLM", A_VERM, HELD),
-            ("Text-to-speech", "Parler, MMS, Supertonic, Piper", A_GREY, INK)]
-    for i, (t, sub, fill, stroke) in enumerate(talk):
-        out.append(_ablock(tx, R[i], t, sub, fill, stroke))
-        if i < len(talk) - 1:
-            out.append(_arrow([(tx, R[i] - bh / 2), (tx, R[i + 1] + bh / 2 + 2)]))
-    out.append(_arrow([(tx, R[4] - bh / 2), (tx, 96)]))
-    out.append(text(tx, 80, "Spoken translation", 24, INK, 600, "middle"))
-    # inputs
-    for cx, label, fill in ((200, "Doctor speech", A_BLUE), (400, "Patient speech", A_GREEN)):
-        out.append(f'<rect x="{cx - 88}" y="702" width="176" height="48" rx="12" fill="{fill}" stroke="{INK}" stroke-width="1.6"/>')
-        out.append(text(cx, 733, label, 19, INK, 600, "middle"))
-        out.append(_arrow([(cx, 702), (cx, R[0] + bh / 2 + 2)]))
-    # hold branch
-    out.append(_arrow([(470, R[3]), (522, R[3])], HELD, 2.4))
-    out.append(text(530, R[3] + 7, "Held, not spoken", 19, HELD, 600))
+    def box(x0, y0, x1, y1):
+        return (f'<rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" rx="22" fill="{A_BOX}" '
+                f'stroke="{A_BOX_LINE}" stroke-width="1.6"/>')
 
-    # think loop (every turn, background)
-    bx = 890
-    out.append(container(690, 1090, 232, 640, "N×", ["each turn", "background"]))
-    think = [("Idiom lexicon", "59 entries", A_BLUE), ("Fact extraction", "gpt-oss-120b", A_BLUE),
-             ("Safety rules", "83 rules", A_BLUE), ("Copilot agent", "smolagents", A_BLUE)]
-    for i, (t, sub, fill) in enumerate(think):
-        out.append(_ablock(bx, R[i], t, sub, fill))
-        if i < len(think) - 1:
-            out.append(_arrow([(bx, R[i] - bh / 2), (bx, R[i + 1] + bh / 2 + 2)]))
-    out.append(_arrow([(bx, R[3] - bh / 2), (bx, 210)]))
-    out.append(text(bx, 194, "Doctor's cards", 24, INK, 600, "middle"))
-    out.append(_arrow([(470, R[2]), (580, R[2]), (580, 698), (bx, 698), (bx, R[0] + bh / 2 + 2)], INK, 1.6))
-    out.append(text(735, 689, "text of each turn", 16, MUTED, 400, "middle"))
+    def nlabel(x, y, big, lines):
+        s = text(x, y, big, 30, INK, 600, "middle")
+        for k, line in enumerate(lines):
+            s += text(x, y + 26 + 20 * k, line, 16, MUTED, 400, "middle")
+        return s
 
-    # wrap-up (once, at the end)
-    wx = 1430
-    out.append(container(1230, 1630, 232, 1195, "1×", ["at End"]))
-    wrap = [("Wrap-up agent", "smolagents", A_GREEN), ("Rule re-check", "83 rules", A_GREEN),
-            ("PDFs", "patient's script", A_GREEN), ("QR code", "phone page", A_GREEN)]
-    for i, (t, sub, fill) in enumerate(wrap):
-        out.append(_ablock(wx, R[i], t, sub, fill))
-        if i < len(wrap) - 1:
-            out.append(_arrow([(wx, R[i] - bh / 2), (wx, R[i + 1] + bh / 2 + 2)]))
-    out.append(_arrow([(wx, R[3] - bh / 2), (wx, 210)]))
-    out.append(text(wx, 194, "Care plan, PDF, QR", 24, INK, 600, "middle"))
-    out.append(_arrow([(1090, 446), (1160, 446), (1160, 698), (wx, 698), (wx, R[0] + bh / 2 + 2)], INK, 1.6))
-    out.append(text(1295, 689, "full record", 16, MUTED, 400, "middle"))
+    # ---- interpretation stack (each turn)
+    R = [612, 508, 404, 300, 196]
+    ix, iw = 232, 300
+    out.append(box(72, 128, 392, 660))
+    out.append(nlabel(36, 552, "N×", ["each", "turn"]))
+    talk = [("Speaker check", ["VoxLingua107"], A_GREY, INK, 1.6),
+            ("Speech-to-text", ["Whisper, IndicConformer, MMS"], A_GREY, INK, 1.6),
+            ("Translate + extract", ["gpt-oss-120b"], A_GREY, INK, 1.6),
+            ("Prescription gate", ["83 rules, no LLM"], A_VERM, HELD, 2.4),
+            ("Text-to-speech", ["Parler, MMS, Supertonic, Piper"], A_GREY, INK, 1.6)]
+    for i, (t, sub, fill, st, sw) in enumerate(talk):
+        out.append(blk(ix, R[i], iw, 68, t, sub, fill, st, sw))
+        if i < 4:
+            out.append(_arrow([(ix, R[i] - 34), (ix, R[i + 1] + 36)]))
+    out.append(_arrow([(ix, R[4] - 34), (ix, 96)]))
+    out.append(text(ix, 80, "Spoken translation", 24, INK, 600, "middle"))
+    for cx, label, fill in ((154, "Doctor speech", A_BLUE), (312, "Patient speech", A_GREEN)):
+        out.append(f'<rect x="{cx - 75}" y="702" width="150" height="48" rx="12" fill="{fill}" stroke="{INK}" stroke-width="1.6"/>')
+        out.append(text(cx, 733, label, 18, INK, 600, "middle"))
+        out.append(_arrow([(cx, 702), (cx, R[0] + 36)]))
+    out.append(_arrow([(382, R[3]), (404, R[3])], HELD, 2.4))
+    out.append(text(410, R[3] - 4, "Held,", 18, HELD, 600))
+    out.append(text(410, R[3] + 18, "not spoken", 18, HELD, 600))
+
+    # ---- reasoning loop (each substantive turn, in the background) - the focus
+    cx, bw = 830, 424
+    C = {"sum": 596, "rev": 478, "con": 368, "fil": 270, "out": 150}
+    out.append(f'<rect x="598" y="206" width="464" height="454" rx="26" fill="{A_BOX}" stroke="{INK}" stroke-width="1.8"/>')
+    out.append(nlabel(522, 552, "N×", ["each turn", "background"]))
+    out.append(blk(cx, C["sum"], bw, 88, "Case summary", ["complaint, history, diagnosis,", "plan, understanding, mood"], A_BLUE))
+    out.append(blk(cx, C["rev"], bw, 88, "Clinical review agent", ["smolagents + gpt-oss-120b, five checks: safety,", "history, plan, communication, consistency"], A_BLUE, INK, 2.4))
+    out.append(blk(cx, C["con"], bw, 68, "Candidate concerns", ["each quotes the transcript"], A_BLUE))
+    out.append(blk(cx, C["fil"], bw, 68, "Attention filter", ["severity × confidence × novelty"], A_BLUE))
+    out.append(blk(cx, C["out"], bw, 68, "Doctor's screen", ["one Ask next + flags"], A_BLUE))
+    out.append(_arrow([(cx, C["sum"] - 44), (cx, C["rev"] + 46)]))
+    out.append(_arrow([(cx, C["rev"] - 44), (cx, C["con"] + 36)]))
+    out.append(_arrow([(cx, C["con"] - 34), (cx, C["fil"] + 36)]))
+    out.append(_arrow([(cx, C["fil"] - 34), (cx, C["out"] + 36)]))
+    # loop: doctor's screen / next turn back into the case summary
+    out.append(_arrow([(cx - bw / 2, C["out"]), (580, C["out"]), (580, C["sum"]), (cx - bw / 2 - 2, C["sum"])], INK, 2))
+    out.append(f'<text x="568" y="{(C["out"] + C["sum"]) / 2 - 40:.0f}" font-size="17" fill="{MUTED}" text-anchor="middle" '
+               f'font-family="{FONT}" transform="rotate(-90 568 {(C["out"] + C["sum"]) / 2 - 40:.0f})">next turn</text>')
+    # feed from the interpretation stack into the case summary
+    out.append(_arrow([(382, R[2]), (470, R[2]), (470, 700), (cx, 700), (cx, C["sum"] + 46)], INK, 1.6))
+    out.append(text(650, 692, "updates the case summary", 16, MUTED, 400, "middle"))
+    # agent tools
+    tx0, tx1 = 1118, 1324
+    ty0, ty1 = 330, 626
+    out.append(f'<rect x="{tx0}" y="{ty0}" width="{tx1 - tx0}" height="{ty1 - ty0}" rx="18" fill="#FFFFFF" stroke="{A_BOX_LINE}" stroke-width="1.6"/>')
+    out.append(text((tx0 + tx1) / 2, ty0 + 30, "Agent tools", 19, INK, 600, "middle"))
+    tools = ["Safety rules (83)", "Idiom lexicon (98)", "Drug check", "Case lookup"]
+    for k, t in enumerate(tools):
+        y = ty0 + 50 + k * 60
+        out.append(f'<rect x="{tx0 + 14}" y="{y}" width="{tx1 - tx0 - 28}" height="48" rx="10" fill="{A_GREY}" stroke="{INK}" stroke-width="1.4"/>')
+        out.append(text((tx0 + tx1) / 2, y + 31, t, 18, INK, 600, "middle"))
+    out.append(f'<line x1="{cx + bw / 2 + 2}" y1="{C["rev"]}" x2="{tx0 - 2}" y2="{C["rev"]}" stroke="{INK}" stroke-width="2" '
+               'marker-start="url(#ah)" marker-end="url(#ah)"/>')
+    out.append(text((cx + bw / 2 + tx0) / 2, C["rev"] - 16, "calls", 16, MUTED, 400, "middle"))
+
+    # ---- wrap-up (once, at the end)
+    wx, ww = 1478, 230
+    out.append(box(1352, 232, 1604, 660))
+    out.append(nlabel(1634, 552, "1×", ["at End"]))
+    wrap = [("Wrap-up agent", ["smolagents"]), ("Rule re-check", ["83 rules"]), ("PDFs", ["patient's script"]), ("QR code", ["phone page"])]
+    for i, (t, sub) in enumerate(wrap):
+        out.append(blk(wx, R[i], ww, 68, t, sub, A_GREEN))
+        if i < 3:
+            out.append(_arrow([(wx, R[i] - 34), (wx, R[i + 1] + 36)]))
+    out.append(_arrow([(wx, R[3] - 34), (wx, 210)]))
+    out.append(text(wx, 194, "Care plan, PDF, QR", 22, INK, 600, "middle"))
+    out.append(_arrow([(wx, 712), (wx, R[0] + 36)]))
+    out.append(text(wx, 738, "full record", 18, MUTED, 400, "middle"))
 
     return (f'<svg class="arch" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" '
-            'aria-label="Bayan architecture: each turn passes speaker check, speech-to-text, translation, the prescription '
-            'gate and text-to-speech; a background copilot turns each turn into cards for the doctor; at the end a wrap-up '
-            'agent produces the care plan, PDFs and QR code.">' + "".join(out) + "</svg>")
+            'aria-label="Bayan architecture: each turn is heard, transcribed, translated and checked by the prescription gate; '
+            'in the background a clinical review agent reads the case summary, calls tools, and an attention filter sends one '
+            'question or flag to the doctor, then loops on the next turn; at the end a wrap-up agent writes the care plan.">'
+            + "".join(out) + "</svg>")
 
 
 # ------------------------------------------------------------------ Hugging Face stack slide
@@ -286,7 +321,7 @@ def slides() -> list[str]:
   <div class="title">
     <h1>Bayan AI</h1>
     <p class="ar" lang="ar">بيان</p>
-    <p class="tag">Interprets between doctors and patients in Qatar, and catches what gets lost.</p>
+    <p class="tag">A clinical AI system that interprets between doctors and patients in Qatar, reasons about the consultation, and flags what gets missed.</p>
     <p class="meta"><span>Team QH-129</span><span>Qai × Hugging Face Hackathon O1</span><span>Doha, 5–7 Nov 2026</span></p>
   </div>
   <div class="orb big r"><span class="ring r1"></span><span class="ring r2"></span><span class="pearl"></span></div>
@@ -309,24 +344,31 @@ def slides() -> list[str]:
 
     # 2 Qatar
     S.append(f'''
-<section class="slide" data-title="Qatar">
+<section class="slide s-qatar" data-title="Qatar">
   {brand()}
   <h2>Language barriers in Qatar</h2>
   <div class="figs">
     <div><p class="v">65%</p><p class="l">of HMC ambulance staff face language barriers at work</p></div>
     <div><p class="v">71%</p><p class="l">are comfortable letting family members interpret</p></div>
-    <div><p class="v">9</p><p class="l">languages with face-to-face interpreters at Sidra. Nepali, Malayalam, Bengali and Tagalog are not among them.</p></div>
+    <div><p class="v">9</p><p class="l">languages with face-to-face interpreters at Sidra; Nepali, Malayalam, Bengali and Tagalog are not among them</p></div>
+    <div><p class="v">49%</p><p class="l">of adverse events in patients with limited English caused physical harm, against 30% for English speakers (US study)</p></div>
   </div>
   {foot(2, "Farhat et al., Qatar Medical Journal 2025, survey of HMC Ambulance Service staff (n = 312): 24% very often, 41% occasionally. Sidra Medicine, Medical interpreters (2026): 9 languages in person, 66 by phone or video. About 94% of Qatar's workforce is non-Qatari (Labour Force Survey 2024, via GLMM).")}
 </section>''')
 
-    # 3 Harm
+    # 3 What Bayan does
     S.append(f'''
-<section class="slide" data-title="Harm">
+<section class="slide s-does" data-title="What Bayan does">
   {brand()}
-  <h2>Adverse events and language</h2>
-  <div class="chartwrap harm">{chart_harm()}</div>
-  {foot(3, "Divi et al., Int J Quality in Health Care 2007: adverse events reported at six US Joint Commission hospitals, patients with limited English vs English speakers (voluntary reports, pilot study). Ad hoc interpreters: 77% of errors potentially consequential vs 53% for hospital interpreters (Flores, Pediatrics 2003).")}
+  <h2>What Bayan does</h2>
+  <p class="lede">It listens to both sides of the consultation.</p>
+  <div class="four">
+    <div><p class="k">Interprets</p><p class="d">37 patient languages. The doctor speaks English or Arabic.</p></div>
+    <div><p class="k">Reasons</p><p class="d">Keeps a running case summary and reviews it after every turn.</p></div>
+    <div><p class="k">Flags</p><p class="d">Allergies, doses, interactions, missed workup, plans that don’t fit the complaint, patient confusion, mood cues.</p></div>
+    <div><p class="k">Suggests</p><p class="d">One next question at a time, asked in the patient’s language with one tap.</p></div>
+  </div>
+  {foot(3, "bayan/ui.py (37 languages); reasoning design: case summary, clinical review agent, attention filter.")}
 </section>''')
 
     # 4 Demo
@@ -464,7 +506,7 @@ def slides() -> list[str]:
     <h2>Next steps</h2>
     <ul class="ask">
       <li>A pilot at one QRCS workers' health centre</li>
-      <li>Clinicians to review our 83 rules and 59 idioms</li>
+      <li>Clinicians to review our 83 rules and 98 idioms</li>
       <li>Native speakers to validate each language</li>
     </ul>
     <p class="team">Team QH-129<br><span>huggingface.co/spaces/dullgrey/team-qh-129-bayan-app</span></p>
@@ -533,6 +575,18 @@ h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-heigh
 .s-proof .figs{top:356px}
 .s-proof .figs .v{font-size:112px}
 .s-proof .figs .l{margin-top:18px;font-size:27px}
+
+/* 2b qatar: four figures */
+.s-qatar .figs{grid-template-columns:repeat(4,380px);column-gap:48px}
+.s-qatar .figs .v{font-size:132px}
+.s-qatar .figs .l{font-size:27px}
+
+/* 3 what bayan does */
+.s-does .lede{position:absolute;left:128px;top:262px;font-size:32px;color:var(--muted)}
+.four{position:absolute;left:128px;top:400px;width:1664px;display:grid;grid-template-columns:repeat(4,380px);column-gap:48px}
+.four>div{border-top:1px solid var(--rule);padding-top:30px}
+.four .k{font-size:44px;font-weight:600;letter-spacing:-.01em}
+.four .d{margin-top:18px;font-size:28px;line-height:1.42;color:var(--muted)}
 
 /* 3 harm */
 .chartwrap.harm{position:absolute;left:128px;top:350px}

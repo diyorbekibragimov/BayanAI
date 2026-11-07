@@ -1,0 +1,774 @@
+{
+ "meta": {
+  "run_id": "coherence-v3",
+  "models": {
+   "llm": "openai/gpt-oss-120b",
+   "llm_provider": "cerebras",
+   "agent": "openai/gpt-oss-120b",
+   "agent_provider": "cerebras",
+   "brain": "openai/gpt-oss-120b",
+   "brain_provider": "default",
+   "extract_provider": "groq"
+  },
+  "wall_s": 31.642526149749756,
+  "n": 1,
+  "git": "085796e",
+  "dirty_app_files": 11,
+  "created": "2026-11-07T09:02:57"
+ },
+ "results": [
+  {
+   "id": "coh-06-hopeless-in-passing",
+   "title": "Back pain from carrying loads; in passing \"what is the point of living like this\"; the doctor treats the back only",
+   "category": "coherence",
+   "patient_lang": "ne",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 3.47,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 3.47
+     },
+     "utt": "u003",
+     "english": "What brings you in?",
+     "translation": "के कारणले तपाईं यहाँ आउनु भयो?",
+     "wait_s": 1.22,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.9,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.89
+     },
+     "utt": "u004",
+     "english": "My back hurts, doctor, it’s been a week, especially when I carry heavy things on the site. Sometimes I wonder what this means, but the back really hurts a lot.",
+     "translation": "",
+     "wait_s": 8.25,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.93,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.93
+     },
+     "utt": "u005",
+     "english": "Any allergies? Any numbness in the legs?",
+     "translation": "केही एलर्जी छ? खुट्टामा कुनै सुन्नु भएको छ?",
+     "wait_s": 1.22,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.91,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.91
+     },
+     "utt": "u006",
+     "english": "No allergies. My legs don’t have jham-jham.",
+     "translation": "",
+     "wait_s": 5.22,
+     "open_cards": [
+      "c002",
+      "c003"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.94,
+     "talk": {
+      "drugs": [
+       {
+        "name": "paracetamol",
+        "intent": "prescribe",
+        "dose_mg": 1000,
+        "frequency_per_day": 3,
+        "dose": "1 g three times a day if needed"
+       }
+      ],
+      "allergies": [],
+      "tests": [],
+      "s": 0.94
+     },
+     "utt": "u007",
+     "english": "Take paracetamol 1 g three times a day if needed and rest your back for a few days.",
+     "translation": "प्यारासिटामोल १ ग्राम दिनमा तीन पटक आवश्यक परेमा लिईँ, र केही दिनको लागि पिठ्यूँ आराम गर्नुहोस्।",
+     "wait_s": 5.7,
+     "open_cards": [
+      "c002",
+      "c003"
+     ]
+    },
+    {
+     "i": 5,
+     "t_min": 4.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 1.04,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 1.03
+     },
+     "utt": "u008",
+     "english": "Okay, thank you.",
+     "translation": "",
+     "wait_s": 1.22,
+     "open_cards": [
+      "c002",
+      "c003"
+     ]
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T09:02:26",
+   "wrapup": false,
+   "cards_live": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Red flag symptoms",
+     "body": "Need to rule out serious causes such as infection or nerve compression before focusing on treatment.",
+     "ask_text": "Do you have any fever, night sweats, weight loss, or trouble controlling your bladder or bowels?",
+     "dimension": "safety",
+     "score": 0.51
+    },
+    {
+     "id": "c002",
+     "source": "lexicon",
+     "kind": "idiom",
+     "severity": "caution",
+     "status": "open",
+     "title": "Idiom: jham-jham (झमझम)",
+     "body": "Literal: tingling, pins-and-needles (also 'kat kat khanchha': gnawing, burning tingling). Likely meanings: Anxiety or hyperventilation-related paraesthesia (medium); Peripheral neuropathy, e.g., diabetic or B12 deficiency (medium); Electrolyte disturbance after heavy sweating (low); Stroke or TIA if it is one-sided and sudden (low). Can mask: Stroke (sudden one-sided numbness, weakness, facial droop, speech change); Undiagnosed diabetes.",
+     "ask_text": null,
+     "dimension": null,
+     "score": null
+    },
+    {
+     "id": "c003",
+     "source": "fallback",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Is it on one side of the body or both? Did it start suddenly?",
+     "body": "'jham-jham' can mask: Stroke (sudden one-sided numbness, weakness, facial droop, speech change); Undiagnosed diabetes",
+     "ask_text": "Is it on one side of the body or both? Did it start suddenly?",
+     "dimension": "safety",
+     "score": 0.48
+    }
+   ],
+   "screen": "live",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {},
+   "agentic": null,
+   "care_plan": {
+    "lang": null,
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {}
+   },
+   "note_md": "",
+   "pdf": {
+    "patient": {
+     "path": null,
+     "exists": false
+    },
+    "doctor": {
+     "path": null,
+     "exists": false
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [
+     {
+      "drug": "paracetamol",
+      "dose_mg": 1000,
+      "frequency_per_day": 3,
+      "daily_dose_mg": 3000,
+      "dose_raw": "1 g",
+      "as_needed": true,
+      "route": null
+     }
+    ],
+    "stopped_meds": [],
+    "symptoms": [
+     "back_pain"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [
+     "npi-006"
+    ],
+    "questions_asked": [
+     "allergies",
+     "pain_radiation"
+    ]
+   },
+   "case": {
+    "chief_complaint": {
+     "text": "back pain",
+     "evidence": [
+      {
+       "utt": "u004",
+       "t_min": 1.25,
+       "quote": "My back hurts, doctor, it’s been a week, especially when I carry heavy things on the site."
+      }
+     ],
+     "t_min": 1.25
+    },
+    "history": [],
+    "working_diagnosis": [],
+    "differential": [],
+    "plan": [],
+    "exam_claims": [],
+    "patient_understanding": [],
+    "patient_affect": []
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Red flag symptoms",
+     "body": "Need to rule out serious causes such as infection or nerve compression before focusing on treatment.",
+     "ask_text": "Do you have any fever, night sweats, weight loss, or trouble controlling your bladder or bowels?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 1.25,
+     "dimension": "safety",
+     "confidence": 0.85,
+     "score": 0.51
+    },
+    {
+     "id": "c002",
+     "source": "lexicon",
+     "kind": "idiom",
+     "severity": "caution",
+     "status": "open",
+     "title": "Idiom: jham-jham (झमझम)",
+     "body": "Literal: tingling, pins-and-needles (also 'kat kat khanchha': gnawing, burning tingling). Likely meanings: Anxiety or hyperventilation-related paraesthesia (medium); Peripheral neuropathy, e.g., diabetic or B12 deficiency (medium); Electrolyte disturbance after heavy sweating (low); Stroke or TIA if it is one-sided and sudden (low). Can mask: Stroke (sudden one-sided numbness, weakness, facial droop, speech change); Undiagnosed diabetes.",
+     "ask_text": null,
+     "grounding": "npi-006",
+     "rule_ids": [],
+     "t_min": 2.75,
+     "dimension": null,
+     "confidence": null,
+     "score": null
+    },
+    {
+     "id": "c003",
+     "source": "fallback",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Is it on one side of the body or both? Did it start suddenly?",
+     "body": "'jham-jham' can mask: Stroke (sudden one-sided numbness, weakness, facial droop, speech change); Undiagnosed diabetes",
+     "ask_text": "Is it on one side of the body or both? Did it start suddenly?",
+     "grounding": "npi-006",
+     "rule_ids": [],
+     "t_min": 2.75,
+     "dimension": "safety",
+     "confidence": 0.8,
+     "score": 0.48
+    }
+   ],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [
+      "c001"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [
+      "held back: the current Ask next (c003) is still worth more (0.48 >= 0.43)",
+      "held back: score 0.31 < 0.40 (info x conf 0.8 x novelty 1.0 x recency 0.64)"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u007"
+     ],
+     "results": [
+      "held back: score 0.28 < 0.40 (info x conf 0.9 x novelty 1.0 x recency 0.51)"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u008"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Red flag symptoms",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "idiom",
+     "source": "lexicon",
+     "title": "Idiom: jham-jham (झमझम)",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Red flag symptoms",
+     "reason": "superseded by a more useful next question",
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "fallback",
+     "title": "Is it on one side of the body or both? Did it start suddenly?",
+     "reason": null,
+     "t_min": 2.75
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: update_state → +back_pain, complaint: back pain",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 card: + info ask card c001: Red flag symptoms [safety]",
+    "1.25 card: curate: c001 shown (score 0.51: info x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "1.25 tool: final_answer([ask 'Red flag symptoms']) → c001",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 2.0s, 2490/585 tok ($0.0013)",
+    "2.00 tool: update_state deferred: u005 (question, batched with the answer)",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 agent: copilot skipped: nothing new in u005",
+    "2.75 tool: lookup_idiom('झमझम') → npi-006 (talk loop)",
+    "2.75 card: + caution idiom card c002: Idiom: jham-jham (झमझम) [npi-006]",
+    "2.75 card: ✓ retired c001: Red flag symptoms (superseded)",
+    "2.75 card: + info ask card c003: Is it on one side of the body or both? Did it start suddenly? [npi-006]",
+    "2.75 card: curate: c003 shown (score 0.48: info x conf 0.8 x novelty 1.0 x recency 1.0)",
+    "2.75 tool: lookup_idiom('झमझम') → npi-006",
+    "2.75 tool: update_state → asked:allergies, asked:pain_radiation, +idiom npi-006",
+    "2.75 tool: check_safety_rules → none",
+    "2.75 card: curate: 'Bladder/bowel function' held back: the current Ask next (c003) is still worth more (0.48 >= 0.43)",
+    "2.75 card: curate: 'Pain radiation' held back: score 0.31 < 0.40 (info x conf 0.8 x novelty 1.0 x recency 0.64)",
+    "2.75 tool: final_answer([ask 'Bladder/bowel function', ask 'Pain radiation']) → held back: the current Ask next (c003) is still worth more (0.48 >= 0…",
+    "2.75 agent: copilot: 1 step(s), 1 tool call(s), 1.5s, 2729/1111 tok ($0.0018)",
+    "3.50 tool: update_state (prescription gate) → +rx paracetamol 1000 mg x3/day",
+    "3.50 tool: check_prescription(paracetamol) → no on_prescribe rule fires",
+    "3.50 tool: update_state → no new facts",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 card: curate: 'Ask about bladder/bowel control' held back: score 0.28 < 0.40 (info x conf 0.9 x novelty 1.0 x recency 0.51)",
+    "3.50 tool: final_answer([ask 'Ask about bladder/bowel control']) → held back: score 0.28 < 0.40 (info x conf 0.9 x novelty 1.0 x recency…",
+    "3.50 agent: copilot: 1 step(s), 1 tool call(s), 1.6s, 2780/924 tok ($0.0017)",
+    "4.25 tool: check_safety_rules → none",
+    "4.25 agent: copilot skipped: nothing new in u008"
+   ],
+   "stats": {
+    "runs": 6,
+    "latency_s": [
+     0.0,
+     7.03,
+     0.0,
+     4.01,
+     4.49,
+     0.0
+    ],
+    "extract_tokens": [
+     14555,
+     2473
+    ],
+    "agent_tokens": [
+     7999,
+     2620
+    ],
+    "cost_usd": 0.011713649999999999
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 7.03,
+     "extract_s": 4.86,
+     "agent_s": 2.03,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7272,
+     "output_tokens": 1659,
+     "extract_tokens": [
+      4782,
+      1074
+     ],
+     "agent_tokens": [
+      2490,
+      585
+     ],
+     "cost_usd": 0.002833
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 4.01,
+     "extract_s": 2.47,
+     "agent_s": 1.53,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 2,
+     "fallback": 0,
+     "input_tokens": 7585,
+     "output_tokens": 1766,
+     "extract_tokens": [
+      4856,
+      655
+     ],
+     "agent_tokens": [
+      2729,
+      1111
+     ],
+     "cost_usd": 0.003008
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 4.49,
+     "extract_s": 2.87,
+     "agent_s": 1.61,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 1,
+     "fallback": 0,
+     "input_tokens": 7697,
+     "output_tokens": 1668,
+     "extract_tokens": [
+      4917,
+      744
+     ],
+     "agent_tokens": [
+      2780,
+      924
+     ],
+     "cost_usd": 0.002962
+    },
+    {
+     "t_min": 4.25,
+     "kind": "think",
+     "turns": [
+      "u008"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794031360.5558028,
+     "latency_s": 9.14,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Red flag symptoms",
+     "severity": "info"
+    },
+    "c002": {
+     "turn": 3,
+     "wall": 1794031363.664027,
+     "latency_s": 0.96,
+     "source": "lexicon",
+     "kind": "idiom",
+     "title": "Idiom: jham-jham (झमझम)",
+     "severity": "caution"
+    },
+    "c003": {
+     "turn": 3,
+     "wall": 1794031363.664027,
+     "latency_s": 0.96,
+     "source": "fallback",
+     "kind": "ask",
+     "title": "Is it on one side of the body or both? Did it start suddenly?",
+     "severity": "info"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 9.14,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Red flag symptoms"
+    },
+    {
+     "card": "c001",
+     "turn": 3,
+     "latency_s": 0.96,
+     "status": "resolved",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Red flag symptoms"
+    },
+    {
+     "card": "c002",
+     "turn": 3,
+     "latency_s": 0.96,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Idiom: jham-jham (झमझम)"
+    },
+    {
+     "card": "c003",
+     "turn": 3,
+     "latency_s": 0.96,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Is it on one side of the body or both? Did it start suddenly?"
+    }
+   ],
+   "rules_seen": {},
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      7139,
+      659,
+      6
+     ],
+     "openai/gpt-oss-120b|groq": [
+      14555,
+      2473,
+      3
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      7999,
+      2620,
+      3,
+      5.170892000198364,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.00703,
+    "cost_agent_usd": 0.00476,
+    "cost_usd": 0.0118,
+    "llm_usage_delta": {
+     "calls": 12,
+     "prompt_tokens": 29693,
+     "completion_tokens": 5752
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 31.0,
+   "checks": [
+    {
+     "type": "theme",
+     "desc": "[communication] hopelessness voiced in passing, not explored",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/ask[safety] 'Red flag symptoms'; lexicon/idiom[-] 'Idiom: jham-jham (झमझम)'; fallback/ask[safety] 'Is it on one side of the body or both? Did it star'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  }
+ ]
+}

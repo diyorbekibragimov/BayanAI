@@ -16,6 +16,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+def empty_case() -> dict:
+    """The running case summary (extract.py maintains it, merge.merge_case merges it, the copilot reviews it).
+    Every item: {"text", "evidence": [ev], "t_min"} (history items also "present": bool, plan items "type")."""
+    return {"chief_complaint": None, "history": [], "working_diagnosis": [], "differential": [], "plan": [],
+            "exam_claims": [], "patient_understanding": [], "patient_affect": []}
+
+
 def empty_state() -> dict:
     """Clinical state, following docs/05 §2.3 (plus stopped_meds and questions_asked)."""
     return {
@@ -36,6 +43,7 @@ def empty_state() -> dict:
         },
         "idiom_hits": [],       # {"id","red_flag_tags":[..],"utt","t_min","matched"}
         "questions_asked": [],  # topic codes the doctor has already asked about, e.g. "pain_radiation"
+        "case": empty_case(),   # running case summary (free text + evidence), see empty_case()
     }
 
 

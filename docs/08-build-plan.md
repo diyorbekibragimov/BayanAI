@@ -73,7 +73,7 @@ Not created: `bayan/audio/`, `bayan/prompts/`, `demo/golden_path/*.wav`, `traini
 - **Checkpoint:** English speech → Nepali audio, Nepali speech → English text: done.
 
 ### Phase 2 · The "thinking" layer
-- [x] Deterministic idiom matching over `data/idiom_lexicon.json` (59 entries).
+- [x] Deterministic idiom matching over `data/idiom_lexicon.json` (98 entries).
 - [x] State extractor (Groq, background), merge with utterance evidence.
 - [x] Rule engine over all 81 rules in `data/safety_rules.json`, card store with acknowledge / override / dismiss / wrong fact and an append-only audit.
 - [x] Prescription gate (synchronous, no LLM, about 3 ms).

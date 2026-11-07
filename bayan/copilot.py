@@ -5,7 +5,8 @@ clinical copilot, CardStore with guardrails); nothing clinical is decided here. 
 the background think run; the stage re-renders when `consult.cards.version` changes (see bayan.consult.poll_render).
 
 Mapping (deduped by card id, reflecting card status):
-  kind "ask"                     -> Notes-panel suggestion ("Ask the patient in <language>"), open until asked
+  kind "ask"                     -> Notes-panel suggestion ("Ask the patient in <language>"), open until asked;
+                                    exactly one is open at a time (bayan.brain.curator retires the older one)
   kind "idiom"                   -> the explanation under the patient's English line (+ the idiom underlined)
   kind "missed" / "observation"  -> a note in "Noted in this visit" (agent / fallback cards)
   source "rules" (safety cards)  -> an alert note (red if critical / caution) while the card is open (the card of a
@@ -18,6 +19,7 @@ from __future__ import annotations
 import re
 
 _SUG_STATUS = {"open": "open", "accepted": "asked"}
+MAX_AGENT_NOTES = 4          # the curator's visible budget (bayan.brain.curator.MAX_VISIBLE)
 
 
 def _lower_first(s: str) -> str:
@@ -54,6 +56,10 @@ def suggest(consult, turn: dict | None = None) -> list[dict]:
             continue
         out.append({"id": c["id"], "kind": "ask", "label": "Ask next", "text": c["ask_text"],
                     "status": _SUG_STATUS.get(c.get("status"), "closed"), "source": c.get("grounding")})
+    # exactly ONE "Ask next" is offered (the curator keeps one open; this view guarantees it): the newest open one
+    opened = [x for x in out if x["status"] == "open"]
+    for x in opened[:-1]:
+        x["status"] = "closed"
     return out
 
 
@@ -101,4 +107,4 @@ def notes(consult, hide: set[str] | frozenset = frozenset()) -> list[dict]:
             alerts.append({"kind": kind, "text": text, "id": c["id"]})
         elif c.get("kind") in ("missed", "observation") and c.get("status") not in ("dismissed", "resolved"):
             others.append({"kind": c["kind"], "text": c.get("title") or "", "id": c["id"]})
-    return alerts + others
+    return alerts + others[-MAX_AGENT_NOTES:]

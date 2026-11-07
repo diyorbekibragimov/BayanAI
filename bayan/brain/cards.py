@@ -6,10 +6,13 @@ Cards come from four sources:
   "agent"    the smolagents copilot (ask / missed / observation, at most caution)
   "fallback" deterministic ask cards when the agent fails or is switched off
 
-Guardrails: agent/fallback cards need evidence that quotes real utterance ids and a grounding that exists
-(rule id, idiom id, checklist id; observations may also cite an utterance id); at most 3 open "ask" cards;
+Guardrails: agent/fallback cards need evidence that cites real utterance ids, and every quote an agent card
+carries must really be in that utterance (normalised substring of its English rendering or of the words as said);
+the grounding must exist (a rule id, idiom id or checklist id, a review dimension such as "plan" for a
+transcript-grounded agent concern, or an utterance id for an observation); at most `max_open_ask` open "ask" cards;
 dedupe on (kind, grounding, normalised title) plus fuzzy matching of the question; a card the doctor dismissed
-never comes back in that consultation. WORK-CHEST-* rule hits collapse into one "Chest-pain workup" card.
+never comes back in that consultation. Which agent card is worth the doctor's attention is decided before posting,
+by bayan.brain.curator. WORK-CHEST-* rule hits collapse into one "Chest-pain workup" card.
 Every change bumps `version` (the UI polls it) and every alert/action lands in the append-only `audit`.
 """
 
@@ -80,8 +83,37 @@ _CHECKLIST_ID = re.compile(r"^[a-z][a-z0-9_]*$")
 _UTT_ID = re.compile(r"^u\d+$")
 
 
+# Review dimensions: the grounding of a transcript-quoted agent concern (bayan.brain.curator decides duplicates).
+REVIEW_DIMENSIONS = ("safety", "history", "plan", "communication", "consistency")
+
+
 def _is_checklist_id(grounding: str | None) -> bool:
-    return bool(grounding) and bool(_CHECKLIST_ID.match(grounding)) and not _UTT_ID.match(grounding)
+    return (bool(grounding) and bool(_CHECKLIST_ID.match(grounding)) and not _UTT_ID.match(grounding)
+            and grounding not in REVIEW_DIMENSIONS)
+
+
+_QUOTE_FOLD = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"', "\u2011": "-", "\u2013": "-",
+                             "\u2014": "-", "\u00a0": " "})
+
+
+def _qnorm(s: str | None) -> str:
+    """Quote normalisation: case, curly quotes, dashes, punctuation and spacing do not matter (words do)."""
+    s = (s or "").translate(_QUOTE_FOLD).lower().replace("'", "")
+    return " ".join(re.findall(r"\w+", s))
+
+
+def quote_in_turn(turn, quote: str | None) -> bool:
+    """True if `quote` is really in the turn: a normalised substring of its English rendering, its words as said, or
+    what was interpreted to the listener. Fragments joined by "..." / "…" must each be there, in order of mention."""
+    if turn is None:
+        return False
+    parts = [_qnorm(p) for p in re.split(r"\.\.\.+|…", quote or "")]
+    parts = [p for p in parts if p]
+    if not parts:
+        return False
+    hay = [_qnorm(getattr(turn, k, "") or "") for k in ("english", "text", "translation")]
+    hay = [f" {h} " for h in hay if h]
+    return any(all(f" {p} " in h for p in parts) for h in hay)
 
 
 def _similar(a: str, b: str) -> bool:
@@ -215,7 +247,7 @@ class CardStore:
     def _find_duplicate(self, kind: str, grounding: str, title: str, ask_text: str | None) -> dict | None:
         key = (kind, grounding, norm_text(title))
         cid = self._by_key.get(key)
-        if cid is not None:
+        if cid is not None and not (grounding in REVIEW_DIMENSIONS and self._cards[cid]["status"] == "resolved"):
             return self._cards[cid]
         for c in self._cards.values():
             if c["kind"] != kind or c["status"] in ("dismissed", "resolved"):
@@ -227,15 +259,18 @@ class CardStore:
             if (kind in ("ask", "missed") and _is_checklist_id(grounding) and c["grounding"] == grounding
                     and c.get("source") != "rules"):
                 return c
-            if c["grounding"] == grounding and _similar(c["title"], title):
+            if c["grounding"] == grounding and grounding not in REVIEW_DIMENSIONS and _similar(c["title"], title):
                 return c
             if ask_text and c.get("ask_text") and _similar(c["ask_text"], ask_text):
                 return c
         return None
 
-    def _clean_evidence(self, evidence) -> list[dict]:
+    def _clean_evidence(self, evidence, bad: list | None = None) -> list[dict]:
+        """Evidence -> [{"utt","t_min","quote"}] on existing utterances. A supplied quote that is not in its
+        utterance is appended to `bad` as (utt, quote)."""
         if isinstance(evidence, (str, dict)):
             evidence = [evidence]
+        bad = bad if bad is not None else []
         out = []
         for ev in evidence or []:
             if isinstance(ev, str):
@@ -245,13 +280,15 @@ class CardStore:
             utt = str(ev.get("utt") or "").strip()
             if not utt:
                 continue
-            item = {"utt": utt, "t_min": ev.get("t_min"), "quote": ev.get("quote") or ""}
+            item = {"utt": utt, "t_min": ev.get("t_min"), "quote": str(ev.get("quote") or "").strip()}
             if self.turn_lookup is not None:
                 turn = self.turn_lookup(utt)
                 if turn is None:
                     continue           # cites an utterance that does not exist: drop it
                 if item["t_min"] is None:
                     item["t_min"] = getattr(turn, "t_min", None)
+                if item["quote"] and not quote_in_turn(turn, item["quote"]):
+                    bad.append((utt, item["quote"]))
                 if not item["quote"]:
                     item["quote"] = (getattr(turn, "english", "") or getattr(turn, "text", ""))[:200]
             out.append(item)
@@ -282,16 +319,18 @@ class CardStore:
         """Returns the new card id, "duplicate", or "rejected: <why>". Never raises."""
         kind = (kind or "").strip().lower()
         grounding = (grounding or "").strip()
-        ev = self._clean_evidence(evidence)            # callbacks run outside the store lock
+        bad: list = []
+        ev = self._clean_evidence(evidence, bad)       # callbacks run outside the store lock
         grounding_ok = self._grounding_ok(kind, grounding)
         try:
             with self._lock:
                 return self._post(kind, title, body, ev, grounding, grounding_ok, severity, ask_text, source,
-                                  t_min, extra)
+                                  t_min, extra, bad)
         finally:
             self._flush()
 
-    def _post(self, kind, title, body, ev, grounding, grounding_ok, severity, ask_text, source, t_min, extra) -> str:
+    def _post(self, kind, title, body, ev, grounding, grounding_ok, severity, ask_text, source, t_min, extra,
+              bad=()) -> str:
         source = (source or "agent").strip().lower()
         severity = (severity or "caution").strip().lower()
         title = (title or "").strip()
@@ -310,9 +349,12 @@ class CardStore:
             why = "title is required"
         elif source in ("agent", "fallback") and not ev:
             why = "evidence must cite at least one existing utterance id"
+        elif source == "agent" and bad:
+            u, q = bad[0]
+            why = f"evidence quote not found in {u}: '{q[:60]}' (copy the words verbatim from that utterance)"
         elif not grounding_ok:
-            why = (f"grounding '{grounding}' not found (use a fired rule id, an idiom id, an open checklist id"
-                   + (", or an utterance id" if kind == "observation" else "") + ")")
+            why = (f"grounding '{grounding}' not found (use a review dimension, a fired rule id, an idiom id, an open "
+                   "checklist id" + (", or an utterance id" if kind == "observation" else "") + ")")
         elif kind == "ask" and not ask_text:
             if title.endswith("?"):
                 ask_text = title
@@ -332,6 +374,15 @@ class CardStore:
                         dup["updated_t_min"] = t_min
                         self._bump()
                 return "duplicate"
+        supersede = extra.pop("supersede", None)
+        if why is None and kind == "ask" and supersede:
+            old = self._cards.get(supersede)
+            if old is not None and old["kind"] == "ask" and old["status"] == "open" and old["source"] != "rules":
+                old["status"] = "resolved"           # one "Ask next" at a time: the older question is retired
+                old["updated_t_min"] = t_min
+                self._audit(old, "resolved", reason="superseded by a more useful next question", user="system",
+                            t_min=t_min)
+                self._emit("card", f"✓ retired {old['id']}: {old['title'][:60]} (superseded)")
         if why is None and kind == "ask" and self._open_ask_count() >= self.max_open_ask:
             why = f"ask-card cap reached ({self.max_open_ask} open); wait for the doctor"
         if why is not None:
@@ -357,6 +408,46 @@ class CardStore:
         self._emit("card", f"+ {severity} {kind} card {cid}: {title[:80]} [{grounding}]")
         self._bump()
         return cid
+
+    def reject(self, kind: str, title: str, why: str, source: str = "agent", severity: str = "info",
+               grounding: str = "", t_min: float | None = None) -> str:
+        """Record a proposal that never reached the screen (audited like a guardrail rejection). Returns
+        "rejected: <why>"."""
+        try:
+            with self._lock:
+                self._audit(None, "rejected", reason=why, user=source, t_min=t_min,
+                            extra={"grounding": grounding, "kind": kind, "severity": severity, "title": title,
+                                   "source": source})
+                self._emit("card", f"✗ rejected {kind} card '{(title or '')[:60]}': {why}")
+                self._bump()
+            return f"rejected: {why}"
+        finally:
+            self._flush()
+
+    def update(self, card_id: str, evidence: list[dict] | None = None, body: str | None = None,
+               t_min: float | None = None, **fields) -> bool:
+        """Fold more evidence (and optionally a new body / extra fields such as confidence) into an open non-rule
+        card: a near-duplicate proposal strengthens the card already on screen instead of adding another."""
+        ev = self._clean_evidence(evidence or [])
+        try:
+            with self._lock:
+                card = self._cards.get(card_id)
+                if card is None or card["status"] != "open" or card["source"] == "rules":
+                    return False
+                merged = _merge_evidence(card["evidence"], ev)
+                changed = len(merged) != len(card["evidence"])
+                card["evidence"] = merged
+                if body and body != card["body"]:
+                    card["body"], changed = body, True
+                for k, v in fields.items():
+                    if card.get(k) != v:
+                        card[k], changed = v, True
+                if changed:
+                    card["updated_t_min"] = self._now() if t_min is None else t_min
+                    self._bump()
+                return changed
+        finally:
+            self._flush()
 
     # ------------------------------------------------------------------ rule cards
     @staticmethod
@@ -536,6 +627,7 @@ class CardStore:
             t = self._now() if t_min is None else t_min
             card["status"] = "resolved"
             card["updated_t_min"] = t
+            card["resolved_reason"] = reason
             self._audit(card, "resolved", reason=reason, user="system", t_min=t)
             self._emit("card", f"✓ resolved {card_id}: {card['title'][:60]} ({reason})")
             self._bump()
@@ -564,6 +656,10 @@ class CardStore:
     def all_cards(self) -> list[dict]:
         with self._lock:
             return [self._public(c) for c in self._cards.values()]
+
+    def dismissed_cards(self) -> list[dict]:
+        with self._lock:
+            return [self._public(c) for c in self._cards.values() if c["status"] == "dismissed"]
 
     def dismissed_titles(self) -> list[str]:
         with self._lock:

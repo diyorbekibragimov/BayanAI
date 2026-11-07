@@ -105,6 +105,151 @@ def test_every_entry_matches_its_own_native_or_romanized_form(ix):
         assert e["id"] in hit_ids(ix.match(native, "", lang)), (e["id"], native)
 
 
+# ---------------------------------------------------------------------------- lexicon schema (v0.2)
+# Tags the rules and the copilot already understand; a new tag needs a rule/checklist change first.
+ALLOWED_TAGS = {"acs", "arrhythmia_syncope", "ectopic_pregnancy", "gi_bleed", "heat_illness", "malaria", "metabolic",
+                "neuro_psych_emergency", "postpartum", "respiratory", "sepsis_infection", "stroke", "suicidality"}
+REQUIRED_KEYS = {"id", "language", "iso639_3", "native", "romanized", "literal_en", "clinical_interpretations",
+                 "masks_red_flags", "clarifying_questions_en", "body_system", "source_urls", "evidence_level",
+                 "red_flag_tags"}
+OPTIONAL_KEYS = {"also_used_in", "notes"}
+
+
+def test_lexicon_schema_ids_tags_and_sources(ix):
+    import re
+
+    ids = [e["id"] for e in ix.entries]
+    assert len(ids) == len(set(ids)) and len(ids) >= 95
+    levels = set(ix.meta["evidence_levels"])
+    for e in ix.entries:
+        assert REQUIRED_KEYS <= set(e) <= REQUIRED_KEYS | OPTIONAL_KEYS, e["id"]
+        assert re.fullmatch(r"[a-z]{3}-\d{3}", e["id"]), e["id"]
+        assert e["native"].strip() and e["romanized"].strip() and e["literal_en"].strip(), e["id"]
+        assert set(e["red_flag_tags"]) <= ALLOWED_TAGS, (e["id"], e["red_flag_tags"])
+        assert e["red_flag_tags"] == sorted(set(e["red_flag_tags"])), e["id"]
+        assert e["evidence_level"] in levels, e["id"]
+        assert e["source_urls"] and all(u.startswith("https://") for u in e["source_urls"]), e["id"]
+        assert e["clinical_interpretations"] and all(
+            i["likelihood"] in ("high", "medium", "low") and i["meaning"] for i in e["clinical_interpretations"]), e["id"]
+        assert 1 <= len(e["clarifying_questions_en"]) <= 5, e["id"]
+        assert e["red_flag_tags"] == [] or e["masks_red_flags"], e["id"]
+
+
+def test_rule_tags_exist_in_lexicon(ix):
+    """Every red_flag_tags value a safety rule matches on is carried by at least one lexicon entry."""
+    import json
+
+    from bayan.brain.vocab import RULES_PATH
+
+    rule_tags: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get("fact") == "red_flag_tags":
+                v = node.get("value")
+                rule_tags.update(v if isinstance(v, list) else [v])
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    with open(RULES_PATH, encoding="utf-8") as f:
+        walk(json.load(f))
+    lex_tags = {t for e in ix.entries for t in e["red_flag_tags"]}
+    assert rule_tags and rule_tags <= lex_tags <= ALLOWED_TAGS
+
+
+@pytest.mark.parametrize("text,lang,expected", [
+    # Nepali (Kohrt & Harper 2008)
+    ("मलाई दिमाग गयो जस्तो भयो", "ne", "npi-013"),
+    ("kaam pachhi dimaag gayo", "ne", "npi-013"),
+    ("उसको दिमाग खराब भयो", "ne", "npi-014"),
+    ("मलाई चैत लाग्यो", "ne", "npi-015"),
+    # Hindi / Urdu: conjugated verb idioms match through the infinitive stem
+    ("कल धूप में काम किया और लू लग गई", "hi", "hin-011"),
+    ("mujhe loo lag gayi", "hi", "hin-011"),
+    ("सीढ़ी चढ़ते ही साँस फूल जाती है", "hi", "hin-012"),
+    ("Mera badan toot raha hai", "hi", "hin-013"),
+    ("میرا بدن ٹوٹ رہا ہے", "ur", "hin-013"),
+    ("biwi ke paon bhari hain", "hi", "hin-014"),
+    ("मैं उम्मीद से हूँ", "hi", "hin-015"),
+    ("میں امید سے ہوں", "ur", "hin-015"),
+    ("सफ़ेद पानी आता है", "hi", "hin-016"),
+    ("mujhe gupt rog hai", "hi", "hin-017"),
+    ("bawaseer se khoon aata hai", "hi", "hin-018"),
+    ("कल रात दौरा पड़ा", "hi", "hin-019"),
+    ("दिल बैठा जा रहा है", "hi", "hin-020"),
+    ("जी मिचला रहा है", "hi", "hin-021"),
+    ("डर से हाथ पैर फूल गए", "hi", "hin-022"),
+    ("आँखों के आगे अँधेरा छा गया", "hi", "hin-023"),
+    # Bengali (Wahid et al. 2021 and others)
+    ("ব্রেন স্ট্রোক হয়ে গেছে", "bn", "ben-009"),
+    ("মাথা কাজ করে না", "bn", "ben-010"),
+    ("সব কিছুতে হতাশা লাগে", "bn", "ben-011"),
+    ("ওর মাথা খারাপ হয়ে গেছে", "bn", "ben-012"),
+    ("আমার বুক জ্বালাপোড়া করছে", "bn", "ben-013"),
+    ("buk jala korche", "bn", "ben-013"),
+    ("আমাশয় হয়েছে", "bn", "ben-014"),
+    # Malayalam, Tamil
+    ("എനിക്ക് നെഞ്ചെരിച്ചിൽ ഉണ്ട്", "ml", "mal-003"),
+    ("ഭാര്യക്ക് വിശേഷം ഉണ്ട്", "ml", "mal-004"),
+    ("എനിക്ക് നെഞ്ചെരിച്ചില്‍ ഉണ്ട്", "ml", "mal-003"),    # old-style chillu (ZWJ) spelling
+    ("எனக்கு மயக்கமா இருக்கு", "ta", "tam-002"),
+    ("நெஞ்சில் வாய்வு வலி", "ta", "tam-003"),
+    # Tagalog (Lasco et al. 2020; Gaw et al. 2011)
+    ("Na-hi-highblood po ako kapag galit", "tl", "tgl-010"),
+    ("Lowblood daw po ako sabi ng nurse", "tl", "tgl-011"),
+    ("Tinigil ko ang maintenance ko", "tl", "tgl-012"),
+    ("Namatay sa bangungot ang kuya ko", "tl", "tgl-013"),
+    ("Sinusumpong po ako ng hika", "tl", "tgl-014"),
+    ("Kinulam daw siya", "tl", "tgl-015"),
+    # Swahili (lang 'swh'; see test_swahili_language_code below)
+    ("Nina msongo wa mawazo", "swh", "swh-001"),
+    ("Kichwa kimejaa mawazo", "swh", "swh-002"),
+    ("Mtoto ana degedege", "swh", "swh-003"),
+    ("Nina kiungulia", "swh", "swh-004"),
+    ("Presha imepanda", "swh", "swh-005"),
+    # Arabic
+    ("عندي حموضة", "ar", "ara-014"),
+    ("صار عنده ضربة شمس بالشغل", "ar", "ara-015"),
+])
+def test_new_entries_match_in_context(ix, text, lang, expected):
+    assert hit_ids(ix.match(text, "", lang)) == [expected]
+    assert hit_ids(ix.match(text, "", None))[0] == expected
+
+
+@pytest.mark.parametrize("lang,sentences", [
+    ("en", ["I ate rice", "Thank you doctor", "Good morning", "I have had a headache since yesterday",
+            "My blood test was normal", "Please take this medicine after food", "I work in maintenance at a hotel"]),
+    ("ne", ["नमस्ते डाक्टर साब", "मैले भात खाएँ", "धन्यवाद", "मलाई टाउको दुख्यो", "Namaste doctor sab", "maile bhat khae"]),
+    ("hi", ["नमस्ते डॉक्टर साहब", "मैंने चावल खाया", "धन्यवाद डॉक्टर जी", "दर्द पेट से शुरू हुआ",
+            "डॉक्टर साहब का दौरा कब है?", "उम्मीद है आप ठीक हैं", "maine chawal khaya", "mujhe ummeed hai aap theek hain"]),
+    ("ur", ["السلام علیکم ڈاکٹر صاحب", "میں نے چاول کھائے", "شکریہ ڈاکٹر صاحب", "امید ہے آپ ٹھیک ہیں"]),
+    ("bn", ["আমি ভাত খেয়েছি", "ধন্যবাদ ডাক্তার", "নমস্কার", "আসসালামু আলাইকুম", "ami bhat kheyechi"]),
+    ("ml", ["ഞാൻ ചോറ് കഴിച്ചു", "നന്ദി ഡോക്ടർ", "എന്താ വിശേഷം?", "എന്തുണ്ട് വിശേഷം", "സുഖമാണോ?"]),
+    ("ta", ["நான் சாப்பாடு சாப்பிட்டேன்", "நன்றி டாக்டர்", "வணக்கம்", "என் வாய் வலிக்கிறது"]),
+    ("tl", ["Kumain ako ng kanin", "Salamat po doktor", "Magandang umaga po", "May ulam po kami", "Kumusta po kayo"]),
+    ("swh", ["Nimekula wali", "Asante daktari", "Habari za asubuhi", "Mawazo yangu ni mazuri", "Jambo"]),
+    ("ar", ["أكلت رز", "شكرا دكتور", "صباح الخير", "السلام عليكم", "عندي حرقان في البول"]),
+])
+def test_greetings_and_ordinary_sentences_match_nothing(ix, lang, sentences):
+    """Ordinary words that overlap an idiom ('vishesham' in a greeting, 'pet se', 'ummeed', 'daura' = visit,
+    'vaay' = mouth, 'ulam' = dish, 'mawazo' = ideas) must not raise an idiom card."""
+    for s in sentences:
+        for lg in (lang, None):
+            assert ix.match(s, "", lg) == [], (s, lg)
+            assert ix.match(s, s, lg) == [], (s, lg)
+
+
+def test_swahili_language_code(ix):
+    """Swahili entries match with lang None or the ISO code 'swh'. The app passes 'sw', which the matcher's
+    _LANG table does not map yet, so romanized Swahili forms are skipped for lang='sw' (see lexicon report)."""
+    assert hit_ids(ix.match("Nina kiungulia", "", "swh")) == ["swh-004"]
+    assert hit_ids(ix.match("Nina kiungulia", "", None)) == ["swh-004"]
+    assert ix.match("Nina kiungulia", "", "ne") == []
+
+
 # ============================================================================ checklist
 def _chest_state():
     c = Consultation()

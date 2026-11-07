@@ -1,0 +1,1037 @@
+{
+ "meta": {
+  "run_id": "coherence-v2",
+  "models": {
+   "llm": "openai/gpt-oss-120b",
+   "llm_provider": "cerebras",
+   "agent": "openai/gpt-oss-120b",
+   "agent_provider": "cerebras",
+   "brain": "openai/gpt-oss-120b",
+   "brain_provider": "default",
+   "extract_provider": "groq"
+  },
+  "wall_s": 41.756145000457764,
+  "n": 1,
+  "git": "085796e",
+  "dirty_app_files": 11,
+  "created": "2026-11-07T09:00:58"
+ },
+ "results": [
+  {
+   "id": "coh-01-nasal-spray-butt",
+   "title": "The user's live test: buttock pain after cold tiles and low mood; doctor prescribes nasal spray, patient asks if it goes in the butt, doctor claims a high temperature never measured",
+   "category": "coherence",
+   "patient_lang": "ru",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "patient",
+     "action": null,
+     "process_s": 3.24,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 3.23
+     },
+     "utt": "u003",
+     "english": "Hello, doctor. My bottom hurts.",
+     "translation": "",
+     "wait_s": 8.21,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.81,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.81
+     },
+     "utt": "u004",
+     "english": "I sat on a cold tile and probably chilled my bottom.",
+     "translation": "",
+     "wait_s": 4.93,
+     "open_cards": [
+      "c002"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.88,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.88
+     },
+     "utt": "u005",
+     "english": "And also my heart feels somehow cold, I think I have no mood at all.",
+     "translation": "",
+     "wait_s": 5.25,
+     "open_cards": [
+      "c003"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.81,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.81
+     },
+     "utt": "u006",
+     "english": "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner.",
+     "translation": "Я думаю, это должно быть ваш нос. Я буду давать вам назальные спреи каждый день в течение следующих трёх недель после обеда и после ужина.",
+     "wait_s": 6.04,
+     "open_cards": [
+      "c004",
+      "c003"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.83,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.83
+     },
+     "utt": "u007",
+     "english": "And why do I need this? Do I have to spray it in my butt?",
+     "translation": "",
+     "wait_s": 4.74,
+     "open_cards": [
+      "c005",
+      "c004",
+      "c003"
+     ]
+    },
+    {
+     "i": 5,
+     "t_min": 4.25,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.76,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.76
+     },
+     "utt": "u008",
+     "english": "You are not cold, you are very hot and have a really high temperature.",
+     "translation": "Вы не замерзли, у вас очень жарко и высокая температура.",
+     "wait_s": 4.76,
+     "open_cards": [
+      "c006",
+      "c005",
+      "c004",
+      "c003"
+     ]
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T09:00:17",
+   "wrapup": false,
+   "cards_live": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about fever",
+     "body": "Fever could indicate an infection such as an abscess that needs urgent evaluation.",
+     "ask_text": "Do you have a fever?",
+     "dimension": "safety",
+     "score": 0.54
+    },
+    {
+     "id": "c002",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about swelling or redness",
+     "body": "Perianal pain can be from an infection; need to know if there is swelling, redness, or discharge.",
+     "ask_text": "Do you have any swelling, redness, or discharge around the painful area?",
+     "dimension": "safety",
+     "score": 0.51
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about self-harm",
+     "body": "Patient reports feeling no mood, which may indicate depression; need to assess suicidal thoughts.",
+     "ask_text": "Have you had thoughts of hurting yourself or not wanting to live?",
+     "dimension": "safety",
+     "score": 0.552
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Nose vs butt pain mismatch",
+     "body": "The doctor attributes the problem to the nose while the patient’s complaint is butt pain, which is inconsistent and suggests a misdiagnosis.",
+     "ask_text": null,
+     "dimension": "consistency",
+     "score": 0.9
+    },
+    {
+     "id": "c005",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Nasal spray for butt pain",
+     "body": "The prescribed nasal spray does not address the patient's butt pain, indicating a mismatch in the treatment plan.",
+     "ask_text": null,
+     "dimension": "plan",
+     "score": 0.85
+    },
+    {
+     "id": "c006",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "No temperature measured",
+     "body": "Doctor states you have a high temperature, but no measurement was recorded, which may be inaccurate.",
+     "ask_text": null,
+     "dimension": "consistency",
+     "score": 0.85
+    }
+   ],
+   "screen": "live",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {},
+   "agentic": null,
+   "care_plan": {
+    "lang": null,
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {}
+   },
+   "note_md": "",
+   "pdf": {
+    "patient": {
+     "path": null,
+     "exists": false
+    },
+    "doctor": {
+     "path": null,
+     "exists": false
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [],
+    "stopped_meds": [],
+    "symptoms": [
+     "low_mood",
+     "fever"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": []
+   },
+   "case": {
+    "chief_complaint": {
+     "text": "bottom hurts",
+     "evidence": [
+      {
+       "utt": "u003",
+       "t_min": 0.5,
+       "quote": "My bottom hurts"
+      }
+     ],
+     "t_min": 0.5
+    },
+    "history": [],
+    "working_diagnosis": [
+     {
+      "text": "problem is in the nose",
+      "evidence": [
+       {
+        "utt": "u006",
+        "t_min": 2.75,
+        "quote": "I think it should be your nose"
+       }
+      ],
+      "t_min": 2.75
+     }
+    ],
+    "differential": [],
+    "plan": [
+     {
+      "text": "nasal spray every day after lunch and after dinner for three weeks",
+      "evidence": [
+       {
+        "utt": "u006",
+        "t_min": 2.75,
+        "quote": "I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner"
+       }
+      ],
+      "t_min": 2.75,
+      "type": "medicine"
+     }
+    ],
+    "exam_claims": [],
+    "patient_understanding": [],
+    "patient_affect": []
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about fever",
+     "body": "Fever could indicate an infection such as an abscess that needs urgent evaluation.",
+     "ask_text": "Do you have a fever?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 0.5,
+     "dimension": "safety",
+     "confidence": 0.9,
+     "score": 0.54
+    },
+    {
+     "id": "c002",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about swelling or redness",
+     "body": "Perianal pain can be from an infection; need to know if there is swelling, redness, or discharge.",
+     "ask_text": "Do you have any swelling, redness, or discharge around the painful area?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 1.25,
+     "dimension": "safety",
+     "confidence": 0.85,
+     "score": 0.51
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about self-harm",
+     "body": "Patient reports feeling no mood, which may indicate depression; need to assess suicidal thoughts.",
+     "ask_text": "Have you had thoughts of hurting yourself or not wanting to live?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 2.0,
+     "dimension": "safety",
+     "confidence": 0.92,
+     "score": 0.552
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Nose vs butt pain mismatch",
+     "body": "The doctor attributes the problem to the nose while the patient’s complaint is butt pain, which is inconsistent and suggests a misdiagnosis.",
+     "ask_text": null,
+     "grounding": "consistency",
+     "rule_ids": [],
+     "t_min": 2.75,
+     "dimension": "consistency",
+     "confidence": 0.9,
+     "score": 0.9
+    },
+    {
+     "id": "c005",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Nasal spray for butt pain",
+     "body": "The prescribed nasal spray does not address the patient's butt pain, indicating a mismatch in the treatment plan.",
+     "ask_text": null,
+     "grounding": "plan",
+     "rule_ids": [],
+     "t_min": 3.5,
+     "dimension": "plan",
+     "confidence": 0.85,
+     "score": 0.85
+    },
+    {
+     "id": "c006",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "No temperature measured",
+     "body": "Doctor states you have a high temperature, but no measurement was recorded, which may be inaccurate.",
+     "ask_text": null,
+     "grounding": "consistency",
+     "rule_ids": [],
+     "t_min": 4.25,
+     "dimension": "consistency",
+     "confidence": 0.85,
+     "score": 0.85
+    }
+   ],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [
+      "c001",
+      "held back: one new card per turn (score 0.54)"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [
+      "c002"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [
+      "c003"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [
+      "c004",
+      "held back: score 0.25 < 0.40 (info x conf 0.8 x novelty 1.0 x recency 0.51)"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u007"
+     ],
+     "results": [
+      "c005"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u008"
+     ],
+     "results": [
+      "c006"
+     ],
+     "skipped": null
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about fever",
+     "reason": null,
+     "t_min": 0.5
+    },
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about fever",
+     "reason": "superseded by a more useful next question",
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about swelling or redness",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about swelling or redness",
+     "reason": "superseded by a more useful next question",
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about self-harm",
+     "reason": null,
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Nose vs butt pain mismatch",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c005",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Nasal spray for butt pain",
+     "reason": null,
+     "t_min": 3.5
+    },
+    {
+     "card_id": "c006",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "No temperature measured",
+     "reason": null,
+     "t_min": 4.25
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state → complaint: bottom hurts",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 card: + info ask card c001: Ask about fever [safety]",
+    "0.50 card: curate: c001 shown (score 0.54: info x conf 0.9 x novelty 1.0 x recency 1.0)",
+    "0.50 card: curate: 'Ask about rectal bleeding' held back: one new card per turn (score 0.54)",
+    "0.50 tool: final_answer([ask 'Ask about fever', ask 'Ask about rectal bleeding']) → c001; held back: one new card per turn (score 0.54)",
+    "0.50 agent: copilot: 1 step(s), 1 tool call(s), 2.1s, 2398/694 tok ($0.0014)",
+    "1.25 tool: update_state → no new facts",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 card: ✓ retired c001: Ask about fever (superseded)",
+    "1.25 card: + info ask card c002: Ask about swelling or redness [safety]",
+    "1.25 card: curate: c002 shown (score 0.51: info x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "1.25 tool: final_answer([ask 'Ask about swelling or redness']) → c002",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 1.4s, 2452/694 tok ($0.0014)",
+    "2.00 tool: update_state → +low_mood",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 card: ✓ retired c002: Ask about swelling or redness (superseded)",
+    "2.00 card: + info ask card c003: Ask about self-harm [safety]",
+    "2.00 card: curate: c003 shown (score 0.55: info x conf 0.92 x novelty 1.0 x recency 1.0)",
+    "2.00 tool: final_answer([ask 'Ask about self-harm']) → c003",
+    "2.00 agent: copilot: 1 step(s), 1 tool call(s), 1.2s, 2517/592 tok ($0.0013)",
+    "2.75 tool: update_state → dx: problem is in the nose, plan: nasal spray every day after lunch and after dinn",
+    "2.75 tool: check_safety_rules → none",
+    "2.75 card: + caution observation card c004: Nose vs butt pain mismatch [consistency]",
+    "2.75 card: curate: c004 shown (score 0.90: caution x conf 0.9 x novelty 1.0 x recency 1.0)",
+    "2.75 card: curate: 'Ask about butt pain onset' held back: score 0.25 < 0.40 (info x conf 0.8 x novelty 1.0 x recency 0.51)",
+    "2.75 tool: final_answer([observation 'Nose vs butt pain mismatch', ask 'Ask about butt pain onset']) → c004; held back: score 0.25 < 0.40 (info x conf 0.8 x novelty 1.0 x r…",
+    "2.75 agent: copilot: 1 step(s), 1 tool call(s), 1.4s, 2589/811 tok ($0.0015)",
+    "3.50 tool: update_state → no new facts",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 card: + caution observation card c005: Nasal spray for butt pain [plan]",
+    "3.50 card: curate: c005 shown (score 0.85: caution x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "3.50 tool: final_answer([observation 'Nasal spray for butt pain']) → c005",
+    "3.50 agent: copilot: 1 step(s), 1 tool call(s), 1.4s, 2648/909 tok ($0.0016)",
+    "4.25 tool: update_state → +fever",
+    "4.25 tool: check_safety_rules → none",
+    "4.25 card: + caution observation card c006: No temperature measured [consistency]",
+    "4.25 card: curate: c006 shown (score 0.85: caution x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "4.25 tool: final_answer([observation 'No temperature measured']) → c006",
+    "4.25 agent: copilot: 1 step(s), 1 tool call(s), 1.3s, 2691/746 tok ($0.0015)"
+   ],
+   "stats": {
+    "runs": 6,
+    "latency_s": [
+     6.99,
+     3.71,
+     4.03,
+     4.82,
+     3.52,
+     3.55
+    ],
+    "extract_tokens": [
+     28950,
+     3485
+    ],
+    "agent_tokens": [
+     15295,
+     4446
+    ],
+    "cost_usd": 0.021433999999999998
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 6.99,
+     "extract_s": 4.76,
+     "agent_s": 2.1,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 1,
+     "fallback": 0,
+     "input_tokens": 7094,
+     "output_tokens": 1210,
+     "extract_tokens": [
+      4696,
+      516
+     ],
+     "agent_tokens": [
+      2398,
+      694
+     ],
+     "cost_usd": 0.002451
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 3.71,
+     "extract_s": 2.33,
+     "agent_s": 1.36,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7198,
+     "output_tokens": 1084,
+     "extract_tokens": [
+      4746,
+      390
+     ],
+     "agent_tokens": [
+      2452,
+      694
+     ],
+     "cost_usd": 0.002383
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 4.03,
+     "extract_s": 2.77,
+     "agent_s": 1.25,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7313,
+     "output_tokens": 1136,
+     "extract_tokens": [
+      4796,
+      544
+     ],
+     "agent_tokens": [
+      2517,
+      592
+     ],
+     "cost_usd": 0.002452
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 4.82,
+     "extract_s": 3.44,
+     "agent_s": 1.37,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 1,
+     "fallback": 0,
+     "input_tokens": 7429,
+     "output_tokens": 1870,
+     "extract_tokens": [
+      4840,
+      1059
+     ],
+     "agent_tokens": [
+      2589,
+      811
+     ],
+     "cost_usd": 0.003035
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 3.52,
+     "extract_s": 2.16,
+     "agent_s": 1.35,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7570,
+     "output_tokens": 1296,
+     "extract_tokens": [
+      4922,
+      387
+     ],
+     "agent_tokens": [
+      2648,
+      909
+     ],
+     "cost_usd": 0.002637
+    },
+    {
+     "t_min": 4.25,
+     "kind": "think",
+     "turns": [
+      "u008"
+     ],
+     "latency_s": 3.55,
+     "extract_s": 2.23,
+     "agent_s": 1.3,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7641,
+     "output_tokens": 1335,
+     "extract_tokens": [
+      4950,
+      589
+     ],
+     "agent_tokens": [
+      2691,
+      746
+     ],
+     "cost_usd": 0.002686
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 0,
+     "wall": 1794031229.021666,
+     "latency_s": 11.45,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about fever",
+     "severity": "info"
+    },
+    "c002": {
+     "turn": 1,
+     "wall": 1794031234.761705,
+     "latency_s": 5.74,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about swelling or redness",
+     "severity": "info"
+    },
+    "c003": {
+     "turn": 2,
+     "wall": 1794031240.891093,
+     "latency_s": 6.13,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about self-harm",
+     "severity": "info"
+    },
+    "c004": {
+     "turn": 3,
+     "wall": 1794031247.740549,
+     "latency_s": 6.85,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Nose vs butt pain mismatch",
+     "severity": "caution"
+    },
+    "c005": {
+     "turn": 4,
+     "wall": 1794031253.300041,
+     "latency_s": 5.56,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Nasal spray for butt pain",
+     "severity": "caution"
+    },
+    "c006": {
+     "turn": 5,
+     "wall": 1794031258.825479,
+     "latency_s": 5.52,
+     "source": "agent",
+     "kind": "observation",
+     "title": "No temperature measured",
+     "severity": "caution"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 0,
+     "latency_s": 11.45,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about fever"
+    },
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 5.74,
+     "status": "resolved",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about fever"
+    },
+    {
+     "card": "c002",
+     "turn": 1,
+     "latency_s": 5.74,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about swelling or redness"
+    },
+    {
+     "card": "c002",
+     "turn": 2,
+     "latency_s": 6.13,
+     "status": "resolved",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about swelling or redness"
+    },
+    {
+     "card": "c003",
+     "turn": 2,
+     "latency_s": 6.13,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about self-harm"
+    },
+    {
+     "card": "c004",
+     "turn": 3,
+     "latency_s": 6.85,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Nose vs butt pain mismatch"
+    },
+    {
+     "card": "c005",
+     "turn": 4,
+     "latency_s": 5.56,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Nasal spray for butt pain"
+    },
+    {
+     "card": "c006",
+     "turn": 5,
+     "latency_s": 5.52,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "No temperature measured"
+    }
+   ],
+   "rules_seen": {},
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      7010,
+      585,
+      6
+     ],
+     "openai/gpt-oss-120b|groq": [
+      28950,
+      3485,
+      6
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      15295,
+      4446,
+      6,
+      8.74109172821045,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.00985,
+    "cost_agent_usd": 0.00869,
+    "cost_usd": 0.01854,
+    "llm_usage_delta": {
+     "calls": 18,
+     "prompt_tokens": 51255,
+     "completion_tokens": 8516
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 41.3,
+   "checks": [
+    {
+     "type": "no_flag",
+     "desc": "NOT card severity=critical source=agent",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[plan] treatment does not fit the complaint",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[consistency] 'Nose vs butt pain mismatch'; agent/observation[plan] 'Nasal spray for butt pain'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[plan] prescription incomplete (no drug name, strength or dose)",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/ask[safety] 'Ask about fever'; agent/ask[safety] 'Ask about swelling or redness'; agent/ask[safety] 'Ask about self-harm'; agent/observation[consistency] 'Nose vs butt pain mismatch'; agent/observation[plan] 'Nasal spray for butt pain'; agent/observation[consistency] 'No temperature measured'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[communication] patient confused about how / where to use it",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/ask[safety] 'Ask about fever'; agent/ask[safety] 'Ask about swelling or redness'; agent/ask[safety] 'Ask about self-harm'; agent/observation[consistency] 'Nose vs butt pain mismatch'; agent/observation[plan] 'Nasal spray for butt pain'; agent/observation[consistency] 'No temperature measured'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[consistency] temperature claim not backed by a measurement / contradicts the patient",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[consistency] 'No temperature measured'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[communication] low mood said in passing, not followed up",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/ask[safety] 'Ask about self-harm'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  }
+ ]
+}

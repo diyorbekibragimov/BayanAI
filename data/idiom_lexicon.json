@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "Bayan AI cultural idiom lexicon",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "created": "2026-11-06",
     "purpose": "Retrieval-augmented decision support: lets the doctor see the literal meaning of a patient's idiom of distress plus literature-sourced clinical possibilities and clarifying questions. It is not a diagnostic tool.",
     "authorship_caveat": "Compiled by engineers without clinical training from the cited literature. Every entry needs review by a licensed clinician and a native speaker before real-world use.",
@@ -2404,6 +2404,1602 @@
       "evidence_level": "literature",
       "notes": "Documented in Ethiopian ethnobotanical surveys as a human febrile illness. The clinical meaning here comes from the fever, not a validated mapping.",
       "red_flag_tags": [
+        "malaria",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "npi-013",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "दिमाग गयो",
+      "romanized": "dimaag gayo / dimag gayo",
+      "literal_en": "my brain-mind has gone",
+      "clinical_interpretations": [
+        {
+          "meaning": "A passing state of not understanding or feeling confused (Kohrt & Harper 2008)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute confusion from heat stroke, hypoglycaemia, hypoxia, intoxication or stroke if it is new or sudden",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Anxiety or overload ('I can't think')",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat stroke (confusion after work in the heat)",
+        "Hypoglycaemia",
+        "Stroke or other acute brain event",
+        "Delirium from infection"
+      ],
+      "clarifying_questions_en": [
+        "When did this start? Was it sudden, after work in the heat, or after missing food?",
+        "Did you faint, have a fit, or lose strength or speech on one side?",
+        "Do you take any medicine for diabetes?"
+      ],
+      "body_system": "neurological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Kohrt & Harper describe it as a transient, less stigmatised dimaag idiom. A worker who says this after a shift in the heat needs a temperature and glucose check, not reassurance. MT renderings: 'my brain is gone'; 'my mind went'.",
+      "red_flag_tags": [
+        "heat_illness",
+        "metabolic",
+        "neuro_psych_emergency",
+        "stroke"
+      ]
+    },
+    {
+      "id": "npi-014",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "दिमाग खराब भयो / दिमाग बिग्रेको",
+      "romanized": "dimaag kharaab bhayo / dimaag bigreko / dimaag crack bhayo",
+      "literal_en": "my brain-mind has gone bad / is broken",
+      "clinical_interpretations": [
+        {
+          "meaning": "Label for madness or psychosis, seen as permanent and highly stigmatising (Kohrt & Harper 2008)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute confusion or behaviour change from a medical cause (delirium, hypoglycaemia, alcohol withdrawal, heat stroke)",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Delirium or organic psychosis labelled as 'madness'",
+        "Risk to self or others",
+        "Heat stroke or hypoglycaemia presenting as strange behaviour"
+      ],
+      "clarifying_questions_en": [
+        "Who says this, the patient or the family? What changed, and when?",
+        "Any fever, head injury, heavy drinking, fits, or work in the heat before it started?",
+        "Has the person talked about harming themselves or anyone else?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Families may hide this because 'dimaag' illness harms the marriage prospects of the whole family (Kohrt & Harper 2008). A new behaviour change is a medical emergency until proven otherwise. MT renderings: 'his brain is spoiled'; 'brain cracked'.",
+      "red_flag_tags": [
+        "metabolic",
+        "neuro_psych_emergency",
+        "suicidality"
+      ]
+    },
+    {
+      "id": "npi-015",
+      "language": "Nepali",
+      "iso639_3": "npi",
+      "native": "चैत लाग्यो",
+      "romanized": "chait laagyo / chait lagyo",
+      "literal_en": "the month of Chait has struck me",
+      "clinical_interpretations": [
+        {
+          "meaning": "Hot, heavy-hearted, low state linked to the hot pre-monsoon month (Kohrt & Harper 2008)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Low mood or depression expressed as a seasonal, external cause",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Heat exhaustion or dehydration when it follows work in the heat",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat illness in a worker who links feeling unwell to the hot season",
+        "Depression with suicidal thoughts"
+      ],
+      "clarifying_questions_en": [
+        "Do you feel hot, weak, dizzy or very thirsty, or is it more a heaviness in your heart-mind?",
+        "How much water do you drink at work, and how dark is your urine?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3869091/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Kohrt & Harper quote it for a woman whose heart-mind felt heavy in the hot month of Chait (April-May): distress framed as seasonal and external, not personal. MT renderings: 'Chait has hit me'; 'the month of Chait struck'.",
+      "red_flag_tags": [
+        "heat_illness",
+        "suicidality"
+      ]
+    },
+    {
+      "id": "hin-011",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "लू लगना / لو لگنا (लू लग गई / لو لگ گئی)",
+      "romanized": "loo lagna / lu lagna / loo lag gayi",
+      "literal_en": "the hot wind (loo) has struck me",
+      "clinical_interpretations": [
+        {
+          "meaning": "Heat illness: anything from heat exhaustion to heat stroke, blamed on the hot summer wind",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Dehydration or fever from another cause attributed to the heat",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat stroke (confusion, collapse, very high temperature)",
+        "Rhabdomyolysis or acute kidney injury after heat exposure",
+        "Sepsis or malaria blamed on the heat"
+      ],
+      "clarifying_questions_en": [
+        "Were you confused, did you collapse, or stop sweating?",
+        "What was your temperature, and has anyone measured it since?",
+        "Is your urine dark or very little? Any muscle pain or cramps?"
+      ],
+      "body_system": "thermoregulatory",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=lu+lagnaa",
+        "https://en.wikipedia.org/wiki/Loo_(wind)"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Dictionary meaning: 'suffer from heatstroke (due to exposure to hot wind)'. Patients may use it for mild symptoms too, so it does not tell you the severity; measure core temperature. MT renderings: 'I got hit by the loo'; 'I caught the hot wind'; 'loo has touched me'.",
+      "red_flag_tags": [
+        "heat_illness",
+        "malaria",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "hin-012",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "साँस फूलना / सांस फूलना / سانس پھولنا / दम फूलना / دم پھولنا",
+      "romanized": "saans phoolna / sans phulna / dam phoolna",
+      "literal_en": "my breath is swelling",
+      "clinical_interpretations": [
+        {
+          "meaning": "Breathlessness, panting, especially on exertion (dictionary meaning)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Heart failure, ischaemia (angina equivalent), asthma or COPD, anaemia",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Pulmonary embolism or pneumonia when sudden",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Angina equivalent or heart failure",
+        "Pulmonary embolism",
+        "Severe asthma or pneumonia",
+        "Severe anaemia (e.g. from GI bleeding)"
+      ],
+      "clarifying_questions_en": [
+        "Does it come on with walking or work and ease with rest? Since when?",
+        "Any chest pain, swollen legs, or waking up at night short of breath?",
+        "Did it start suddenly? Any calf pain, cough with blood, or fever?"
+      ],
+      "body_system": "respiratory",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=saa.ns+phuulnaa",
+        "https://www.rekhta.org/urdudictionary?keyword=dam+phuulnaa"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Rekhta glosses saans phoolna as 'gasping, breathlessness' and dam phoolna as 'become breathless, pant, gasp'. MT renderings: 'my breath is swelling'; 'breath is blooming'.",
+      "red_flag_tags": [
+        "acs",
+        "gi_bleed",
+        "respiratory"
+      ]
+    },
+    {
+      "id": "hin-013",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "बदन टूटना / بدن ٹوٹنا",
+      "romanized": "badan tootna / badan toot raha hai",
+      "literal_en": "my body is breaking",
+      "clinical_interpretations": [
+        {
+          "meaning": "Racking body aches with weariness, usually with a fever or viral illness (dictionary meaning)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Dengue, malaria, influenza or other febrile illness",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Exertional rhabdomyolysis after heavy work in the heat",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Malaria or dengue",
+        "Sepsis",
+        "Rhabdomyolysis after heavy work in the heat"
+      ],
+      "clarifying_questions_en": [
+        "Do you have fever or chills? For how many days?",
+        "Have you travelled home recently, for example to India, Pakistan, Nepal or Africa?",
+        "Is your urine dark like tea or cola?"
+      ],
+      "body_system": "general/constitutional",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=badan+TuuTnaa"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Rekhta: 'suffer from racking body pain, a sign of weariness or illness'. MT renderings: 'my body is breaking'; 'body is broken'.",
+      "red_flag_tags": [
+        "heat_illness",
+        "malaria",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "hin-014",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "पाँव भारी होना / पांव भारी होना / پاؤں بھاری ہونا",
+      "romanized": "paon bhari hona / paanv bhaari hona / paon bhari hai",
+      "literal_en": "her feet are heavy",
+      "clinical_interpretations": [
+        {
+          "meaning": "Pregnancy (euphemism)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Literal heaviness or swelling of the legs",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Unrecognised pregnancy (ectopic pregnancy, teratogenic drugs, radiation)",
+        "Pre-eclampsia if the legs are literally swollen in pregnancy"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean you are pregnant? When was your last period?",
+        "Any pain low in the belly, bleeding, or fainting?",
+        "Are your feet actually swollen? Any headache or blurred vision?"
+      ],
+      "body_system": "reproductive",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=paa.nv+bhaarii+honaa"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Rekhta: 'to be with child, be pregnant'. A literal translation sends the doctor to the legs. MT renderings: 'her feet have become heavy'; 'my legs are heavy'.",
+      "red_flag_tags": [
+        "ectopic_pregnancy"
+      ]
+    },
+    {
+      "id": "hin-015",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "उम्मीद से होना / امید سے ہونا / उम्मीद से हूँ / امید سے ہوں / पेट से हूँ / پیٹ سے ہوں",
+      "romanized": "ummeed se hona / umeed se hoon / ummeed se hai / pet se hoon",
+      "literal_en": "to be with hope / I am from the stomach",
+      "clinical_interpretations": [
+        {
+          "meaning": "Pregnancy (euphemism)",
+          "likelihood": "high"
+        }
+      ],
+      "masks_red_flags": [
+        "Unrecognised pregnancy (ectopic pregnancy, teratogenic drugs, X-ray or CT)"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean you are pregnant? When was your last period?",
+        "Any pain low in the belly, bleeding, or dizziness?"
+      ],
+      "body_system": "reproductive",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=ummiid+se+honaa",
+        "https://www.rekhta.org/urdudictionary?keyword=peT+se+honaa"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Rekhta glosses both 'ummiid se honaa' and 'peT se honaa' as 'be pregnant'. Only first-person forms of 'pet se' are listed, because 'pet se' alone ('from the stomach') is ordinary speech. MT renderings: 'she is hopeful'; 'I am with hope'; 'I am from the stomach'.",
+      "red_flag_tags": [
+        "ectopic_pregnancy"
+      ]
+    },
+    {
+      "id": "hin-016",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "सफ़ेद पानी / सफेद पानी / سفید پانی",
+      "romanized": "safed pani / safed paani",
+      "literal_en": "white water",
+      "clinical_interpretations": [
+        {
+          "meaning": "Vaginal discharge (leukorrhoea), often feared as a loss of vital substance that causes weakness (Trollope-Kumar 2001)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Somatic expression of distress or depression",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Reproductive tract infection, STI or pelvic inflammatory disease",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Pelvic inflammatory disease or STI",
+        "Pregnancy complications",
+        "Depression behind the bodily complaint"
+      ],
+      "clarifying_questions_en": [
+        "What colour is it, does it smell, and do you have itching or pain low in the belly?",
+        "Any fever, pain with sex, or bleeding between periods? Could you be pregnant?",
+        "How is your mood and sleep? Do you feel weak or worried about it?"
+      ],
+      "body_system": "genitourinary",
+      "source_urls": [
+        "https://doi.org/10.1046/j.1365-3156.2001.00699.x",
+        "https://macsphere.mcmaster.ca/handle/11375/12989"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Trollope-Kumar found many women complaining of discharge had no infection; the complaint can carry weakness, dizziness, backache and distress. Do not treat it as an STI by reflex, and do not dismiss it. MT renderings: 'white water is coming'; 'white water problem'.",
+      "red_flag_tags": [
+        "ectopic_pregnancy",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "hin-017",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "गुप्त रोग / گپت روگ",
+      "romanized": "gupt rog / gupt rog ki samasya",
+      "literal_en": "secret disease",
+      "clinical_interpretations": [
+        {
+          "meaning": "Any sexual health problem in men: semen loss worries, erectile or ejaculation problems, genital symptoms",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Sexually transmitted infection",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Anxiety or depression with sexual and somatic symptoms (see dhat)",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "STI including HIV or syphilis",
+        "Diabetes or vascular disease behind erectile problems",
+        "Unsafe use of 'sex tonics' or unlabelled pills"
+      ],
+      "clarifying_questions_en": [
+        "What exactly is the problem: discharge, sores, pain on passing urine, or a problem with erections?",
+        "Have you taken any medicine or tonic for it? Do you have the packet?",
+        "Any chest pain, or do you take any heart medicine such as nitrate tablets or spray?"
+      ],
+      "body_system": "genitourinary",
+      "source_urls": [
+        "https://knowledgecommons.popcouncil.org/departments_sbsr-hiv/571",
+        "https://knowledgecommons.popcouncil.org/departments_sbsr-rh/2302"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Term used by Indian practitioners and programmes for men's sexual health concerns (Population Council). Young male workers rarely raise it unprompted. MT renderings: 'secret disease'; 'hidden illness'.",
+      "red_flag_tags": [
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "hin-018",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "बवासीर / بواسیر",
+      "romanized": "bawaseer / bavasir",
+      "literal_en": "piles",
+      "clinical_interpretations": [
+        {
+          "meaning": "Haemorrhoids, used for almost any anal pain, lump or rectal bleeding",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Anal fissure or fistula",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Colorectal cancer, inflammatory bowel disease or upper GI bleeding with dark stools attributed to piles",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Lower or upper GI bleeding",
+        "Colorectal cancer (bleeding, weight loss, change in bowel habit)",
+        "Anaemia from chronic blood loss"
+      ],
+      "clarifying_questions_en": [
+        "Is the blood bright red on the paper, mixed in the stool, or are the stools black?",
+        "Any weight loss, change in bowel habit, or tiredness and breathlessness?",
+        "How long has it been happening, and how much blood?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=bavaasiir"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Patients often self-label rectal bleeding as bawaseer and treat it with remedies. MT renderings: 'piles'; 'haemorrhoids'.",
+      "red_flag_tags": [
+        "gi_bleed"
+      ]
+    },
+    {
+      "id": "hin-019",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "दौरा पड़ना / دورہ پڑنا (दौरा पड़ा / دورہ پڑا)",
+      "romanized": "daura padna / daura pada / daura padta hai",
+      "literal_en": "an attack fell (on me)",
+      "clinical_interpretations": [
+        {
+          "meaning": "A fit of any kind: seizure, faint, panic or dissociative attack (dictionary: 'have a fit')",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Heart attack ('dil ka daura')",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Stroke or transient ischaemic attack",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Seizure",
+        "Syncope from arrhythmia",
+        "Myocardial infarction ('dil ka daura')",
+        "Stroke"
+      ],
+      "clarifying_questions_en": [
+        "What happened exactly? Did you lose consciousness, shake, bite your tongue or wet yourself?",
+        "Was there chest pain, palpitations or breathlessness before it?",
+        "Any weakness of the face, arm or leg, or trouble speaking?"
+      ],
+      "body_system": "neurological",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=daura+pa.Dnaa"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "One word covers seizure, faint, heart attack and hysterical fit; the doctor must ask what happened. MT renderings: 'I had a tour'; 'an attack came'; 'I had a fit'.",
+      "red_flag_tags": [
+        "acs",
+        "arrhythmia_syncope",
+        "neuro_psych_emergency",
+        "stroke"
+      ]
+    },
+    {
+      "id": "hin-020",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "दिल बैठना / دل بیٹھنا (दिल बैठा जा रहा है / دل بیٹھا جا رہا ہے)",
+      "romanized": "dil baithna / dil baith raha hai / dil baitha ja raha hai",
+      "literal_en": "my heart is sitting down",
+      "clinical_interpretations": [
+        {
+          "meaning": "Being dispirited or disheartened (dictionary meaning)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "A sinking or faint feeling in the chest: presyncope, palpitations or hypotension",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Cardiac ischaemia when it comes with chest discomfort or exertion",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Arrhythmia or presyncope",
+        "Acute coronary syndrome",
+        "Hypoglycaemia",
+        "Depression with suicidal thoughts"
+      ],
+      "clarifying_questions_en": [
+        "Is it a sad feeling, or does your body feel faint or weak? Have you fainted?",
+        "Any chest pain, sweating, palpitations or breathlessness with it?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=dil+baiThnaa",
+        "https://pubmed.ncbi.nlm.nih.gov/2756440/"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Rekhta: 'be dispirited, be disappointed'. Close to the Punjabi 'sinking heart' (Krause 1989, pan-001) and dil doobna (hin-002). MT renderings: 'my heart is sitting'; 'heart is sinking'.",
+      "red_flag_tags": [
+        "acs",
+        "arrhythmia_syncope",
+        "metabolic",
+        "suicidality"
+      ]
+    },
+    {
+      "id": "hin-021",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "जी मिचलाना / जी मतलाना / جی متلانا / जी घबराना / جی گھبرانا",
+      "romanized": "ji michlana / jee machlana / ji matlana / ji ghabrana",
+      "literal_en": "my soul is churning / my soul is panicking",
+      "clinical_interpretations": [
+        {
+          "meaning": "Nausea or queasiness ('jii matlaanaa': to feel nausea)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "General unease or agitation ('jii ghabraanaa')",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Atypical acute coronary syndrome (nausea with or without chest discomfort), pregnancy, hypoglycaemia",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Atypical acute coronary syndrome, especially in women and people with diabetes",
+        "Early pregnancy",
+        "Hypoglycaemia"
+      ],
+      "clarifying_questions_en": [
+        "Do you feel like vomiting, or is it a restless, uneasy feeling?",
+        "Any chest, jaw or arm discomfort, sweating or breathlessness with it?",
+        "Could you be pregnant? Do you take diabetes medicine?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=jii+mitlaanaa",
+        "https://www.rekhta.org/urdudictionary?keyword=jii+ghabraanaa",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "'Ji' (life, soul) is also an honorific ('doctor ji'), so read the whole phrase. MT renderings: 'my soul is wobbling'; 'my heart is nauseous'; 'my life is panicking'.",
+      "red_flag_tags": [
+        "acs",
+        "ectopic_pregnancy",
+        "metabolic"
+      ]
+    },
+    {
+      "id": "hin-022",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "हाथ पाँव फूलना / हाथ पैर फूल गए / ہاتھ پاؤں پھولنا",
+      "romanized": "haath paon phoolna / hath pair phool gaye / hath paon phool gaye",
+      "literal_en": "my hands and feet swelled up",
+      "clinical_interpretations": [
+        {
+          "meaning": "Panic, being struck with fear or confusion (idiomatic meaning 'haath paa.nv phuul jaanaa')",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Literal swelling of the hands and feet (oedema), the older dictionary sense",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Panic misread as oedema, or real oedema (heart failure, kidney disease, pre-eclampsia) dismissed as fear"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean you panicked, or are your hands and feet really swollen? Can I look?",
+        "If swollen: since when? Any breathlessness lying flat, less urine, or are you pregnant?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=haath+paa.nv+phuulnaa"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Rekhta lists both senses: swelling of the hands and feet, and 'haath paa.nv phuul jaanaa' = to panic or lose one's wits. MT usually picks the literal one. MT renderings: 'my hands and feet swelled'; 'hands and legs got swollen'.",
+      "red_flag_tags": []
+    },
+    {
+      "id": "hin-023",
+      "language": "Hindi/Urdu",
+      "iso639_3": "hin",
+      "native": "आँखों के आगे अँधेरा छाना / आंखों के आगे अंधेरा / آنکھوں کے آگے اندھیرا",
+      "romanized": "aankhon ke aage andhera chhana / ankhon ke aage andhera / aankhon ke samne andhera",
+      "literal_en": "darkness spreads before my eyes",
+      "clinical_interpretations": [
+        {
+          "meaning": "Feeling faint or giddy, from weakness, grief or anger (dictionary meaning)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Presyncope: orthostatic hypotension, dehydration, arrhythmia, anaemia or hypoglycaemia",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Visual loss (retinal or stroke) if meant literally",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Syncope from arrhythmia",
+        "Bleeding (GI bleed, ectopic pregnancy) causing anaemia or hypotension",
+        "Heat exhaustion or dehydration",
+        "Hypoglycaemia"
+      ],
+      "clarifying_questions_en": [
+        "Did you faint or nearly faint? What were you doing at the time?",
+        "Any black stools, heavy bleeding, or a missed period?",
+        "Is your sight normal now? Did you lose vision in one eye or have weakness anywhere?"
+      ],
+      "body_system": "neurological",
+      "source_urls": [
+        "https://www.rekhta.org/urdudictionary?keyword=aa.nkho.n+ke+aage+a.ndheraa"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "urd"
+      ],
+      "notes": "Rekhta: to reel from grief, anger or weakness; 'nothing can be seen'. MT renderings: 'darkness came in front of my eyes'; 'it went dark before my eyes'.",
+      "red_flag_tags": [
+        "arrhythmia_syncope",
+        "ectopic_pregnancy",
+        "gi_bleed",
+        "heat_illness",
+        "metabolic"
+      ]
+    },
+    {
+      "id": "ben-009",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "ব্রেন স্ট্রোক",
+      "romanized": "brain stroke",
+      "literal_en": "brain stroke",
+      "clinical_interpretations": [
+        {
+          "meaning": "Severe mental harm or overload from stress; 'the brain has had a stroke' (Wahid et al. 2021)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "A real stroke or transient ischaemic attack",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "A real stroke dismissed as a figure of speech",
+        "Conversely, stress misrecorded as stroke"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean your mind is overloaded, or did your face, arm or leg become weak or numb?",
+        "Any sudden trouble speaking, seeing, or walking? When exactly?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Wahid et al. list 'brain stroke', 'brain hang', 'brain out' and 'brain short' as English-Bengali idioms of distress. MT keeps the English words, so the note will read 'brain stroke'. MT renderings: 'brain stroke'.",
+      "red_flag_tags": [
+        "stroke"
+      ]
+    },
+    {
+      "id": "ben-010",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "মাথা নষ্ট / মাথা কাজ করে না",
+      "romanized": "matha noshto / matha nosto / matha kaj kore na / brain hang",
+      "literal_en": "my head is broken / my head does not work",
+      "clinical_interpretations": [
+        {
+          "meaning": "Burnout or temporary cognitive overload from stress (Wahid et al. 2021)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute confusion from heat stroke, hypoglycaemia, infection or head injury if new",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat stroke or hypoglycaemia presenting as 'my head doesn't work'",
+        "Depression with suicidal thoughts"
+      ],
+      "clarifying_questions_en": [
+        "Is it stress and too much thinking, or are you confused or forgetful? Since when?",
+        "Did it start after work in the heat, a fall, or missing food?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "notes": "MT renderings: 'my head is rotten'; 'my head is spoiled'; 'brain hang'.",
+      "red_flag_tags": [
+        "heat_illness",
+        "metabolic",
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ben-011",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "হতাশা",
+      "romanized": "hotasha / hotasa",
+      "literal_en": "disappointment; despair",
+      "clinical_interpretations": [
+        {
+          "meaning": "Hopelessness, despondency (Wahid et al. 2021)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Depression",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation: one respondent linked hotasha to suicide (Wahid et al. 2021)"
+      ],
+      "clarifying_questions_en": [
+        "How long have you felt like this? Can you still enjoy anything?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?",
+        "Have you made any plan, or done anything to harm yourself?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "notes": "MT usually renders it as 'frustration', which sounds mild. MT renderings: 'frustration'; 'disappointment'.",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ben-012",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "মাথা খারাপ",
+      "romanized": "matha kharap / mathar tar chira",
+      "literal_en": "my head is bad / the wires in my head are torn",
+      "clinical_interpretations": [
+        {
+          "meaning": "Crazy or mentally ill; also used for anger or unpredictability (Wahid et al. 2021)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute behaviour change from a medical cause (delirium, hypoglycaemia, intoxication)",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Psychosis or delirium",
+        "Risk to self or others"
+      ],
+      "clarifying_questions_en": [
+        "Who says this, the patient or the family? What has changed, and since when?",
+        "Any fever, head injury, alcohol or drugs, fits, or work in the heat?",
+        "Has anyone talked about harming themselves or others?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9034992/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Can also be said in everyday irritation ('it's driving me mad'); ask who it describes. MT renderings: 'my head is bad'; 'head is broken'.",
+      "red_flag_tags": [
+        "neuro_psych_emergency",
+        "suicidality"
+      ]
+    },
+    {
+      "id": "ben-013",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "বুক জ্বালা / বুকজ্বালা / বুক জ্বালাপোড়া",
+      "romanized": "buk jala / buk jwala / buk jalapora",
+      "literal_en": "my chest is burning",
+      "clinical_interpretations": [
+        {
+          "meaning": "Heartburn or acid reflux, usually after meals",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute coronary syndrome with burning rather than pressing pain",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome"
+      ],
+      "clarifying_questions_en": [
+        "Does it come with work or walking and ease with rest, or after meals?",
+        "Does it spread to the arm, neck or jaw? Any sweating or breathlessness?",
+        "Black stools or vomiting blood?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.prothomalo.com/lifestyle/health/tg7fppixsv",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Prothom Alo health article (Prof. M. Azizur Rahman) separates post-meal 'buk jala' from pressing cardiac pain and advises ECG and troponin when in doubt. MT renderings: 'chest burning'; 'my chest is on fire'.",
+      "red_flag_tags": [
+        "acs",
+        "gi_bleed"
+      ]
+    },
+    {
+      "id": "ben-014",
+      "language": "Bengali",
+      "iso639_3": "ben",
+      "native": "আমাশয় / আমাশা",
+      "romanized": "amashoy / amasha / amashay",
+      "literal_en": "dysentery",
+      "clinical_interpretations": [
+        {
+          "meaning": "Loose stools with mucus, sometimes blood (dysentery)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Bacterial or amoebic dysentery, inflammatory bowel disease",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Lower GI bleeding attributed to 'amashoy'",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Bloody diarrhoea with sepsis or dehydration",
+        "GI bleeding"
+      ],
+      "clarifying_questions_en": [
+        "Is there blood in the stool? How many times a day?",
+        "Any fever, severe belly pain, or feeling faint on standing?",
+        "Can you drink and keep fluids down? How much urine are you passing?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/%E0%A6%86%E0%A6%AE%E0%A6%BE%E0%A6%B6%E0%A6%AF%E0%A6%BC"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Lay use is broad (any mucousy stool). MT renderings: 'dysentery'; 'amoebiasis'.",
+      "red_flag_tags": [
+        "gi_bleed",
+        "heat_illness",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "mal-003",
+      "language": "Malayalam",
+      "iso639_3": "mal",
+      "native": "നെഞ്ചെരിച്ചിൽ / നെഞ്ചെരിച്ചില്‍",
+      "romanized": "nenjerichil / nenju erichil",
+      "literal_en": "chest burning",
+      "clinical_interpretations": [
+        {
+          "meaning": "Heartburn or acid reflux",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute coronary syndrome with burning chest discomfort",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome"
+      ],
+      "clarifying_questions_en": [
+        "Does it come with exertion and ease with rest, or after meals?",
+        "Does it spread to the arm, shoulder, back or jaw? Any sweating or breathlessness?",
+        "Did antacid or gas medicine help at all?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.asianetnews.com/health/know-the-difference-between-heartburn-and-heart-attack-rer0k4",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Asianet News Malayalam advises going to hospital at once if antacid or gas medicine does not relieve it. MT renderings: 'heartburn'; 'chest burning'.",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "mal-004",
+      "language": "Malayalam",
+      "iso639_3": "mal",
+      "native": "വിശേഷം ഉണ്ട് / വിശേഷമുണ്ട് / വിശേഷം ആയി",
+      "romanized": "vishesham undu / visheshamundu / vishesham aayi",
+      "literal_en": "there is special news",
+      "clinical_interpretations": [
+        {
+          "meaning": "Pregnancy (euphemism)",
+          "likelihood": "high"
+        }
+      ],
+      "masks_red_flags": [
+        "Unrecognised pregnancy (ectopic pregnancy, teratogenic drugs, X-ray or CT)"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean you are pregnant? When was your last period?",
+        "Any pain low in the belly, bleeding, or dizziness?"
+      ],
+      "body_system": "reproductive",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/%E0%B4%B5%E0%B4%BF%E0%B4%B6%E0%B5%87%E0%B4%B7%E0%B4%82"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Wiktionary lists 'pregnancy' among the senses of vishesham. The bare word also means 'news' and is used in greetings ('enthaanu vishesham?' = what's new?), so only the 'there is news' forms are listed. MT renderings: 'there is something special'; 'there is news'.",
+      "red_flag_tags": [
+        "ectopic_pregnancy"
+      ]
+    },
+    {
+      "id": "tam-002",
+      "language": "Tamil",
+      "iso639_3": "tam",
+      "native": "மயக்கம் / மயக்கமா",
+      "romanized": "mayakkam / mayakam / mayakkama",
+      "literal_en": "swooning",
+      "clinical_interpretations": [
+        {
+          "meaning": "Fainting, dizziness, drowsiness or confusion: one word for all four (dictionary senses)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Syncope, heat exhaustion, hypoglycaemia, dehydration",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Stroke or seizure",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Syncope from arrhythmia",
+        "Heat stroke",
+        "Hypoglycaemia",
+        "Stroke"
+      ],
+      "clarifying_questions_en": [
+        "Did you lose consciousness, or feel dizzy, sleepy or confused?",
+        "What were you doing: working in the heat, standing up, missing food?",
+        "Any chest pain or palpitations before it, or weakness on one side after?"
+      ],
+      "body_system": "neurological",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/%E0%AE%AE%E0%AE%AF%E0%AE%95%E0%AF%8D%E0%AE%95%E0%AE%AE%E0%AF%8D"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Wiktionary senses: fainting, dizziness, confusion, sleepiness. MT picks one of them at random, so ask. MT renderings: 'fainting'; 'dizziness'; 'drowsiness'.",
+      "red_flag_tags": [
+        "arrhythmia_syncope",
+        "heat_illness",
+        "metabolic",
+        "stroke"
+      ]
+    },
+    {
+      "id": "tam-003",
+      "language": "Tamil",
+      "iso639_3": "tam",
+      "native": "வாய்வு / வாயு / வாய்வு வலி / வாயுத் தொல்லை",
+      "romanized": "vaayvu / vaayu / vaayvu vali / gas vali",
+      "literal_en": "wind; gas pain",
+      "clinical_interpretations": [
+        {
+          "meaning": "Gas, bloating or indigestion (the body's 'vital airs' in traditional medicine)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Chest pain dismissed as gas pain, including cardiac pain",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome dismissed as gas"
+      ],
+      "clarifying_questions_en": [
+        "Where exactly is the pain? Does it spread to the arm, neck or jaw?",
+        "Does it come with work or walking and ease with rest?",
+        "Any sweating, breathlessness or fainting?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.tnpscthervupettagam.com/articles-detail/%E0%AE%A8%E0%AF%86%E0%AE%9E%E0%AF%8D%E0%AE%9A%E0%AE%BF%E0%AE%B2%E0%AF%8D-%E0%AE%B5%E0%AE%B2%E0%AE%BF-%E0%AE%8F%E0%AE%B1%E0%AF%8D%E0%AE%AA%E0%AE%9F%E0%AF%81%E0%AE%B5%E0%AE%A4%E0%AF%81-%E0%AE%8F%E0%AE%A9%E0%AF%8D",
+        "https://en.wiktionary.org/wiki/%E0%AE%B5%E0%AE%BE%E0%AE%AF%E0%AF%81",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "A Tamil health article (Arunchol, 2023) notes that people ignore chest pain thinking it is 'vaayvu vali' (gas pain). Tamil counterpart of gyastrik/gas trouble. MT renderings: 'gas'; 'wind pain'; 'air trouble'.",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "tgl-010",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "high blood / highblood / mataas ang dugo / malakas ang dugo",
+      "romanized": "high blood / highblood / na-hi-highblood / mataas ang dugo",
+      "literal_en": "high blood; strong blood",
+      "clinical_interpretations": [
+        {
+          "meaning": "Hypertension, understood as episodic: 'I am having high blood' rather than a constant condition (Lasco et al. 2020)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "A surge of anger or a hot temper",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Hypertensive emergency or stroke when it comes with headache, nape pain or weakness",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Hypertensive emergency",
+        "Stroke",
+        "Acute coronary syndrome",
+        "Stopping antihypertensives when there are no symptoms"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean your blood pressure is high, or that you got angry? What was the reading?",
+        "Any severe headache, weakness, trouble speaking, chest pain or blurred vision now?",
+        "Do you take your blood pressure medicine every day, or only when you feel it?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7351273/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Lasco et al. (BMJ Global Health 2020) describe a folk physiology in which heat, stress and diet 'thicken' or 'heat' the blood, and sporadic medication-taking. MT renderings: 'high blood'; 'my blood is high'.",
+      "red_flag_tags": [
+        "acs",
+        "stroke"
+      ]
+    },
+    {
+      "id": "tgl-011",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "low blood / lowblood / mababa ang dugo",
+      "romanized": "low blood / lowblood / mababa ang dugo",
+      "literal_en": "low blood",
+      "clinical_interpretations": [
+        {
+          "meaning": "Low blood pressure and anaemia lumped together, with dizziness and weakness (Lasco et al. 2020)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Dehydration or heat exhaustion",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "Bleeding (GI, heavy periods, ectopic pregnancy) or arrhythmia behind the dizziness",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Anaemia from GI bleeding or heavy menstrual bleeding",
+        "Ectopic pregnancy",
+        "Syncope from arrhythmia",
+        "Heat exhaustion"
+      ],
+      "clarifying_questions_en": [
+        "Have you fainted? What were you doing at the time?",
+        "Any black stools, vomiting blood, very heavy periods, or a missed period?",
+        "Has anyone measured your blood pressure or blood count?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7351273/"
+      ],
+      "evidence_level": "literature",
+      "notes": "MT renderings: 'low blood'; 'my blood is low'.",
+      "red_flag_tags": [
+        "arrhythmia_syncope",
+        "ectopic_pregnancy",
+        "gi_bleed",
+        "heat_illness"
+      ]
+    },
+    {
+      "id": "tgl-012",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "may maintenance / maintenance ko",
+      "romanized": "may maintenance / maintenance ko / nag-maintenance / maintenance na gamot",
+      "literal_en": "'maintenance' (English loanword)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Daily long-term medicine, usually for blood pressure, diabetes or cholesterol (Lasco et al. 2020: 'I stopped my maintenance')",
+          "likelihood": "high"
+        }
+      ],
+      "masks_red_flags": [
+        "Unrecorded chronic medication (drug interactions, allergy checks)",
+        "Stopped antihypertensive or diabetes treatment"
+      ],
+      "clarifying_questions_en": [
+        "What is the name of your maintenance medicine, and what is it for? Do you have the packet or a photo?",
+        "Do you take it every day, or only when you feel unwell? When did you last take it?"
+      ],
+      "body_system": "general/constitutional",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7351273/"
+      ],
+      "evidence_level": "literature",
+      "notes": "Matters for the medication history: a patient asked 'do you take any medicines?' may answer 'no' and only later mention 'maintenance'. MT renderings: 'maintenance'; 'my maintenance'.",
+      "red_flag_tags": []
+    },
+    {
+      "id": "tgl-013",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "bangungot / bangungut",
+      "romanized": "bangungot / bangungut / binangungot",
+      "literal_en": "nightmare",
+      "clinical_interpretations": [
+        {
+          "meaning": "Sudden unexplained death in sleep of young, apparently healthy men (SUNDS), told about a relative or friend",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Night-time episodes of moaning, gasping or gurgling in sleep",
+          "likelihood": "medium"
+        },
+        {
+          "meaning": "An ordinary nightmare",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Brugada syndrome or other inherited arrhythmia (family history of sudden death)",
+        "Nocturnal arrhythmia or seizures"
+      ],
+      "clarifying_questions_en": [
+        "Did someone in your family die suddenly in their sleep? How old were they?",
+        "Have you ever woken gasping, or been told you moan or stop breathing in your sleep? Any fainting?",
+        "Have you ever had an ECG?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3404490/",
+        "https://en.wiktionary.org/wiki/bangungot"
+      ],
+      "evidence_level": "literature",
+      "notes": "Gaw et al. (Philipp J Intern Med 2011) describe bangungut as SUNDS in men aged 20-40, possibly allelic to Brugada syndrome (not yet proven). A family history of bangungot is a reason to get an ECG. MT renderings: 'nightmare'; 'died in his sleep'.",
+      "red_flag_tags": [
+        "arrhythmia_syncope"
+      ]
+    },
+    {
+      "id": "tgl-014",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "sumpong / sinumpong / sinusumpong",
+      "romanized": "sumpong / sinumpong / sinusumpong",
+      "literal_en": "a fit; an attack; a mood",
+      "clinical_interpretations": [
+        {
+          "meaning": "An attack or flare of a known illness: asthma ('sinusumpong ng hika'), seizure, migraine",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "A tantrum or a bad mood",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Severe asthma attack",
+        "Seizure",
+        "Other acute flare of a chronic illness"
+      ],
+      "clarifying_questions_en": [
+        "What kind of attack: breathing, shaking, headache, or mood?",
+        "How bad is it now? Can you speak in full sentences? Did you lose consciousness?",
+        "What medicine do you use for it, and did it help this time?"
+      ],
+      "body_system": "general/constitutional",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/sumpong"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Wiktionary senses: fit, attack; whim; tantrum, moodiness. MT renderings: 'my tantrum came'; 'it struck me'; 'I had an attack'.",
+      "red_flag_tags": [
+        "neuro_psych_emergency",
+        "respiratory"
+      ]
+    },
+    {
+      "id": "tgl-015",
+      "language": "Tagalog/Filipino",
+      "iso639_3": "tgl",
+      "native": "kulam / kinulam / nakulam",
+      "romanized": "kulam / kinulam / nakulam",
+      "literal_en": "witchcraft; bewitched",
+      "clinical_interpretations": [
+        {
+          "meaning": "Illness attributed to sorcery by another person",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Unexplained or chronic illness, seizures, swelling or psychiatric symptoms for which the patient seeks a healer",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Psychosis or delirium",
+        "Seizures",
+        "Any serious illness delayed while a healer is consulted"
+      ],
+      "clarifying_questions_en": [
+        "What has been happening to you that makes you think so?",
+        "Any fits, fever, swelling, weight loss, or hearing or seeing things others don't?",
+        "Have you taken anything from a healer?"
+      ],
+      "body_system": "spiritual/explanatory",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/kulam"
+      ],
+      "evidence_level": "community_reported",
+      "notes": "Respect the explanation; ask about symptoms rather than arguing about the cause. MT renderings: 'witchcraft'; 'I was cursed'.",
+      "red_flag_tags": [
+        "neuro_psych_emergency"
+      ]
+    },
+    {
+      "id": "swh-001",
+      "language": "Swahili",
+      "iso639_3": "swh",
+      "native": "msongo wa mawazo",
+      "romanized": "msongo wa mawazo",
+      "literal_en": "pressure of thoughts",
+      "clinical_interpretations": [
+        {
+          "meaning": "Stress, too many thoughts; one of three local concepts of distress among Congolese women in Tanzania (Greene et al. 2022)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Anxiety, depression or PTSD (overlapping)",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation"
+      ],
+      "clarifying_questions_en": [
+        "What are the thoughts about? Do they stop you sleeping or working?",
+        "How long has it been like this?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://doi.org/10.1177/13634615221122626"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "swa"
+      ],
+      "notes": "MT renderings: 'stress'; 'mental stress'; 'pressure of thoughts'.",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "swh-002",
+      "language": "Swahili",
+      "iso639_3": "swh",
+      "native": "mawazo mengi / kichwa kinajaa mawazo / kichwa kimejaa mawazo",
+      "romanized": "mawazo mengi / kichwa kinajaa mawazo / kichwa kimejaa mawazo",
+      "literal_en": "many thoughts / my head is filling with thoughts",
+      "clinical_interpretations": [
+        {
+          "meaning": "'Thinking too much': rumination and worry (Kaiser et al. 2015, citing Mann 2010)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Depression, anxiety or PTSD",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Suicidal ideation (thinking too much was believed to lead to death, including suicide, in some studies)"
+      ],
+      "clarifying_questions_en": [
+        "What do you think about most? How many hours a day?",
+        "Does it stop you sleeping or working?",
+        "Sometimes when people feel like this they think life is not worth living. Have you had thoughts like that?"
+      ],
+      "body_system": "psychological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4689615/"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "swa"
+      ],
+      "notes": "Kaiser et al. caution that 'thinking too much' is not a one-to-one gloss for any psychiatric disorder. MT renderings: 'many ideas'; 'my head is full of thoughts'.",
+      "red_flag_tags": [
+        "suicidality"
+      ]
+    },
+    {
+      "id": "swh-003",
+      "language": "Swahili",
+      "iso639_3": "swh",
+      "native": "degedege",
+      "romanized": "degedege",
+      "literal_en": "convulsions (bird-spirit illness)",
+      "clinical_interpretations": [
+        {
+          "meaning": "Fever with convulsions, usually in a child, attributed to evil spirits (75% of mothers in Makundi et al. 2006)",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Severe (cerebral) malaria or febrile seizure",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Meningitis or epilepsy",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Cerebral malaria",
+        "Meningitis",
+        "Delayed treatment because injections are believed harmful in degedege"
+      ],
+      "clarifying_questions_en": [
+        "Who had the fits, and is there a fever? For how long?",
+        "Has anyone recently travelled from East Africa? Has a malaria test been done?",
+        "Is the person awake and responding normally now?"
+      ],
+      "body_system": "neurological",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC1540433/",
+        "https://en.wiktionary.org/wiki/degedege"
+      ],
+      "evidence_level": "literature",
+      "also_used_in": [
+        "swa"
+      ],
+      "notes": "Families may first seek a traditional healer (Makundi et al., Malaria Journal 2006). MT renderings: 'convulsions'; 'fits'; 'seizure'.",
+      "red_flag_tags": [
+        "malaria",
+        "neuro_psych_emergency",
+        "sepsis_infection"
+      ]
+    },
+    {
+      "id": "swh-004",
+      "language": "Swahili",
+      "iso639_3": "swh",
+      "native": "kiungulia",
+      "romanized": "kiungulia / nina kiungulia",
+      "literal_en": "heartburn",
+      "clinical_interpretations": [
+        {
+          "meaning": "Heartburn or acid reflux",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute coronary syndrome with burning chest discomfort",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome"
+      ],
+      "clarifying_questions_en": [
+        "Does it come with work or walking and ease with rest, or after meals?",
+        "Does it spread to the arm, neck or jaw? Any sweating or breathlessness?",
+        "Black stools or vomiting blood?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://en.wiktionary.org/wiki/kiungulia",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "swa"
+      ],
+      "notes": "Swahili counterpart of 'gastric'/'gas trouble'. AHA/ACC 2021 counts burning discomfort as possible cardiac chest pain. MT renderings: 'heartburn'.",
+      "red_flag_tags": [
+        "acs",
+        "gi_bleed"
+      ]
+    },
+    {
+      "id": "swh-005",
+      "language": "Swahili",
+      "iso639_3": "swh",
+      "native": "presha / presha imepanda / ana presha",
+      "romanized": "presha / presha imepanda / ana presha",
+      "literal_en": "pressure / the pressure has gone up",
+      "clinical_interpretations": [
+        {
+          "meaning": "Hypertension, often understood as a temporary, symptomatic condition caused by stress (Temu et al. 2017, Kenya: 'pressure')",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Stress or worry",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Hypertensive emergency or stroke",
+        "Taking antihypertensives only when symptomatic"
+      ],
+      "clarifying_questions_en": [
+        "Do you mean your blood pressure? What was the last reading?",
+        "Any severe headache, chest pain, weakness, trouble speaking or blurred vision now?",
+        "Do you take your pressure medicine every day, or only when you feel it?"
+      ],
+      "body_system": "cardiovascular",
+      "source_urls": [
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC5384458/",
+        "https://en.wiktionary.org/wiki/presha"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "swa"
+      ],
+      "notes": "Temu et al. found hypertension 'commonly referred as pressure' and taken 'only when I feel sick'; the Swahili spelling 'presha' is from Wiktionary, not the study. MT renderings: 'pressure'; 'pressure has risen'.",
+      "red_flag_tags": [
+        "acs",
+        "stroke"
+      ]
+    },
+    {
+      "id": "ara-014",
+      "language": "Arabic",
+      "iso639_3": "arb",
+      "native": "حموضة / حموضه / حرقة في المعدة / حرقان في المعدة",
+      "romanized": "humooda / hmouda / hamouda / harqa fil ma'ida",
+      "literal_en": "acidity / burning in the stomach",
+      "clinical_interpretations": [
+        {
+          "meaning": "Heartburn or acid reflux",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Acute coronary syndrome experienced as indigestion or burning",
+          "likelihood": "low"
+        }
+      ],
+      "masks_red_flags": [
+        "Acute coronary syndrome"
+      ],
+      "clarifying_questions_en": [
+        "Does it come with exertion and ease with rest, or after meals?",
+        "Does it spread to the arm, jaw or back? Any sweating, nausea or breathlessness?",
+        "Did antacids help at all?"
+      ],
+      "body_system": "gastrointestinal",
+      "source_urls": [
+        "https://www.mayoclinic.org/ar/diseases-conditions/heartburn/in-depth/heartburn-gerd/art-20046483",
+        "https://aawsat.com/node/1725886",
+        "https://doi.org/10.1161/CIR.0000000000001029"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "afb",
+        "apc",
+        "arz",
+        "apd"
+      ],
+      "notes": "Arabic counterpart of 'gastric'. Mayo Clinic's Arabic page ('heartburn or heart attack?') advises emergency care for unexplained chest pain. MT renderings: 'acidity'; 'heartburn'; 'stomach burning'.",
+      "red_flag_tags": [
+        "acs"
+      ]
+    },
+    {
+      "id": "ara-015",
+      "language": "Arabic",
+      "iso639_3": "arb",
+      "native": "ضربة شمس / ضربة الشمس / ضربه شمس",
+      "romanized": "darbat shams / darbet shams / dharbat shams",
+      "literal_en": "a strike of sun",
+      "clinical_interpretations": [
+        {
+          "meaning": "Any heat-related illness, from heat exhaustion to true heat stroke",
+          "likelihood": "high"
+        },
+        {
+          "meaning": "Heat stroke: core temperature above 40 °C with delirium, seizures or coma (Saudi MoH)",
+          "likelihood": "medium"
+        }
+      ],
+      "masks_red_flags": [
+        "Heat stroke (needs core temperature and immediate cooling)",
+        "Rhabdomyolysis or acute kidney injury",
+        "Sepsis or malaria blamed on the sun"
+      ],
+      "clarifying_questions_en": [
+        "Was there confusion, a fit, or collapse? Has the core temperature been measured?",
+        "Is the urine dark or scanty? Any muscle pain or cramps?",
+        "Any fever or recent travel before the heat exposure?"
+      ],
+      "body_system": "thermoregulatory",
+      "source_urls": [
+        "https://ajel.sa/thehour/health-warns-of-summer-weather-what-is-the-difference-between-heat-stress-and-heat-stroke"
+      ],
+      "evidence_level": "community_reported",
+      "also_used_in": [
+        "afb",
+        "apc",
+        "arz",
+        "apd"
+      ],
+      "notes": "The lay label does not tell you the severity; a patient or co-worker may say 'darbat shams' for mild symptoms or for true heat stroke. MT renderings: 'sunstroke'; 'sun stroke'.",
+      "red_flag_tags": [
+        "heat_illness",
         "malaria",
         "sepsis_infection"
       ]

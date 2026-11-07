@@ -72,7 +72,9 @@ SLOW_GAP_MIN_S = 0.4      # a sentence gap: a run of (near) zeros at least this 
 CONSENT_EN = ui.t("en", "consent_doc")
 # Nepali: machine draft, native check pending.
 _CONSENT = {
-    "ne": "नमस्ते। म बयान हुँ। म तपाईं र डाक्टरको कुरा अनुवाद गर्छु। के तपाईं आफ्नो आवाज प्रशोधन गर्न सहमति दिनुहुन्छ?",
+    # Says what CONSENT_EN says (processed to translate it, not stored), sentence by sentence.
+    "ne": "नमस्ते, म बयान हुँ। म तपाईं र डाक्टरबीच अनुवाद गर्छु। तपाईंको आवाज अनुवाद गर्नका लागि मात्र प्रशोधन गरिन्छ, "
+          "भण्डारण गरिँदैन। के तपाईं सहमत हुनुहुन्छ?",
     # gpt-oss drafts, hand-corrected (Swahili, Korean); native check pending.
     "ta": "வணக்கம், நான் பயான். நான் உங்களுக்கும் மருத்துவருக்கும் இடையில் மொழிபெயர்க்கிறேன். உங்கள் குரல் மொழிபெயர்ப்புக்காக மட்டுமே செயலாக்கப்படுகிறது, சேமிக்கப்படாது. நீங்கள் ஒப்புக்கொள்கிறீர்களா?",
     "sw": "Habari, mimi ni Bayan. Ninatafsiri kati yako na daktari. Sauti yako inachakatwa ili kutafsiriwa tu, na haihifadhiwi. Je, unakubali?",
@@ -268,9 +270,15 @@ def begin(s: Consult) -> None:
 
 
 def record_consent(s: Consult) -> None:
-    """The patient tapped Yes: the consent question and the answer go on the record (not interpreted again)."""
-    s.brain.add_turn("bayan", s.lang, s.consent_native or CONSENT_EN, english=f"Consent: {CONSENT_EN}", kind="system")
+    """The patient tapped Yes: the consent question and the answer go on the record (not interpreted again). The
+    record holds exactly what was shown and spoken: the native sentence (s.consent_native, what the patient heard
+    and read) and CONSENT_EN (the sentence on the doctor's screen, ui "consent_doc"), never a paraphrase."""
+    native = s.consent_native or CONSENT_EN
+    s.brain.add_turn("bayan", s.lang, native, english=f"Consent: {CONSENT_EN}", kind="system")
     s.brain.add_turn("patient", s.lang, "✓", english="Yes (consent given on screen)", kind="system")
+    with s.brain.lock:
+        s.brain.outputs["consent"] = {"lang": s.lang, "native": native, "en": CONSENT_EN,
+                                      "shown": ui.t(s.doc_lang, "consent_doc"), "t_min": s.brain.now_min()}
 
 
 def _purge_brain(b: Consultation) -> None:

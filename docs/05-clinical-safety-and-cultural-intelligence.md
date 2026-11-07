@@ -1,7 +1,7 @@
 # 05 · Clinical Safety & Cultural Intelligence
 
 > **Scope.** This document specifies two of Bayan AI's background "thinking" components: the **Cultural Idiom Interpreter** and the **Safety Sentinel**. It also covers the guardrails, evaluation plan and limitations that apply to both.
-> **Data files:** [`data/idiom_lexicon.json`](../data/idiom_lexicon.json) (59 entries) · [`data/safety_rules.json`](../data/safety_rules.json) (81 rules).
+> **Data files:** [`data/idiom_lexicon.json`](../data/idiom_lexicon.json) (98 entries) · [`data/safety_rules.json`](../data/safety_rules.json) (81 rules).
 > **Who wrote this:** engineers. The team includes **no clinician**, so every clinical statement here comes from a cited label, guideline or peer-reviewed paper. Nothing in this document is medical advice. Bayan AI is **decision support for a licensed doctor**: it never diagnoses, prescribes or speaks a safety alert to the patient.
 
 ---
@@ -9,7 +9,7 @@
 ## TL;DR
 
 - **Problem.** Patients describe illness in *idioms of distress*, for example a Nepali worker's *"gyastrik"* or a Syrian patient's *"qalbi maqboud"* (my heart is squeezed). Literal translation loses the meaning, and the idiom can **mask a red flag**: "gas" in the chest may be cardiac. Human interpreters also make errors. In one paediatric study, interpreters averaged **31 errors per encounter, and 63% of errors had potential clinical consequences** ([Flores et al., *Pediatrics* 2003](https://pubmed.ncbi.nlm.nih.gov/12509547/)).
-- **Cultural Idiom Interpreter.** When the patient uses a known idiom, a deterministic matcher (native script, romanised forms, English loanwords; no LLM) finds the lexicon entry and the card text comes straight from that entry. The doctor sees the literal translation, a short clinical note and questions to ask, with the entry id and source. **59 sourced entries** cover 9 primary languages: **39** from peer-reviewed or institutional literature and **20** honestly marked `community_reported`.
+- **Cultural Idiom Interpreter.** When the patient uses a known idiom, a deterministic matcher (native script, romanised forms, English loanwords; no LLM) finds the lexicon entry and the card text comes straight from that entry. The doctor sees the literal translation, a short clinical note and questions to ask, with the entry id and source. **98 sourced entries** cover 10 primary languages: **55** from peer-reviewed or institutional literature and **43** honestly marked `community_reported`.
 - **Safety Sentinel.** An open-weights LLM (`gpt-oss-120b`, one JSON-schema call per think run) *extracts* a structured clinical state (allergies, meds, doses, symptoms, vitals, tests, disposition) from the bilingual transcript. **81 deterministic, cited rules** then check that state. The rule families are drug–allergy, dose ceilings, drug–drug interactions, missing critical workup and pregnancy, plus Qatar-specific heat rules. **Rules are the authority for drug and dose checks.** The LLM never decides that a dose is safe.
 - **Alerts are silent** (on screen only, never spoken). Each alert shows the **exact quoted utterance, its timestamp and the rule source**, and takes **one tap** to acknowledge, override or dismiss; every action goes to an append-only audit list. A prescribing sentence that trips a critical rule is **held** before it is spoken. Dedupe, grouping and caps keep alert fatigue down. Override rates of 49–96% for drug alerts are documented ([van der Sijs et al. 2006](https://pubmed.ncbi.nlm.nih.gov/16357358/)).
 - **Qatar grounding.** Heat-illness rules include core-temperature and cooling checks; Qatar's 2021 heat-stress decision requires work to stop above WBGT 32.1 °C. The chest-pain rules and the *gyastrik* card cite the "gastric" attribution of cardiac pain in Nepal: 87.9% of STEMI patients had typical chest pain, only 23.8% thought it was cardiac ([Prajapati et al., JNHRC 2022](https://jnhrc.com.np/index.php/jnhrc/article/view/1217)). Imported malaria surveillance data come from Qatar's MoPH ([Bansal et al. 2025](https://pmc.ncbi.nlm.nih.gov/articles/PMC11725959/)). The privacy design follows **Qatar's PDPPL (Law No. 13 of 2016)**.
@@ -37,8 +37,8 @@ Recorded in each rule's `change_note` in `data/safety_rules.json`.
 
 | Rule / entry | Before | Now | Why |
 |---|---|---|---|
-| `WORK-CHEST-04` (idiom may mask ACS, caution) | Any idiom tagged `acs` with no ECG fired | Needs an `acs`-tagged idiom **and** a chest-pain-group symptom (`chest_pain`, `chest_discomfort`, `chest_pressure`, `chest_burning`, `epigastric_pain_exertional`, `jaw_arm_pain`), the same codes as `WORK-CHEST-01..03` | 16 of 59 entries carry `acs` (e.g. *kabag* = gas pain or infant colic, *man bhaari* = heavy heart-mind), so the old rule would alert on most consultations. The golden path (*gyastrik* + `chest_burning`) still fires. |
-| `WORK-SUICIDE-01` (no risk assessment) | Critical for any idiom tagged `suicidality` | **Caution** for an idiom alone; escalates to **critical** when `suicidal_ideation` or `self_harm` is extracted, including a passive death wish ("I wish I could sleep and not wake up") | 11 of 59 entries carry `suicidality` (e.g. *tension*, *chinta* = worry), so idiom-only critical alerts would be noise. Explicit statements stay critical. |
+| `WORK-CHEST-04` (idiom may mask ACS, caution) | Any idiom tagged `acs` with no ECG fired | Needs an `acs`-tagged idiom **and** a chest-pain-group symptom (`chest_pain`, `chest_discomfort`, `chest_pressure`, `chest_burning`, `epigastric_pain_exertional`, `jaw_arm_pain`), the same codes as `WORK-CHEST-01..03` | 27 of 98 entries carry `acs` (e.g. *kabag* = gas pain or infant colic, *man bhaari* = heavy heart-mind), so the old rule would alert on most consultations. The golden path (*gyastrik* + `chest_burning`) still fires. |
+| `WORK-SUICIDE-01` (no risk assessment) | Critical for any idiom tagged `suicidality` | **Caution** for an idiom alone; escalates to **critical** when `suicidal_ideation` or `self_harm` is extracted, including a passive death wish ("I wish I could sleep and not wake up") | 19 of 98 entries carry `suicidality` (e.g. *tension*, *chinta* = worry), so idiom-only critical alerts would be noise. Explicit statements stay critical. |
 | `npi-005` (*gyastrik*) red flag; `WORK-CHEST-02` and `WORK-CHEST-04` rationale and sources | Cited Pradhan et al. 2019 as if missed diagnosis drove deaths | Cite Prajapati et al., JNHRC 2022 | Pradhan 2019 attributes preventable deaths to missing heat protection, not missed diagnosis. Prajapati 2022: 87.9% of STEMI patients in Nepal had typical chest pain, only 23.8% thought it was cardiac. |
 
 Base severity mix after the change: **37 critical · 35 caution · 9 info**; 14 rules carry `escalate_to_critical_if`.
@@ -72,17 +72,19 @@ Qatar context: Qatar's migrant workforce is mostly South Asian, Southeast Asian,
 | `clarifying_questions_en[]` | Questions the doctor can ask. Bayan translates and speaks them only if the doctor taps them. |
 | `body_system`, `source_urls[]`, `evidence_level`, `notes` | `literature` / `clinical_guideline` / `community_reported` |
 
-**Coverage (v0.1):**
+**Coverage (v0.2):**
 
 | Language | Entries | Main sources |
 |---|---|---|
-| Nepali (npi) | 12 + 1 shared | Kohrt & Hruschka 2010; Kohrt & Harper 2008 |
-| Arabic (Levantine-documented; Gulf/Egyptian/Sudanese listed in `also_used_in`) | 13 | UNHCR 2015 Table 1; Lambert et al. 2024 |
-| Hindi/Urdu (hin/urd) | 10 + 1 shared | Krause 1989; Sumathipala 2004 (dhat); Weaver & Karasz 2022; dictionaries for common symptom words |
-| Tagalog/Filipino (tgl) | 9 | Pasma literature (Palis 2006, Cuyonon study); Visayan *bughat* ethnography; dictionaries |
-| Bengali (ben) | 8 | Wahid et al. 2021 (Bangladesh); Bengali health-education pages |
-| Malayalam (mal) | 2 | Malayalam health media (community-reported only) |
-| Punjabi (pan), Tamil (tam), Amharic (amh) | 1 each | Krause 1989; Affleck et al. 2022 (Walking Corpse Syndrome); Ethiopian ethnobotany (*mich*) |
+| Nepali (npi) | 15 + 1 shared | Kohrt & Hruschka 2010; Kohrt & Harper 2008 (*dimaag gayo*, *dimaag kharaab bhayo*, *Chait laagyo*) |
+| Arabic (Levantine-documented; Gulf/Egyptian/Sudanese listed in `also_used_in`) | 15 | UNHCR 2015 Table 1; Lambert et al. 2024; lay health pages for *humooda* (acidity) and *darbat shams* (sunstroke) |
+| Hindi/Urdu (hin/urd) | 23 + 1 shared | Krause 1989; Sumathipala 2004 (dhat); Weaver & Karasz 2022; Trollope-Kumar 2001 (*safed pani*); Population Council (*gupt rog*); Rekhta dictionary for symptom and pregnancy idioms (*loo lagna*, *saans phoolna*, *paon bhari*, *daura padna*, …) |
+| Tagalog/Filipino (tgl) | 15 | Pasma literature (Palis 2006, Cuyonon study); Visayan *bughat* ethnography; Lasco et al. 2020 (*high blood*, *low blood*, *maintenance*); Gaw et al. 2011 (*bangungot*); dictionaries |
+| Bengali (ben) | 14 | Wahid et al. 2021 (Bangladesh; incl. *brain stroke*, *matha noshto*, *hotasha*); Bengali health-education pages |
+| Malayalam (mal) | 4 | Malayalam health media and Wiktionary (community-reported only) |
+| Swahili (swh) | 5 | Greene et al. 2022 (*msongo wa mawazo*); Kaiser et al. 2015 (*kichwa kinajaa mawazo*); Makundi et al. 2006 (*degedege*); Temu et al. 2017 (*pressure*); Wiktionary |
+| Tamil (tam) | 3 | Affleck et al. 2022 (Walking Corpse Syndrome); Tamil health media and Wiktionary (*vaayvu*, *mayakkam*) |
+| Punjabi (pan), Amharic (amh) | 1 each | Krause 1989; Ethiopian ethnobotany (*mich*) |
 
 **Honesty rules.** An idiom without a source is not included. `community_reported` means the meaning comes from dictionaries or lay health media, and its clinical interpretations are generic differentials. The file's `meta.authorship_caveat` states that a clinician and a native speaker must review every entry before real use. Section 6 lists the gaps.
 
@@ -91,7 +93,7 @@ Qatar context: Qatar's migrant workforce is mostly South Asian, Southeast Asian,
 ```mermaid
 flowchart LR
   A[Patient utterance<br/>native-script ASR text<br/>+ English rendering] --> M{bayan/brain/idioms.py<br/>no LLM}
-  L[(idiom_lexicon.json<br/>59 entries)] --> M
+  L[(idiom_lexicon.json<br/>98 entries)] --> M
   M -- no match --> D[Plain translation only<br/>no clinical note]
   M -- match --> F["Idiom card from the entry<br/>literal · clinical note · ask<br/>+ entry id + source"]
   M -- match --> G[red_flag_tags → idiom_hits<br/>in the clinical state → rules]
@@ -373,7 +375,7 @@ Efficiency (a judging criterion): the rule engine and the idiom matcher run on C
 ## 6. Limitations (read before demoing)
 
 - **No clinician on the team, no native-speaker review yet.** All thresholds and mappings are literature-derived and **unreviewed**. The demo must say so. `verification: threshold_is_design_choice` marks numbers we chose ourselves.
-- **Lexicon gaps.** We could not find citable sources for several idioms the brief asked about: Malayalam *neerkettu* and *vayu*; Nepali *ritto* and *jhamjhamaunu* (the literature uses *jham-jham*); Tagalog *bughat* in Tagalog proper (sourced as Cebuano, with Tagalog *binat*); Sinhala idioms; Swahili (e.g., *presha*); Gulf-specific Arabic phrasing (the main source is Syrian Arabic); Egyptian and Sudanese idioms; Tamil beyond Walking Corpse Syndrome. Bengali *buk dhorfor*, Hindi *dil ghabrana*, and most Tagalog symptom words are `community_reported` only. Several native-script spellings (Punjabi, Tamil) need native-speaker confirmation.
+- **Lexicon gaps.** We could not find citable sources for several idioms the brief asked about: Malayalam *neerkettu* and *vayu*; Nepali *ritto* and *jhamjhamaunu* (the literature uses *jham-jham*); Tagalog *bughat* in Tagalog proper (sourced as Cebuano, with Tagalog *binat*); Sinhala idioms; Swahili beyond five entries (*presha* is sourced only indirectly); Gulf-specific Arabic phrasing (the main source is Syrian Arabic); Egyptian and Sudanese idioms; Tamil beyond three entries; medication-instruction idioms ("1-0-1", "after food") and suicidal-ideation phrasings in Nepali, Hindi and Tagalog. Bengali *buk dhorfor*, Hindi *dil ghabrana*, and most Tagalog symptom words are `community_reported` only. Several native-script spellings (Punjabi, Tamil) need native-speaker confirmation.
 - **Likelihoods are ordinal and uncalibrated.** "High/medium/low" reflects the sources' emphasis, not prevalence among Qatar's patients.
 - **Dose rules are adult-only.** There are no paediatric, renal-adjusted (except the few explicit eGFR rules) or weight-based dosing rules beyond paracetamol under 50 kg. Acute-asthma, oncology and ICU dosing are out of scope.
 - **Small interaction set.** Twelve interaction rules are an illustration, not a formulary-grade DDI database. A production system should license a maintained knowledge base and keep these rules only as a transparent overlay.
@@ -404,6 +406,14 @@ Accessed or verified on 2026-11-06. FDA label links use DailyMed set IDs retriev
 - Pasma (overview, cites Tan 1987). https://en.wikipedia.org/wiki/Pasma · Cuyonon concept of pasma: https://scholarspace.manoa.hawaii.edu/items/61328dc2-e7f4-4094-bd73-ea1c0e21b096
 - Millondaga (bughat, Visayan postpartum practices): https://ojs.upmin.edu.ph/index.php/jcsh/article/view/60 · Philippine TKDL on bughat: https://www.tkdlph.com/index.php/ct-menu-item-3/ct-menu-item-15/conditions-illnesses/zamboanga-salambuyan/40-bughat-after-giving-birth
 - Osman A et al. 2020 (Ethiopian febrile illness "mich"). https://pmc.ncbi.nlm.nih.gov/articles/PMC7647763/
+- Trollope-Kumar K. Cultural and biomedical meanings of the complaint of leukorrhea in South Asian women. *Trop Med Int Health* 2001. https://doi.org/10.1046/j.1365-3156.2001.00699.x
+- Population Council. Addressing Gupt Rog: narrative prevention counselling for STI/HIV prevention. https://knowledgecommons.popcouncil.org/departments_sbsr-hiv/571
+- Lasco G et al. *Nasa dugo* ('It's in the blood'): lay conceptions of hypertension in the Philippines. *BMJ Glob Health* 2020. https://pmc.ncbi.nlm.nih.gov/articles/PMC7351273/
+- Gaw AC et al. Unraveling the enigma of bangungut (SUNDS) in the Philippines. *Philipp J Intern Med* 2011. https://pmc.ncbi.nlm.nih.gov/articles/PMC3404490/
+- Greene MC et al. Why local concepts matter: cultural expressions of distress among Congolese women in Nyarugusu refugee camp (Tanzania). *Transcult Psychiatry* 2022. https://doi.org/10.1177/13634615221122626
+- Makundi EA et al. Role of traditional healers in the management of severe malaria (degedege) among children below five, Kilosa and Handeni, Tanzania. *Malar J* 2006. https://pmc.ncbi.nlm.nih.gov/articles/PMC1540433/
+- Temu TM et al. Lay beliefs about hypertension among HIV-infected adults in Kenya. *Open Heart* 2017. https://pmc.ncbi.nlm.nih.gov/articles/PMC5384458/
+- Rekhta Urdu dictionary (Hindi/Urdu idioms, one URL per entry) and Wiktionary (Tamil, Malayalam, Bengali, Tagalog, Swahili words) for `community_reported` entries.
 - Dictionaries and lay health sources for `community_reported` entries are listed per entry in `idiom_lexicon.json` (Wiktionary, Rekhta, TagalogNow, Unilab, Medanta-bn, Prothom Alo, Asianet News Malayalam, Star Health, Lokmanya Hospitals).
 
 **Qatar context**

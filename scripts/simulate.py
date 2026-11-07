@@ -11,6 +11,8 @@ UX pauses (time.sleep in consult).
     python scripts/simulate.py --only alg-01,dose-03   # some ids (prefix match)
     python scripts/simulate.py --lang ne --category allergy
     python scripts/simulate.py --rescore reports/sim/<run-id>   # re-score saved raw results (no LLM calls)
+    python scripts/simulate.py --category coherence,quiet --no-wrapup all --budget 0.15
+        # copilot-only run: no end_visit / PDFs (cheaper); stop starting scenarios once $0.15 is spent
     # another model for the brain (extraction, copilot agent, wrap-up); live translation stays gpt-oss-120b:
     BAYAN_BRAIN_LLM=<model id> BAYAN_BRAIN_PROVIDER=<provider> python scripts/simulate.py --label <name>
 
@@ -341,8 +343,9 @@ def _pdf_info(path: str | None, lang: str, kind: str, dest: Path, png: Path, sid
     return info
 
 
-def run_scenario(sc: dict, run_dir: str, prices: dict) -> dict:
-    """Play one scenario in this worker process. Returns the raw record (no scoring)."""
+def run_scenario(sc: dict, run_dir: str, prices: dict, wrapup: bool = True) -> dict:
+    """Play one scenario in this worker process. Returns the raw record (no scoring). wrapup=False stops after the
+    last turn (no end_visit / approve / PDFs): the copilot-only checks still apply, the wrap-up ones are skipped."""
     from bayan import consult
     from bayan.brain import agentkit, llm
     from bayan.brain import copilot as brain
@@ -356,7 +359,8 @@ def run_scenario(sc: dict, run_dir: str, prices: dict) -> dict:
     usage0 = dict(llm.USAGE)
     rec: dict = {"id": sc["id"], "title": sc.get("title", ""), "category": sc.get("category"),
                  "patient_lang": sc["patient_lang"], "doctor_lang": sc.get("doctor_lang", "en"),
-                 "turns": [], "holds": [], "errors": [], "started": datetime.now().isoformat(timespec="seconds")}
+                 "turns": [], "holds": [], "errors": [], "started": datetime.now().isoformat(timespec="seconds"),
+                 "wrapup": wrapup}
     t_start = time.time()
     cur = {"turn": -1, "t_turn": time.time()}
     watch = None
@@ -451,12 +455,16 @@ def run_scenario(sc: dict, run_dir: str, prices: dict) -> dict:
             rec["holds"][-1]["resolution"] = "discarded (visit ended)"
         cur.update(turn=len(sc.get("turns") or []), t_turn=time.time())
         b.set_scenario_time(t_clock + 1.0)
-        t_end = time.time()
-        list(consult.end_visit(s, "http://sim.local"))
-        rec["end_visit_s"] = round(time.time() - t_end, 2)
-        t_ap = time.time()
-        list(consult.approve(s))
-        rec["approve_s"] = round(time.time() - t_ap, 2)
+        # the copilot as the doctor saw it before the wrap-up (end_visit may run one last think)
+        rec["cards_live"] = [{k: c.get(k) for k in ("id", "source", "kind", "severity", "status", "title", "body",
+                                                    "ask_text", "dimension", "score")} for c in b.cards.all_cards()]
+        if wrapup:
+            t_end = time.time()
+            list(consult.end_visit(s, "http://sim.local"))
+            rec["end_visit_s"] = round(time.time() - t_end, 2)
+            t_ap = time.time()
+            list(consult.approve(s))
+            rec["approve_s"] = round(time.time() - t_ap, 2)
         rec["screen"] = s.screen
         if s.error:
             rec["errors"].append(f"end: {s.error}")
@@ -492,8 +500,12 @@ def run_scenario(sc: dict, run_dir: str, prices: dict) -> dict:
             "idiom_hits": [h.get("id") for h in st.get("idiom_hits") or []],
             "questions_asked": [q if isinstance(q, str) else q.get("topic") for q in st.get("questions_asked") or []],
         }
+        rec["case"] = st.get("case") or {}
         rec["cards"] = [{k: c.get(k) for k in ("id", "source", "kind", "severity", "status", "title", "body", "ask_text",
-                                               "grounding", "rule_ids", "t_min")} for c in b.cards.all_cards()]
+                                               "grounding", "rule_ids", "t_min", "dimension", "confidence", "score")}
+                        for c in b.cards.all_cards()]
+        rec["curation"] = [{"turns": r.get("new_turns"), "results": r.get("curation") or [],
+                            "skipped": r.get("agent_skipped")} for r in brain._rt(b).runs]
         rec["audit"] = [{k: a.get(k) for k in ("card_id", "rule_id", "action", "severity", "kind", "source", "title",
                                                "reason", "t_min")} for a in b.audit]
         rec["trace_errors"] = [t["text"][:300] for t in b.trace if t.get("kind") == "error"]
@@ -733,6 +745,38 @@ def score(sc: dict, rec: dict) -> list[dict]:
         ok, ev = find_flag(f)
         out.append(check("no_flag", "NOT " + flag_desc(f), not ok, ev if ok else "", gap_of(f), f.get("note", "")))
 
+    # ---------------------------------------------------------------- general review: themes + attention budget
+    def theme_hit(th: dict) -> list[dict]:
+        """Cards whose title/body/ask text match the theme's keyword families (a leading space in a keyword means
+        "starts a word": " hot" matches "very hot", not "shot")."""
+        groups = th.get("all") or ([th["any"]] if th.get("any") else [])
+        out_c = []
+        for c in cards:
+            txt = " " + re.sub(r"[^\w\s'-]+", " ", _card_text(c).lower()).replace("-", " ") + " "
+            txt = re.sub(r"\s+", " ", txt)
+            if groups and all(any(str(k).lower().replace("-", " ") in txt for k in g) for g in groups):
+                if th.get("by_turn") is None or (_card_turn(rec, c["id"]) or 0) <= th["by_turn"]:
+                    out_c.append(c)
+        return out_c
+
+    for th in exp.get("themes") or []:
+        hit = theme_hit(th)
+        ev = "; ".join(f"{c['source']}/{c['kind']}[{c.get('dimension') or '-'}] '{c['title'][:60]}'" for c in hit[:3])
+        if not hit:
+            ev = "cards: " + ("; ".join(f"{c['source']}/{c['kind']}[{c.get('dimension') or '-'}] '{c['title'][:50]}'"
+                                        for c in cards if c["source"] != "rules") or "none")
+        out.append(check("theme", f"[{th.get('dimension', '?')}] {th.get('name') or th.get('note') or ''}".strip(),
+                         bool(hit), ev, gap_of(th), th.get("note", "")))
+    mac = exp.get("max_agent_cards")
+    if mac is not None:
+        ag = [c for c in cards if c["source"] == "agent"]
+        out.append(check("budget", f"at most {mac} agent card(s) shown", len(ag) <= int(mac),
+                         "; ".join(f"{c['kind']}/{c['severity']} '{c['title'][:50]}'" for c in ag)))
+    if rec.get("wrapup") is False:
+        errs = [e for e in rec.get("errors") or []]
+        out.append(check("run", "no talk-loop / translation errors", not errs, "; ".join(errs)[:300], auto=True))
+        return out
+
     # ---------------------------------------------------------------- state / care plan
     st = rec.get("state") or {}
     stx = exp.get("state") or {}
@@ -899,6 +943,13 @@ def summarise(run_dir: Path, results: list[dict], meta: dict) -> str:
              f"{sc_pass}/{len(results)} · expected gaps confirmed: {sum(1 for c in gaps if c['status'] == 'GAP')}"
              f" (closed: {sum(1 for c in gaps if c['status'] == 'GAP-CLOSED')})")
     clinical = [c for c in scored if c["type"] in ("hold", "no_hold", "flag", "suggest", "no_flag")]
+    themes = [c for c in scored if c["type"] == "theme"]
+    if themes:
+        L.append(f"- **coherence themes caught: {sum(c['ok'] for c in themes)}/{len(themes)} "
+                 f"({_pct(sum(c['ok'] for c in themes), len(themes))})**")
+    budget = [c for c in scored if c["type"] == "budget"]
+    if budget:
+        L.append(f"- attention budget (max agent cards) respected: {sum(c['ok'] for c in budget)}/{len(budget)}")
     L.append(f"- clinical checks (hold/flag/suggest/no-flag): {sum(c['ok'] for c in clinical)}/{len(clinical)} "
              f"({_pct(sum(c['ok'] for c in clinical), len(clinical))})")
     neg = [c for c in scored if c["type"] in ("no_flag", "no_hold")]
@@ -958,6 +1009,20 @@ def summarise(run_dir: Path, results: list[dict], meta: dict) -> str:
                  f"{len(fails)} | {', '.join(h['drug'] + ':' + str(h['rule']) for h in r.get('holds') or []) or '-'} | "
                  f"{', '.join(crit) or '-'} | {(r.get('usage') or {}).get('cost_usd', 0):.4f} | {r.get('wall_s')} |")
     L.append("")
+    L.append("## Copilot cards per scenario (agent / fallback / lexicon; rule cards counted separately)")
+    L.append("")
+    L.append("| id | agent cards | other non-rule | rule cards | agent runs | copilot $ | total $ |")
+    L.append("|---|---|---|---|---|---|---|")
+    for r in results:
+        cs = r.get("cards") or []
+        ag = [c for c in cs if c["source"] == "agent"]
+        cop = ((r.get("usage") or {}).get("agent_by_label") or {}).get("copilot") or [0, 0, 0]
+        L.append(f"| {r['id']} | {len(ag)}: " + "; ".join(f"{c['kind']}/{c['severity']}[{c.get('dimension') or '-'}] "
+                                                         f"{c['title'][:48]}" for c in ag)
+                 + f" | {sum(1 for c in cs if c['source'] in ('fallback', 'lexicon'))} | "
+                 f"{sum(1 for c in cs if c['source'] == 'rules')} | {cop[2]} | "
+                 f"{(r.get('usage') or {}).get('cost_agent_usd', 0):.4f} | {(r.get('usage') or {}).get('cost_usd', 0):.4f} |")
+    L.append("")
     L.append("## Failures (with evidence)")
     L.append("")
     for r in results:
@@ -1008,6 +1073,9 @@ def main() -> int:
     ap.add_argument("--rescore", default="", help="re-score a saved run directory (no LLM calls)")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--resume", default="", help="run id: keep the scenarios already in its raw.jsonl, run the rest")
+    ap.add_argument("--no-wrapup", default="", help="categories (comma) or 'all' to play without end_visit/PDFs")
+    ap.add_argument("--budget", type=float, default=0.0, help="stop starting new scenarios once this many $ are spent")
+    ap.add_argument("--priority", default="", help="categories (comma) to start first, e.g. coherence,chest,quiet")
     args = ap.parse_args()
     sys.path.insert(0, str(ROOT))
 
@@ -1095,28 +1163,53 @@ def main() -> int:
         safe_score(by_id[r["id"]], r)
         results.append(r)
     ctx = mp.get_context("spawn")
+    no_wrap = {x.strip() for x in args.no_wrapup.split(",") if x.strip()}
+
+    def wrap_of(sc_: dict) -> bool:
+        return not ("all" in no_wrap or sc_["category"] in no_wrap or sc_["id"] in no_wrap)
+
+    spent = sum((r.get("usage") or {}).get("cost_usd", 0.0) for r in done_recs)
+    prio = [x.strip() for x in args.priority.split(",") if x.strip()]
+    queue = sorted(sel, key=lambda x: prio.index(x["category"]) if x["category"] in prio else len(prio))
     with cf.ProcessPoolExecutor(max_workers=max(1, min(args.workers, len(sel) or 1)), mp_context=ctx,
                                 initializer=_worker_init, initargs=(env,)) as ex:
-        futs = {ex.submit(run_scenario, s, str(run_dir), prices): s for s in sel}
-        for fut in cf.as_completed(futs):
-            sc = futs[fut]
-            try:
-                rec = fut.result()
-            except Exception as e:  # noqa: BLE001
-                rec = {"id": sc["id"], "title": sc.get("title", ""), "category": sc["category"],
-                       "patient_lang": sc["patient_lang"], "doctor_lang": sc.get("doctor_lang", "en"),
-                       "errors": [f"CRASH worker: {type(e).__name__}: {e}"], "usage": {"cost_usd": 0.0}}
-            with open(run_dir / "raw.jsonl", "a", encoding="utf-8") as fh:
-                fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
-            safe_score(sc, rec)
-            results.append(rec)
-            nf = sum(1 for c in rec["checks"] if c["status"] == "FAIL")
-            print(f"[{len(results)}/{len(sel)}] {sc['id']:<34} {'PASS' if not nf else f'FAIL({nf})':<8} "
-                  f"holds={[h['drug'] + ':' + str(h['rule']) for h in rec.get('holds') or []]} "
-                  f"${(rec.get('usage') or {}).get('cost_usd', 0):.4f} {rec.get('wall_s')}s", flush=True)
-            for c in rec["checks"]:
-                if c["status"] == "FAIL":
-                    print(f"      FAIL [{c['type']}] {c['desc']} :: {c['evidence'][:160]}", flush=True)
+        futs: dict = {}
+
+        def submit_next() -> None:
+            while queue and len(futs) < max(1, args.workers):
+                if args.budget and spent >= args.budget:
+                    print(f"[budget] ${spent:.4f} spent >= ${args.budget:.2f}: not starting "
+                          f"{', '.join(x['id'] for x in queue)}", flush=True)
+                    queue.clear()
+                    return
+                nxt = queue.pop(0)
+                futs[ex.submit(run_scenario, nxt, str(run_dir), prices, wrap_of(nxt))] = nxt
+
+        submit_next()
+        while futs:
+            done, _pending = cf.wait(list(futs), return_when=cf.FIRST_COMPLETED)
+            for fut in done:
+                sc = futs.pop(fut)
+                try:
+                    rec = fut.result()
+                except Exception as e:  # noqa: BLE001
+                    rec = {"id": sc["id"], "title": sc.get("title", ""), "category": sc["category"],
+                           "patient_lang": sc["patient_lang"], "doctor_lang": sc.get("doctor_lang", "en"),
+                           "errors": [f"CRASH worker: {type(e).__name__}: {e}"], "usage": {"cost_usd": 0.0}}
+                with open(run_dir / "raw.jsonl", "a", encoding="utf-8") as fh:
+                    fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                safe_score(sc, rec)
+                results.append(rec)
+                spent += (rec.get("usage") or {}).get("cost_usd", 0.0)
+                nf = sum(1 for c in rec["checks"] if c["status"] == "FAIL")
+                print(f"[{len(results)}/{len(sel)}] {sc['id']:<34} {'PASS' if not nf else f'FAIL({nf})':<8} "
+                      f"holds={[h['drug'] + ':' + str(h['rule']) for h in rec.get('holds') or []]} "
+                      f"${(rec.get('usage') or {}).get('cost_usd', 0):.4f} {rec.get('wall_s')}s · total ${spent:.4f}",
+                      flush=True)
+                for c in rec["checks"]:
+                    if c["status"] == "FAIL":
+                        print(f"      FAIL [{c['type']}] {c['desc']} :: {c['evidence'][:160]}", flush=True)
+            submit_next()
     order = {s["id"]: i for i, s in enumerate(scenarios)}
     results.sort(key=lambda r: order.get(r["id"], 0))
     try:

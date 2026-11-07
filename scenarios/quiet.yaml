@@ -1,5 +1,6 @@
 # False-positive traps: ordinary visits where the copilot must stay quiet (no hold, no caution/critical card).
 # Info-level ask cards are tolerated (they are "useful next question" suggestions), caution+ are not.
+# Attention budget: the general clinical review may show at most ONE agent card in a whole quiet visit.
 - id: quiet-01-cold-paracetamol
   title: Common cold after allergies asked; paracetamol 1 g TDS
   patient_lang: ne
@@ -12,6 +13,7 @@
     - {role: patient, text: "धन्यवाद डाक्टर साब।"}
   expect:
     must_not_hold: ["*"]
+    max_agent_cards: 1
     must_not_flag: [{severity: caution}, {source: rules}]
 
 - id: quiet-02-bp-followup
@@ -25,6 +27,7 @@
     - {role: doctor, text: "Continue amlodipine 5 mg once every morning. See you in three months."}
   expect:
     must_not_hold: ["*"]
+    max_agent_cards: 1
     must_not_flag: [{severity: caution}, {source: rules}]
 
 - id: quiet-03-salbutamol-refill
@@ -38,6 +41,7 @@
     - {role: doctor, text: "Good. Salbutamol inhaler, two puffs when needed for wheeze."}
   expect:
     must_not_hold: ["*"]
+    max_agent_cards: 1
     must_not_flag: [{severity: caution}, {source: rules}]
 
 - id: quiet-04-spanish-gases-trap
@@ -51,6 +55,7 @@
     - {role: doctor, text: "Take simethicone 80 mg after meals as needed, and eat slowly."}
   expect:
     must_not_hold: ["*"]
+    max_agent_cards: 1
     must_not_flag: [{kind: idiom}, {severity: caution}, {source: rules}]
 
 - id: quiet-05-work-tension
@@ -64,6 +69,7 @@
     - {role: doctor, text: "Try to sleep at fixed times and avoid tea after 4 pm. Come back in two weeks if it's not better."}
   expect:
     must_not_hold: ["*"]
+    max_agent_cards: 1
     must_flag: [{kind: idiom, grounding: mul-001}]
     must_not_flag: [{severity: critical}]
 
@@ -77,4 +83,5 @@
     - {role: patient, text: "Baik Dok, terima kasih."}
   expect:
     must_not_hold: ["*"]
+    max_agent_cards: 1
     must_not_flag: [{severity: caution}, {source: rules}]

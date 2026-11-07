@@ -3,7 +3,7 @@
 Team QH-129, Qai × Hugging Face Hackathon O1, Doha.
 Deck: [`deck/index.html`](deck/index.html). PDF: [`Bayan-pitch.pdf`](Bayan-pitch.pdf).
 
-**Budget:** 365 spoken words across 14 slides. 315 are spoken over slides in 2:16, about 139 words a minute; 50 go over the 44-second demo video. The slides carry no footnotes; every source is in the table below.
+**Budget:** 369 spoken words across 14 slides. 311 are spoken over slides in 2:15, about 138 words a minute; 58 go over the 44-second demo video. The slides carry no footnotes; every source is in the table below.
 Tone: plain and conversational. Say what the product does and what the numbers are; no slogans. Speak at an even pace and leave a short gap after each number.
 
 **Deck controls:** → / Space / click = next, ← = back, `f` = fullscreen, `r` = restart the demo video, `p` = pause or play it.
@@ -13,80 +13,85 @@ Slide 5 plays `assets/demo.webm` automatically. It starts at 0:22 of the recordi
 
 ---
 
-## 1. Title, 0:00–0:08
-**On screen:** the Bayan wordmark at top left, "Bayan AI" with بيان beneath it, the tagline, then three items on one row with spacing between them: Team QH-129, Qai × Hugging Face Hackathon O1, Doha, 5–7 Nov 2026. The pearl is on the right.
+## 1. Title, 0:00–0:10
+**On screen:** the Bayan wordmark at top left, "Bayan AI" with بيان beneath it, the tagline "A clinical AI system that interprets between doctors and patients in Qatar, reasons about the consultation, and flags what gets missed." Below that, three items on one row: Team QH-129, Qai × Hugging Face Hackathon O1, Doha, 5–7 Nov 2026. The pearl is on the right.
 
-> We're team QH-129. This is Bayan, an interpreter for doctors and patients in Qatar that also checks what's said.
+> We're team QH-129. Bayan is a clinical AI system: it interprets between doctor and patient, reasons about the case, and flags what gets missed.
 
-## 2. Meet Anurag, 0:08–0:20
+## 2. Meet Anurag, 0:10–0:21
 **On screen:** "Meet Anurag", "29, a Nepali construction worker in Doha", and three columns: Anurag says, The doctor hears, It could be.
 
-> Anurag, a Nepali construction worker, says his chest is burning. He calls it gyastrik, Nepali for gastric. The doctor hears reflux, but it could be his heart.
+> Anurag, a Nepali construction worker, says his chest is burning: gyastrik, Nepali for gastric. The doctor hears reflux. It could be his heart.
 
-## 3. Language barriers in Qatar, 0:20–0:33
-**On screen:** 65%, 71%, 9.
+## 3. Language barriers in Qatar, 0:21–0:35
+**On screen:** four figures: 65%, 71%, 9, 49%.
 
-> Anurag is made up; the numbers are real. 65% of HMC ambulance staff report language barriers, and 71% are comfortable letting family interpret. Sidra has no in-person Nepali, Malayalam, Bengali or Tagalog interpreters.
+> Anurag is made up; the numbers are real. 65% of HMC ambulance staff report language barriers. In one US study, half of adverse events in patients with limited English caused physical harm.
 
-## 4. Adverse events and language, 0:33–0:41
-**On screen:** a bar chart. Vermillion is patients with limited English; grey is English speakers.
+## 4. What Bayan does, 0:35–0:49
+**On screen:** four columns: Interprets, Reasons, Flags, Suggests.
 
-> In one US study, about half of adverse events in patients with limited English caused physical harm, against 30% for English speakers.
+> Bayan listens to both sides and interprets in 37 languages. It keeps a running case summary, flags things like allergies, doses or missed workup, and suggests one next question at a time.
 
-## 5. Demo, 0:41–1:26 (44 s video)
+## 5. Demo, 0:49–1:34 (44 s video)
 **On screen:** the recorded Nepali consultation from the live Space. Each cue is the time from when the slide opens.
 
 | Cue | On the video | Say |
 |---|---|---|
 | 0:00 | Ready, then the doctor speaks | "This is a recording from our Space." |
-| 0:02 | "Do you have any allergies to medicines?" in Nepali | "The doctor asks about allergies, and the patient hears it in Nepali." |
-| 0:10 | The patient's Nepali, with the English for the doctor | "He says he once reacted to penicillin." |
-| 0:18 | *Gyastrik* underlined; idiom note; Notes panel | "He says gyastrik. Bayan notes it can be heart pain and suggests a follow-up question." |
-| 0:28 | The suggested question as a Nepali caption | "The doctor asks it." |
-| 0:38 | The doctor's next sentence | "Next, the doctor prescribes amoxicillin." |
+| 0:02 | "Do you have any allergies to medicines?" in Nepali | "The doctor asks about allergies; the patient hears it in Nepali." |
+| 0:10 | The patient's answer, with the English for the doctor | "He reports a penicillin reaction, and Bayan notes the allergy." |
+| 0:18 | *Gyastrik* underlined; Notes panel with flags and Ask next | "He says gyastrik. The notes flag it as possible heart pain and suggest the next question." |
+| 0:28 | The suggested question as a Nepali caption | "The doctor taps it, and it's asked in Nepali." |
+| 0:38 | The doctor's next sentence | "Then the doctor prescribes amoxicillin." |
 | 0:41 | The pearl turns vermillion: Sentence held | (wait for the video to stop, then advance) |
 
-## 6. Held, 1:26–1:36
+## 6. Held, 1:34–1:44
 **On screen:** the held screen, full size.
 
-> Bayan holds that sentence, because amoxicillin is a penicillin. The check is a fixed rule, not the language model; it takes about 3 milliseconds. The doctor can rephrase or override.
+> Bayan holds it: amoxicillin is a penicillin. That check is a fixed rule, not the language model. The doctor can rephrase or override.
 
-## 7. Care plan and doctor's note, 1:36–1:44
+## 7. Care plan and doctor's note, 1:44–1:52
 **On screen:** the phone care-plan page in Nepali, a patient sheet PDF in Tamil and the doctor's note PDF.
 
-> At the end, the patient gets a care plan in his language by QR code, and the doctor gets a note.
+> At the end, the patient gets a care plan in his language by QR code; the doctor gets a note.
 
-## 8. Architecture, 1:44–1:57
-**On screen:** the diagram. On the left is the per-turn stack with the prescription gate in vermillion. In the middle is the background copilot stack, and on the right is the wrap-up stack.
+## 8. Architecture, 1:52–2:08
+**On screen:** the diagram:
+- Left: the per-turn interpretation stack, with the prescription gate in vermillion.
+- Centre: the reasoning loop. A case summary feeds the clinical review agent, which calls its agent tools. Candidate concerns go through an attention filter to the doctor's screen, then the loop repeats on the next turn.
+- Right: wrap-up.
 
-> Each turn goes through speaker check, speech-to-text, translation, the prescription gate and speech. In the background, a smolagents copilot uses an idiom list and 83 rules to suggest questions.
+> Each turn is transcribed, translated and checked by the prescription gate. In the background, a smolagents agent reviews the case summary, calls tools like the rules and idiom lexicon, and a filter picks what the doctor sees.
 
-## 9. Hugging Face stack, 1:57–2:06
+## 9. Hugging Face stack, 2:08–2:18
 **On screen:** two Space cards (Bayan AI on CPU upgrade, Bayan Voice Worker on an NVIDIA L4), the model boxes, and gpt-oss-120b through Inference Providers.
 
-> It all runs on Hugging Face: the app Space, a voice Space on an L4 with eight open models, and gpt-oss-120b through Inference Providers.
+> It runs on Hugging Face: an app Space, a voice Space on an L4 with eight open models, and gpt-oss-120b via Inference Providers.
 
-## 10. Simulation results, 2:06–2:17
+## 10. Simulation results, 2:18–2:27
 **On screen:** 99% of 727 checks, 0 of 44 false-alarm traps, 100% of 477 PDF checks, and the latency bars.
 
-> On 38 scripted consultations in 14 languages, 99% of checks passed and none of the 44 false-alarm tests fired. It missed 3 of 16 holds, which we're fixing.
+> On 38 scripted consultations in 14 languages, 99% of checks passed, no false alarms fired, and 3 of 16 holds were missed.
 
-## 11. First customers in Qatar, 2:17–2:23
-**On screen:** 1.46 M, 1.56 M, 5.17 M visits, and the pricing to test.
+[reasoning eval results pending]
+
+## 11. First customers in Qatar, 2:27–2:32
+**On screen:** 1.46 M, 1.56 M and 5.17 M visits, and the pricing to test.
 
 > First customers: QRCS workers' health centres, then HMC and PHCC.
 
-## 12. Deployment and cost, 2:23–2:42
+## 12. Deployment and cost, 2:32–2:44
 **On screen:** the three deployment tiers and a phone interpreter, with the cost-per-consultation ranges on a log scale.
 
-> On Hugging Face it costs 9 to 28 cents a consultation. On a hospital's own server it's about 16 cents, and no audio leaves the building. A phone interpreter costs 11 to 16 dollars.
+> On Hugging Face it's 9 to 28 cents a consultation, or about 16 cents on a hospital's own server. A phone interpreter costs 11 to 16 dollars.
 
-## 13. Comparison, 2:42–2:50
+## 13. Comparison, 2:44–2:51
 **On screen:** the comparison table.
 
-> Other tools translate or take notes; none we found checks the medical content before it's spoken.
+> Other tools translate or take notes; none we found reviews the clinical content during the consultation.
 
-## 14. Next steps, 2:50–3:00
+## 14. Next steps, 2:51–3:00
 **On screen:** the pearl, the three next steps, the team and the Space URL.
 
 > It isn't a certified interpreter yet. Next we need a pilot clinic, clinician review of our rules, and native-speaker testing. Thank you.
@@ -102,7 +107,7 @@ Slide 5 plays `assets/demo.webm` automatically. It starts at 0:22 of the recordi
 | Physical harm in 49% vs 30% of adverse events | Divi et al., *Int J Qual Health Care* 2007 [19]. Voluntary reports from a pilot, so say "adverse events", not "twice as many events" |
 | *Gyastrik* ("gastric") can hide cardiac pain; Anurag is an illustrative persona | `data/idiom_lexicon.json` entry npi-005; in Nepal only 23.8% of STEMI patients thought their pain was cardiac (Prajapati, *JNHRC* 2022 [36]) |
 | Held in about 3 ms, no LLM | `bayan/brain/copilot.py` prescription gate; docs/11 §2 |
-| 83 rules, 59 idioms | Counted in `data/safety_rules.json` (83) and `data/idiom_lexicon.json` (59). Older docs say 81 and the brief said 84, but the file has 83 |
+| 83 rules, 98 idioms | Counted in `data/safety_rules.json` (83) and `data/idiom_lexicon.json` (98 entries; the 38-scenario simulation ran on the earlier 59-entry lexicon). Older docs say 81 rules |
 | 37 patient languages | `bayan/ui.py`: 5 start chips plus 32 in "More…" (Filipino, Tamil, Swahili, then the 29 in `bayan/langs.py`) |
 | 99% of 727, 0/44 traps, 477/477 PDF checks, 3 of 16 holds missed, $0.011 median, latencies | `reports/sim/gptoss120b-full/summary.md` (text turns, no audio) |
 | Online $0.09–0.28, clinic box $0.13–0.51, hospital $0.16–1.65 per consultation; phone interpreter $11.40–15.75 | research.md §6.3, `data/cost_per_consultation.csv`, `data/cost_per_clinic_month.csv`. Model assumptions: 1,200 consultations per clinic-month; L4 Space at $0.80/h for 12 h a day; CPU Space at $0.03/h; LLM $0.025 per consultation from the token model; 15 interpreter-minutes per visit |
@@ -131,14 +136,16 @@ Three of 16 expected holds:
 
 We also found two known gaps: an allergy to the same non-class drug, and paracetamol added up across brands. Each fix is a rule or an alias, which is deterministic, testable and cheap.
 
-**5. What does the LLM decide, and why use agents?**
-gpt-oss-120b does four jobs:
-- It translates.
-- It extracts facts into a fixed schema.
-- It writes the note and the care plan.
-- The smolagents copilot suggests up to 3 cards (ask, missed workup, observation), and each card must cite the utterance it came from.
+**5. What does the AI decide, and why use an agent?**
+gpt-oss-120b has four jobs:
+- It translates each turn and, in the same call, updates the case summary: complaint, history, working diagnosis, plan, the patient's understanding and mood.
+- After each substantive turn, a smolagents clinical review agent reads that summary and runs five checks: safety, history, plan coherence, communication and consistency.
+- The agent can call tools: the 83 safety rules, the 98-entry idiom lexicon, a drug check and a case lookup.
+- It also writes the note and the care plan at the end.
 
-It can never raise a critical alert or block a sentence; only the deterministic rule engine can. If the agent fails or passes its 20-second timeout, fixed fallback cards appear instead. It runs only when something new happens, usually in a single step.
+Every candidate concern must quote the transcript. An attention filter scores each one by severity, confidence and novelty, shows one "Ask next" at a time, and merges or expires older cards.
+
+The agent cannot hold a sentence; only the deterministic prescription gate can.
 
 **6. Privacy and data residency?**
 - Audio is deleted right after transcription, and transcripts stay in memory.

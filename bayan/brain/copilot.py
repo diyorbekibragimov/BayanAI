@@ -1,19 +1,28 @@
 """Bayan AI · the clinical copilot (think loop) and the synchronous prescription gate.
 
 One think run (background, debounced ~1.2 s, at most one in flight per consultation; a turn arriving mid-run marks
-it dirty -> exactly one rerun):
+it dirty -> exactly one rerun; it never delays speech):
   1. lookup_idiom       deterministic lexicon match on new patient turns -> idiom cards at once        (code)
-  2. update_state       ONE LLM extraction call (json_schema) -> merge_delta; courtesy turns skip it;
-                        if the call fails, a keyword fallback still records chest-pain symptoms         (1 LLM call)
+  2. update_state       ONE LLM extraction call (json_schema) -> merge_delta: clinical facts AND the running case
+                        summary (state["case"]: complaint, history, working diagnosis, plan, stated findings, the
+                        patient's understanding and affect); courtesy turns skip it; if the call fails, a keyword
+                        fallback still records chest-pain symptoms                                       (1 LLM call)
   3. check_safety_rules RuleEngine.evaluate -> CardStore.sync_rules (WORK-CHEST-* -> one grouped card)  (code)
-  4. copilot agent      only if steps 1-3 found something new: smolagents ToolCallingAgent (gpt-oss-120b on
-                        Cerebras). Its final_answer(cards=[...]) tool posts 0-2 ask / missed / observation
-                        cards (<= caution, guardrails in CardStore) and ends the run: typically ONE LLM step.
-  5. fallback           agent off / failed / timed out / no valid card: <=2 "ask" cards from the idiom's
-                        clarifying questions and the open checklist (source "fallback")
-Steps 1-3 never depend on the LLM choosing to call a tool, so safety alerts cannot be skipped by the agent.
-Every step is logged to consult.trace as "tool"/"agent" lines (the activity feed); per-run latency, tokens and
-cost go to consult.outputs["metrics"].
+  4. resolve            open questions the doctor has now asked, checklist items now done              (code)
+  5. clinical review    on every substantive turn (not courtesy turns, not a doctor question still waiting for its
+                        answer): smolagents ToolCallingAgent (gpt-oss-120b on Cerebras) reviews the case like a
+                        second clinician along five general dimensions (safety, history, plan, communication,
+                        consistency) and returns 0-2 candidate concerns, each QUOTING the transcript (quotes are
+                        verified in code; rule / idiom / checklist ids are optional context, never required) plus
+                        the ids of its earlier cards the conversation has addressed. Typically ONE LLM step.
+  6. curate             bayan.brain.curator (code): score = severity x confidence x novelty x recency, threshold,
+                        at most 1 new card per turn, <= 4 visible, ONE "Ask next" at a time, near-duplicates merged,
+                        dismissed themes suppressed for the visit.
+  7. fallback           agent off / failed / timed out / no valid card: at most one deterministic "ask" card from
+                        the idiom's clarifying questions or the open checklist (source "fallback")
+Steps 1-4 never depend on the LLM, so safety alerts cannot be skipped by the agent; rule cards stay the only source
+of critical alerts and held sentences. Every step is logged to consult.trace as "tool"/"agent"/"card" lines (the
+activity feed); per-run latency, tokens and cost go to consult.outputs["metrics"].
 
 Talk-loop hooks: prescription_gate() (sync, no LLM) on doctor turns with drugs, record_allergies() (sync) on
 patient turns with allergies, post_idioms() (sync lexicon idiom + "ask" card) on patient turns, on_turn() after every
@@ -33,8 +42,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-from . import agentkit, llm
-from .cards import CardStore, norm_text
+from . import agentkit, curator, llm
+from .cards import AGENT_KINDS, CardStore, norm_text, quote_in_turn
 from .state import fmt_t
 from .vocab import repair_drug_items
 
@@ -48,8 +57,8 @@ AGENT_TIMEOUT_S = float(os.environ.get("BAYAN_AGENT_TIMEOUT", "20"))
 AGENT_MAX_STEPS = int(os.environ.get("BAYAN_AGENT_MAX_STEPS", "4"))
 AGENT_CARDS_PER_RUN = 3
 AGENT_TOKEN_CAP = int(os.environ.get("BAYAN_AGENT_TOKEN_CAP", "200000"))   # per consultation
-FALLBACK_MAX = 2
-TASK_TURNS = 6
+FALLBACK_MAX = 1          # one "Ask next" at a time
+TASK_TURNS = 10           # transcript window of the review (the case summary covers everything before it)
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="bayan-think")
 _DEPS: dict[str, Any] = {}
@@ -139,7 +148,8 @@ def _rt(consult) -> _Runtime:
     return rt
 
 
-def _grounding_ok(consult, kind: str, g: str) -> bool:
+def _ref_ok(consult, g: str) -> bool:
+    """A rule id, idiom id or checklist id: optional context a card may point at."""
     g = (g or "").strip()
     if not g:
         return False
@@ -153,7 +163,16 @@ def _grounding_ok(consult, kind: str, g: str) -> bool:
             return True
     except Exception:  # noqa: BLE001
         pass
-    if any(c.get("id") == g for c in _checklist(consult)):
+    return any(c.get("id") == g for c in _checklist(consult))
+
+
+def _grounding_ok(consult, kind: str, g: str) -> bool:
+    """Agent cards are grounded in the transcript (their quotes are verified by CardStore); the grounding field
+    holds the review dimension ("plan", "safety", ...) or, optionally, a rule / idiom / checklist id."""
+    g = (g or "").strip()
+    if g in curator.DIMENSIONS:
+        return True
+    if _ref_ok(consult, g):
         return True
     return kind == "observation" and consult.turn_by_id(g) is not None
 
@@ -167,6 +186,7 @@ def attach(consult) -> None:
         state_version=lambda: consult.state_version,
         log=consult.log,
         audit=consult.audit,
+        max_open_ask=1,                  # exactly one "Ask next" on screen (the curator replaces, never stacks)
     )
     consult._copilot = _Runtime()
     for name in ("engine", "idioms"):     # warm the singletons; a missing module is logged, not raised
@@ -237,6 +257,18 @@ def _state_diff(before: dict, after: dict) -> list[str]:
             out.append(f"asked:{q}")
     for code in sorted(codes(after, "idiom_hits", "id") - codes(before, "idiom_hits", "id")):
         out.append(f"+idiom {code}")
+    oc, nc = before.get("case") or {}, after.get("case") or {}
+    cc_new = (nc.get("chief_complaint") or {}).get("text")
+    if cc_new and cc_new != (oc.get("chief_complaint") or {}).get("text"):
+        out.append(f"complaint: {cc_new[:48]}")
+    for key, tag in (("history", "hx"), ("working_diagnosis", "dx"), ("differential", "ddx"), ("plan", "plan"),
+                     ("exam_claims", "stated"), ("patient_understanding", "understanding"),
+                     ("patient_affect", "affect")):
+        old = {x.get("text") for x in oc.get(key) or [] if isinstance(x, dict)}
+        for x in nc.get(key) or []:
+            if isinstance(x, dict) and x.get("text") not in old:
+                sign = {True: "+", False: "-"}.get(x.get("present"), "") if key == "history" else ""
+                out.append(f"{tag}: {sign}{str(x.get('text'))[:48]}")
     return out
 
 
@@ -425,9 +457,11 @@ def post_idioms(consult, turn) -> list[str]:
             if q:
                 why = (f"'{e.get('romanized') or m.get('matched')}' can mask: "
                        f"{'; '.join(e.get('masks_red_flags') or [])[:160]}")
-                res = consult.cards.post("ask", q, why, [_ev(turn)], m.get("id"), severity="info", ask_text=q,
-                                         source="fallback", t_min=turn.t_min)
-                if not res.startswith(("rejected", "duplicate")):
+                res = curator.offer(consult, [{"kind": "ask", "dimension": "safety", "title": q, "body": why,
+                                               "evidence": [_ev(turn)], "grounding": m.get("id"), "ask_text": q,
+                                               "severity": "info", "confidence": curator.FALLBACK_CONFIDENCE}],
+                                    source="fallback")[0]
+                if res.startswith("c"):
                     posted.append(res)
     except Exception as e:  # noqa: BLE001
         try:
@@ -515,44 +549,86 @@ def _j(x: Any) -> str:
     return json.dumps(x, ensure_ascii=False, default=str, separators=(",", ":"))
 
 
-def _parse_utts(evidence: Any) -> list:
+_UTT_RX = re.compile(r"u\d{3,}")
+
+
+def _parse_evidence(evidence: Any) -> list[dict]:
+    """Tolerant evidence parsing -> [{"utt", "quote"}]. Accepts a list of {utt, quote} objects (the schema), a JSON
+    string of it, or "u007: words" strings. Bare ids come back with an empty quote (rejected later)."""
     if evidence is None:
         return []
     if isinstance(evidence, str):
-        s = evidence.strip()
-        if s.startswith("["):
+        st = evidence.strip()
+        if st.startswith(("[", "{")):
             try:
-                evidence = json.loads(s)
+                evidence = json.loads(st)
             except ValueError:
-                evidence = re.findall(r"u\d{3,}", s)
+                evidence = [st]
         else:
-            return [{"utt": u} for u in re.findall(r"u\d{3,}", s)]
+            evidence = [st]
     if isinstance(evidence, dict):
         evidence = [evidence]
     out = []
     for e in evidence if isinstance(evidence, list) else []:
         if isinstance(e, str):
-            out.extend({"utt": u} for u in re.findall(r"u\d{3,}", e))
+            m = re.match(r"\s*(u\d{3,})\s*[:\-–]?\s*(.*)$", e, re.S)
+            if m:
+                out.append({"utt": m.group(1), "quote": m.group(2).strip().strip("\"'“”‘’ ")})
+            else:
+                out.extend({"utt": u, "quote": ""} for u in _UTT_RX.findall(e))
         elif isinstance(e, dict) and (e.get("utt") or e.get("id")):
-            out.append({"utt": e.get("utt") or e.get("id"), "quote": e.get("quote") or ""})
+            out.append({"utt": str(e.get("utt") or e.get("id")).strip(),
+                        "quote": str(e.get("quote") or e.get("text") or "").strip().strip("\"'“”‘’ ")})
     return out
+
+
+def _parse_utts(evidence: Any) -> list:      # kept for callers of the old helper
+    return [{"utt": e["utt"], "quote": e["quote"]} for e in _parse_evidence(evidence)]
+
+
+def verify_quotes(consult, evidence: list[dict]) -> tuple[list[dict], str | None]:
+    """Every quote must really be in the transcript. A quote found in another utterance than the one cited is
+    re-pointed there (the words are real; the id was a slip). Returns (evidence, error or None)."""
+    if not evidence:
+        return [], 'evidence must quote the transcript: [{"utt": "u002", "quote": "<words copied verbatim>"}]'
+    with consult.lock:
+        turns = [t for t in consult.turns if t.kind != "system"]
+    out = []
+    for e in evidence:
+        q = e.get("quote") or ""
+        if not q:
+            return [], (f"evidence must quote the transcript: {e.get('utt')} has no quote (copy the few words "
+                        "that show the problem)")
+        turn = consult.turn_by_id(e.get("utt") or "")
+        if not quote_in_turn(turn, q):
+            turn = next((t for t in reversed(turns) if quote_in_turn(t, q)), None)
+            if turn is None:
+                return [], (f"evidence quote not found in the transcript: '{q[:60]}' (copy the words verbatim "
+                            f"from {e.get('utt') or 'the utterance'})")
+        out.append({"utt": turn.id, "t_min": turn.t_min, "quote": q[:200]})
+    return out, None
 
 
 CARD_ITEM_SCHEMA = {
     "type": "object",
     "properties": {
-        "kind": {"type": "string", "enum": ["ask", "missed", "observation"]},
-        "title": {"type": "string", "description": "at most 10 words"},
-        "body": {"type": "string", "description": "one sentence: why, citing the patient's or doctor's words"},
-        "evidence": {"type": "array", "items": {"type": "string"}, "description": "utterance ids, e.g. [\"u002\"]"},
-        "grounding": {"type": "string", "description": "one id copied from VALID GROUNDING IDS"},
-        "ask_text": {"type": "string", "description": "kind ask: ONE short plain-English question to the patient"},
+        "kind": {"type": "string", "enum": list(AGENT_KINDS)},
+        "dimension": {"type": "string", "enum": list(curator.DIMENSIONS)},
+        "title": {"type": "string", "description": "plain words, at most 8"},
+        "body": {"type": "string", "description": "one sentence: why it matters in this consultation"},
         "severity": {"type": "string", "enum": ["info", "caution"]},
+        "confidence": {"type": "number", "description": "0-1: would a senior clinician want this raised now?"},
+        "evidence": {"type": "array", "items": {"type": "object", "properties": {
+            "utt": {"type": "string", "description": "utterance id, e.g. u007"},
+            "quote": {"type": "string", "description": "a few words copied verbatim from that utterance"}},
+            "required": ["utt", "quote"]}},
+        "ask_text": {"type": "string", "description": "kind ask: ONE short plain-English question to the patient"},
+        "ref": {"type": "string", "description": "optional: a rule, idiom or checklist id from CONTEXT"},
     },
-    "required": ["kind", "title", "evidence", "grounding"],
+    "required": ["kind", "dimension", "title", "body", "severity", "confidence", "evidence"],
 }
-# rejections the model can fix in one retry (vs duplicate / dismissed / cap, which it must simply accept)
-_FIXABLE = ("kind ", "severity", "only the rule engine", "title is required", "evidence must", "grounding ",
+# rejections the model can fix in one retry (vs duplicate / dismissed / held back, which it must simply accept)
+_FIXABLE = ("kind ", "severity", "only the rule engine", "title is required", "evidence must", "evidence quote",
             "ask cards need", "each card", "cards must")
 
 
@@ -589,15 +665,56 @@ def _covered_by_fired(consult) -> dict[str, str]:
     return out
 
 
+def _candidate(consult, c: dict, covered: dict) -> tuple[dict | None, str | None]:
+    """One proposed card -> (validated candidate, None) or (None, rejection reason)."""
+    ask_text = str(c.get("ask_text") or c.get("question") or "").strip() or None
+    kind = str(c.get("kind") or ("ask" if ask_text else "")).strip().lower()
+    title = " ".join(str(c.get("title") or ask_text or "").split())[:90]
+    body = " ".join(str(c.get("body") or c.get("why") or "").split())[:300]
+    severity = str(c.get("severity") or ("info" if kind == "ask" else "caution")).strip().lower()
+    ref = str(c.get("ref") or c.get("grounding") or c.get("grounding_id") or "").strip()
+    dim = str(c.get("dimension") or "").strip().lower()
+    if kind in curator.DIMENSIONS:              # the dimension written into "kind": unambiguous, repaired
+        dim, kind = dim or kind, ("ask" if ask_text else "observation")
+    if kind not in AGENT_KINDS:
+        return None, f"kind '{kind}' must be one of {', '.join(AGENT_KINDS)}"
+    if severity == "critical":
+        return None, "only the rule engine can raise critical alerts (use caution)"
+    if severity not in ("info", "caution"):
+        return None, "severity must be info or caution"
+    if not title:
+        return None, "title is required"
+    if kind == "ask" and not ask_text:
+        if title.endswith("?"):
+            ask_text = title
+        else:
+            return None, "ask cards need ask_text: one plain English question for the patient"
+    if kind == "missed" and ref in covered:
+        return None, f"duplicate (already on screen as rule {covered[ref]})"
+    ev, err = verify_quotes(consult, _parse_evidence(c.get("evidence")))
+    if err:
+        return None, err
+    grounding = ref if ref and ref not in curator.DIMENSIONS and _ref_ok(consult, ref) else ""
+    if dim not in curator.DIMENSIONS:
+        dim = ref if ref in curator.DIMENSIONS else ("history" if kind == "ask" else "consistency")
+    return {"kind": kind, "dimension": dim, "title": title, "body": body or title, "severity": severity,
+            "confidence": c.get("confidence"), "evidence": ev, "ask_text": ask_text,
+            "grounding": grounding or dim}, None
+
+
 def post_cards(consult, cards: Any, cancel: threading.Event | None = None, source: str = "agent",
-               cap: int = AGENT_CARDS_PER_RUN) -> list[str]:
-    """Validate and post agent-proposed cards through CardStore (all guardrails apply). Tolerant of sloppy tool
-    calls: JSON strings, a single object, missing optional fields. Returns one result per card: card id,
-    "duplicate ...", or "rejected: <why>"."""
+               cap: int = AGENT_CARDS_PER_RUN, addressed: Any = None) -> list[str]:
+    """Validate agent-proposed concerns (kind, severity <= caution, verified transcript quotes) and hand them to the
+    curator, which decides what reaches the screen. Tolerant of sloppy tool calls: JSON strings, a single object,
+    missing optional fields. Returns one result per card: card id, "duplicate ...", "held back: ...", or
+    "rejected: <why>"."""
     if cancel is not None and cancel.is_set():
         return ["cancelled: this copilot run timed out"]
+    if isinstance(addressed, str):
+        addressed = re.findall(r"c\d{3,}", addressed)
+    addressed = [str(a) for a in addressed or [] if a]
     if cards is None:
-        return []
+        cards = []
     if isinstance(cards, str):
         try:
             cards = json.loads(cards) if cards.strip() else []
@@ -608,36 +725,42 @@ def post_cards(consult, cards: Any, cancel: threading.Event | None = None, sourc
     if not isinstance(cards, list):
         return ["rejected: cards must be a list of card objects"]
     covered = _covered_by_fired(consult)
-    out: list[str] = []
+    out: list[str | None] = [None] * len(cards)
+    valid: list[tuple[int, dict]] = []
+    now = consult.now_min()
     for i, c in enumerate(cards):
         if i >= cap:
-            out.append(f"rejected: at most {cap} cards per run")
+            out[i] = f"rejected: at most {cap} cards per review"
             continue
         if not isinstance(c, dict):
-            out.append("rejected: each card must be an object")
+            out[i] = "rejected: each card must be an object"
             continue
-        ask_text = str(c.get("ask_text") or c.get("question") or "").strip() or None
-        kind = str(c.get("kind") or ("ask" if ask_text else "")).strip().lower()
-        title = str(c.get("title") or ask_text or "").strip()
-        body = str(c.get("body") or c.get("why") or "").strip()
-        grounding = str(c.get("grounding") or c.get("grounding_id") or "").strip()
-        severity = str(c.get("severity") or ("info" if kind == "ask" else "caution")).strip().lower()
-        if kind == "missed" and grounding in covered:
-            out.append(f"duplicate (already on screen as rule {covered[grounding]})")
+        cand, why = _candidate(consult, c, covered)
+        if cand is None:
+            if why.startswith("duplicate"):
+                out[i] = why
+            else:
+                out[i] = consult.cards.reject(str(c.get("kind") or ""), str(c.get("title") or ""), why,
+                                              source=source, severity=str(c.get("severity") or ""),
+                                              grounding=str(c.get("ref") or c.get("grounding") or ""), t_min=now)
             continue
-        out.append(consult.cards.post(kind, title, body or title, _parse_utts(c.get("evidence")), grounding,
-                                      severity=severity, ask_text=ask_text, source=source, t_min=consult.now_min()))
-    return out
+        valid.append((i, cand))
+    if valid or addressed:
+        res = curator.offer(consult, [c for _i, c in valid], addressed=addressed, source=source)
+        for (i, _c), r in zip(valid, res):
+            out[i] = r
+    return [r or "rejected" for r in out]
 
 
-def build_tools(consult, cancel: threading.Event) -> list:
-    """The copilot's smolagents tools, bound to this consultation: read-only lookups + final_answer, which posts
-    the cards and ends the run (it replaces smolagents' default final_answer, so a typical run is ONE LLM step).
-    A fixable mistake (bad grounding, missing kind/evidence, critical severity) raises once with a short message,
-    which smolagents shows the model as the step error: one retry, already-posted cards come back "duplicate"."""
+def build_tools(consult, cancel: threading.Event, outcome: dict | None = None) -> list:
+    """The copilot's smolagents tools, bound to this consultation: read-only lookups + final_answer, which hands
+    the concerns to the curator and ends the run (it replaces smolagents' default final_answer, so a typical run is
+    ONE LLM step). A fixable mistake (missing or invented quote, missing kind, critical severity) raises once with a
+    short message, which smolagents shows the model as the step error: one retry."""
     from smolagents import tool
 
     attempts = {"n": 0}
+    outcome = outcome if outcome is not None else {}
 
     @tool
     def lookup_idiom(phrase: str, lang: str = "") -> str:
@@ -658,11 +781,14 @@ def build_tools(consult, cancel: threading.Event) -> list:
                    "clarifying_questions_en": e.get("clarifying_questions_en"), "red_flag_tags": e.get("red_flag_tags")})
 
     @tool
-    def lookup_drug(name: str) -> str:
-        """Generic name, classes and the curated safety rules that mention a drug.
+    def lookup_drug(name: str, dose_mg: float = None, frequency_per_day: float = None) -> str:  # noqa: RUF013
+        """Generic name and classes of a drug, the curated safety rules that mention it, and the prescribing rules
+        that WOULD fire for THIS patient (allergies, current medicines, pregnancy, dose ceilings) if it were given.
 
         Args:
             name: Drug name as said (brand or generic), e.g. "Augmentin".
+            dose_mg: Single dose in mg, if known (optional).
+            frequency_per_day: Doses per day, if known (optional).
         """
         inn = _dep("normalise_drug")(name)
         classes = list(_dep("classes_of")(inn) or [])
@@ -672,7 +798,19 @@ def build_tools(consult, cancel: threading.Event) -> list:
             blob = json.dumps(r.get("trigger"), ensure_ascii=False).lower()
             if any(n in blob for n in needles):
                 rules.append(f"{r['id']} ({r.get('severity')}): {(r.get('message_en') or '')[:120]}")
-        return _j({"id": inn, "classes": classes, "rules": rules[:8]})
+        cand = {"drug": inn or name, "intent": "prescribe"}
+        if dose_mg is not None:
+            cand["dose_mg"] = dose_mg
+        if frequency_per_day is not None:
+            cand["frequency_per_day"] = frequency_per_day
+        try:
+            with consult.lock:
+                hits = _dep("engine").check_prescription(consult.state, [cand], consult.now_min()) or []
+        except Exception:  # noqa: BLE001
+            hits = []
+        return _j({"id": inn, "classes": classes, "rules": rules[:8],
+                   "would_fire_for_this_patient": [f"{h.get('rule_id')} ({h.get('severity')}): "
+                                                    f"{(h.get('message') or '')[:140]}" for h in hits[:5]]})
 
     @tool
     def check_safety_rules() -> str:
@@ -680,110 +818,163 @@ def build_tools(consult, cancel: threading.Event) -> list:
         return _j([f"{f.get('rule_id')} ({f.get('severity')}): {f.get('message')}" for f in _evaluate(consult)])
 
     @tool
-    def final_answer(cards: list = None) -> str:  # noqa: RUF013 - smolagents needs the bare `list` hint
-        """Post your proposed cards to the doctor's screen and end this run. Call it once; [] if nothing is useful.
+    def final_answer(cards: list = None, addressed: list = None) -> str:  # noqa: RUF013 - smolagents needs bare `list`
+        """Hand your review to Bayan and end this run. Call it once; cards=[] when nothing needs the doctor now.
 
         Args:
-            cards: 0-2 card objects {kind, title, body, evidence, grounding, ask_text, severity}.
+            cards: 0-2 concerns {kind, dimension, title, body, severity, confidence, evidence: [{utt, quote}], ask_text, ref}, most important first.
+            addressed: ids of YOUR CARDS ON SCREEN that the conversation has now dealt with (e.g. ["c004"]).
         """
-        res = post_cards(consult, cards, cancel)
+        res = post_cards(consult, cards, cancel, addressed=addressed)
         attempts["n"] += 1
+        outcome.setdefault("results", []).extend(res)
         bad = [f"card {i + 1}: {r[len('rejected: '):]}" for i, r in enumerate(res)
                if r.startswith("rejected: ") and any(k in r for k in _FIXABLE)]
         if bad and attempts["n"] == 1 and not (cancel is not None and cancel.is_set()):
             ok = [r for r in res if not r.startswith("rejected")]
-            raise ValueError(("Posted: " + ", ".join(ok) + ". " if ok else "")
+            raise ValueError(("Accepted: " + ", ".join(ok) + ". " if ok else "")
                              + "Fix and call final_answer again with only the corrected cards: " + "; ".join(bad))
         return "; ".join(res) if res else "no cards"
 
     final_answer.inputs["cards"]["items"] = CARD_ITEM_SCHEMA     # full item schema for the provider
+    final_answer.inputs["addressed"]["items"] = {"type": "string"}
     return [lookup_idiom, lookup_drug, check_safety_rules, final_answer]
 
 
-INSTRUCTIONS = """You are Bayan's clinical copilot in an urgent-care clinic in Qatar. Bayan interprets between a licensed
-doctor (English or Arabic) and a migrant-worker patient (Nepali, Hindi, Bengali, Tagalog, ...). While they talk, you
-read the transcript and the structured clinical state and propose short cards on the DOCTOR's screen: the next
-question worth asking, workup that may be missing, or a pattern worth noticing. The doctor taps a card to act on it.
+INSTRUCTIONS = """You are Bayan's clinical copilot: a senior clinician quietly reviewing a consultation while it happens, in
+an urgent-care clinic in Qatar. Bayan interprets between a licensed doctor (English or Arabic) and a patient who speaks
+another language (Nepali, Hindi, Bengali, Tagalog, Russian, ...). You see the running CASE SUMMARY, the recent
+TRANSCRIPT and what is already on the doctor's screen. You propose at most two short cards; deterministic code then
+decides which one, if any, the doctor sees. Reason about THIS patient and THIS conversation, whatever the complaint.
 
-Authority rules (enforced in code; breaking them only gets your card rejected):
-- You never diagnose, prescribe, change a dose, reassure, or speak to the patient. You only PROPOSE.
-- Critical alerts come only from the deterministic rule engine. Your cards are severity "caution" (something may be
-  missed or unsafe) or "info" (a useful next question). Never "critical".
-- Every card cites evidence: the utterance ids (u001, u002, ...) whose words support it.
-- Every card cites ONE grounding copied exactly from VALID GROUNDING IDS in the task: an open checklist item id
-  (best for questions and missing workup), an idiom id (when the card is about what an idiom can hide), or a fired
-  rule id. An "observation" may cite an utterance id instead. Never invent ids or write free text there.
-- Do not repeat what is already on screen: FIRED RULES are shown as rule cards (checklist items marked "covered by"
-  are already flagged), OPEN CARDS are visible, DISMISSED cards were rejected by the doctor and must never return.
+Review it like a second clinician along five dimensions:
+1. safety: dangerous causes of this complaint that nobody has ruled out yet (red flags, can't-miss diagnoses).
+2. history: the single most useful next question for this complaint, if a key question is still missing (kind "ask").
+3. plan: does the treatment fit the complaint and the working diagnosis (right problem, right body part, a reason
+   for it)? Is each prescription complete (named drug, strength, dose, route, frequency, duration)? Any
+   contraindication with this patient's allergies, medicines, pregnancy or age (lookup_drug checks the rule engine)?
+4. communication: does the patient understand what to do and why? Confusion or a question left unanswered, no
+   explanation or teach-back, mood or safety cues (hopelessness, low mood, feeling a burden) said in passing and
+   not followed up.
+5. consistency: claims not backed by any finding (a value or result stated but never measured or reported in this
+   visit), contradictions between what the doctor says and what the patient said, a diagnosis the history argues
+   against, a symptom the patient raised (especially more than once) that the doctor has not responded to.
 
-Card kinds and what makes a good one:
-- "ask": the single most useful next question, aimed at red flags the conversation has not covered yet (radiation of
-  pain, exertional pattern, sweating or breathlessness, black stools, pregnancy, fluid intake in the heat).
-  ask_text is ONE short, plain-English question a patient with little schooling understands; Bayan translates and
-  speaks it only after the doctor taps "Ask". No medical jargon, no two-part essays.
-- "missed": workup or history that may be missing and that NO fired rule already covers (e.g. no blood pressure
-  recorded for chest pain). Name the gap and why in one sentence.
-- "observation": a pattern no rule covers, e.g. a dose stated twice with different numbers, the patient saying
-  something that contradicts the recorded state, or social risk ("I have no one here").
-Prefer the open checklist and the idiom's red-flag questions. Two strong cards beat three weak ones. If nothing new is
-worth the doctor's attention, post nothing: an empty list is a good answer.
+Patient turns show the words AS SAID ("said (ne): ...") and Bayan's live English rendering ("EN rendering: ...").
+Judge the ORIGINAL meaning. If the rendering softens, drops or changes something clinically important (a mood or
+safety cue, a symptom, a "no" that became "yes"), that is itself a card: an "observation" (communication) saying
+what the patient actually said, quoting the original words, so the doctor can ask again.
 
-Examples (shape only; use the real ids from the task):
-{"kind": "ask", "title": "Ask about radiation", "body": "Chest burning described as 'gyastrik' can mask cardiac pain; radiation not asked yet.", "evidence": ["u002"], "grounding": "ask_pain_radiation", "ask_text": "Does the burning spread to your arm, jaw or back?", "severity": "info"}
-{"kind": "ask", "title": "Ask about exertion", "body": "Burning worse with work suggests an exertional pattern.", "evidence": ["u002"], "grounding": "ask_exertional_pattern", "ask_text": "Does it get worse with activity and ease with rest?", "severity": "info"}
-{"kind": "missed", "title": "No blood pressure recorded", "body": "Chest pain reported (u002) and no BP in the state.", "evidence": ["u002"], "grounding": "bp", "severity": "caution"}
+Each review, check ALL five dimensions against the whole conversation so far, then report what matters most:
+- Compare EVERY clinical claim the doctor makes (a finding, a vital sign, a test result, "normal", "fine", "you
+  have X") with what was actually measured or reported in this visit (RECORDED FACTS, CASE SUMMARY, transcript).
+  A claim with nothing behind it is a consistency concern, whatever the claim is about.
+- Evaluate each distinct problem separately: a plan that does not fit, an incomplete prescription and a patient
+  who misunderstood are separate concerns when the evidence differs; propose the most important first.
+- Something that does not make sense or could harm (plan, consistency, communication) outranks a routine history
+  question. A doctor stating a finding (temperature, blood pressure, a test result) that RECORDED FACTS and the
+  transcript do not show was measured is a consistency problem. A plan that treats another body part or another
+  problem than the complaint is a plan problem.
+- Feelings said in passing ("no mood", "no point living", "tension", "my heart feels heavy") are clinically
+  important cues even in a visit about something else: words about the heart, chest or head are often idioms for
+  emotions, so weigh the emotional meaning (and ask about it) before a cardiac or neurological one when the rest
+  of the sentence is about mood.
+- Complete means the patient could take it correctly and safely: a medicine with no name, no dose or no frequency is
+  incomplete; do not demand details a clinician would not normally say (the strength of a standard product). A
+  standard as-needed instruction ("two puffs when needed", "one tablet up to three times a day if needed") is
+  complete.
+- Propose an "ask" only when its answer would change management or safety now (a red flag, a contraindication, a
+  diagnosis that hinges on it). Routine completeness questions a competent doctor will ask anyway are not worth a
+  card; in a routine follow-up or refill, the usual right answer is no question at all.
+Raise a card only if a careful senior colleague would lean over and say it now. A routine, coherent visit deserves
+no card: an empty list is the most common correct answer. Never nitpick wording, style or generic advice, and do
+not ask about things the transcript already answers. A missing routine history question is "info" with modest
+confidence (0.5-0.7), not "caution".
+
+Authority rules (enforced in code; breaking them gets the card rejected):
+- You never diagnose, prescribe, change a dose, reassure, or speak to the patient. You only PROPOSE to the doctor.
+- Critical alerts come only from the deterministic rule engine. Your severity is "caution" (could harm the patient,
+  or clearly does not make sense) or "info" (useful, not urgent). Never "critical".
+- Every card quotes the transcript: evidence = [{"utt": "u007", "quote": "<a few words copied verbatim from that
+  utterance>"}] (from its EN rendering or the words as said). Invented or paraphrased quotes are rejected.
+- Do not repeat what is on screen (RULE ALERTS, YOUR CARDS ON SCREEN, ASK NEXT); never raise a DISMISSED theme again.
+
+Card fields:
+- kind: "ask" (a question for the patient; ask_text = ONE short plain-English question a patient with little
+  schooling understands: no jargon, not two questions in one), "missed" (something not done or not asked that
+  matters now), "observation" (something that does not add up, or a cue to notice).
+- dimension: safety | history | plan | communication | consistency.
+- title: plain words, at most 8. body: one sentence, why it matters here.
+- confidence: 0-1, how sure you are a senior clinician would want this raised now (0.9 clear problem or danger,
+  0.6 useful, below 0.4 do not post it). Calibrate: most questions are 0.5-0.7; reserve 0.8+ for questions whose
+  answer could change what happens to the patient today. Questions ("ask") are suggestions: severity "info".
+- ref (optional): a fired rule id, idiom id or checklist id from CONTEXT when the card is about it.
+Also return addressed: the ids of YOUR CARDS ON SCREEN that the conversation has dealt with since (the doctor asked
+it, explained it, measured it, or changed the plan).
 
 Edge cases:
-- A companion (family member, co-worker, supervisor) may answer for the patient: treat it as the patient's history,
-  but if the companion answers sensitive questions (suicidal thoughts, pregnancy, abuse, money), an "observation"
-  suggesting the doctor asks the patient directly can be useful.
-- Code-switching is normal (Nepali or Hindi with English words such as "gastric", "pressure", "tablet"). Read the
-  EN rendering, but an English loanword like "gyastrik" or "pressure" can be an idiom: check IDIOM HITS.
-- A patient who only says "yes"/"no" may not have understood a long or double question. Prefer one short question per
-  card; if a key answer was a bare "yes" to a two-part question, an "ask" that separates the parts helps.
-- Doctor turns ending in "?" mean the topic is being covered: do not propose the same question again.
-- After discharge or a prescription, cards should be about safety-netting gaps or unresolved red flags, not
-  history-taking that no longer changes the plan.
+- A companion may answer for the patient: that is history; on sensitive topics (self-harm, pregnancy, abuse, money)
+  suggest asking the patient directly.
+- Code-switching and idioms are normal ("gyastrik", "pressure", "tension"): read the EN rendering and IDIOM HITS;
+  an idiom can hide a red flag.
+- A bare "yes" to a long two-part question may not mean yes to both parts.
+- Doctor turns ending in "?" mean that topic is being covered: do not propose the same question.
+- Once the plan is given, history that no longer changes anything is noise; plan fit, understanding and
+  safety-netting matter.
 
-The task already contains the state, fired rules, idiom hits and checklist, so you rarely need a lookup tool.
-Answer with ONE call: final_answer(cards=[...]) holding 0-2 cards. If it returns an error, fix only those cards and
-call final_answer once more."""
+Examples (shape only; use the real ids and words of the transcript):
+{"kind": "ask", "dimension": "safety", "title": "Ask about weakness or speech change", "body": "A sudden severe headache needs a bleed or stroke excluded; no neurological question yet.", "severity": "info", "confidence": 0.8, "evidence": [{"utt": "u002", "quote": "worst headache of my life"}], "ask_text": "Is one arm or leg weak, or is your speech different?"}
+{"kind": "observation", "dimension": "consistency", "title": "Onset differs from the patient's account", "body": "The patient said the cough began two weeks ago; the doctor's summary says since yesterday.", "severity": "caution", "confidence": 0.7, "evidence": [{"utt": "u002", "quote": "for two weeks"}, {"utt": "u006", "quote": "since yesterday"}]}
+{"kind": "missed", "dimension": "communication", "title": "No advice on when to come back", "body": "Sent home with breathlessness and no return advice if it worsens.", "severity": "info", "confidence": 0.6, "evidence": [{"utt": "u008", "quote": "you can go home"}]}
+
+Answer with ONE call: final_answer(cards=[...], addressed=[...]) with 0-2 cards, most important first. Use a
+lookup tool before it only when you really need it. If final_answer returns an error, fix only those cards and call
+it once more."""
 
 
 def _task_prompt(consult, new_turns: list, fired: list[dict], checklist_items: list[dict]) -> str:
-    from .extract import _compact_state
+    from .extract import _compact_state, case_text, said_line
     new_ids = {t.id for t in new_turns}
     with consult.lock:
         state_txt = _compact_state(consult.state)
+        case_txt = case_text(consult.state)
         hits = list(consult.state.get("idiom_hits") or [])
         turns = [t for t in consult.turns if t.kind != "system"]
     recent = turns[-max(TASK_TURNS, len(new_turns)):]
-    lines = ["TRANSCRIPT (* = new):"] + [("* " if t.id in new_ids else "  ") + t.line() for t in recent]
-    lines += ["", "STATE:", state_txt, "", "FIRED RULES (already on screen):"]
-    lines += [f"{f.get('rule_id')}: {(f.get('message') or '')[:140]}" for f in fired] or ["none"]
-    lines += ["", "IDIOM HITS:"]
+    lines = ["CASE SUMMARY:", case_txt, "", "RECORDED FACTS (structured; vitals and results only if stated):",
+             state_txt, "",
+             f"TRANSCRIPT ({'last ' + str(len(recent)) + ' of ' + str(len(turns)) if len(recent) < len(turns) else 'all'}"
+             " turns; * = new since your last review):"]
+    lines += [("* " if t.id in new_ids else "  ") + said_line(t) for t in recent]
+    cards = consult.cards.all_cards()
+    lines += ["", "ON SCREEN NOW", "RULE ALERTS: " + ("; ".join(
+        f"{c['title'].split(' · ')[0]} ({', '.join(c.get('rule_ids') or [])})" for c in cards
+        if c["source"] == "rules" and c["status"] == "open") or "none")]
+    mine = [c for c in cards if c["source"] in ("agent", "fallback") and c["status"] == "open"]
+    lines.append("YOUR CARDS ON SCREEN: " + ("; ".join(
+        f"{c['id']} [{c.get('dimension') or c['kind']}] {c['title']}" for c in mine if c["kind"] != "ask") or "none"))
+    ask = next((c for c in mine if c["kind"] == "ask"), None)
+    lines.append("ASK NEXT: " + (f"{ask['id']} \"{ask.get('ask_text')}\"" if ask else "none"))
+    lines.append("DISMISSED BY THE DOCTOR (never again): " + ("; ".join(
+        c["title"] for c in cards if c["status"] == "dismissed") or "none"))
+    lines += ["", "CONTEXT (optional references; not a list of what to look for)", "FIRED RULES: " + (", ".join(
+        f.get("rule_id") for f in fired) or "none")]
+    idi = []
     for h in hits:
         e = _idiom_entry(h) or {}
-        qs = " | ".join((e.get("clarifying_questions_en") or [])[:3])
-        lines.append(f"{h.get('id')} '{e.get('romanized') or h.get('matched')}' ({h.get('utt')}): can mask "
-                     f"{'; '.join(m.split(':')[0] for m in e.get('masks_red_flags') or []) or '-'}"
-                     + (f"; ask: {qs}" if qs else ""))
-    if not hits:
-        lines.append("none")
+        qs = " | ".join((e.get("clarifying_questions_en") or [])[:2])
+        means = "; ".join(f"{i.get('meaning')} ({i.get('likelihood')})" for i in e.get("clinical_interpretations")
+                          or [] if isinstance(i, dict) and i.get("meaning"))[:220]
+        idi.append(f"{h.get('id')} '{e.get('romanized') or h.get('matched')}' ({h.get('utt')})"
+                   + (f" literally '{e.get('literal_en')}'" if e.get("literal_en") else "")
+                   + (f": usually means {means}" if means else "")
+                   + f"; can mask {'; '.join(m.split(':')[0] for m in e.get('masks_red_flags') or []) or '-'}"
+                   + (f"; ask: {qs}" if qs else ""))
+    lines.append("IDIOM HITS: " + ("; ".join(idi) or "none"))
     covered = _covered_by_fired(consult)
-    open_items = [c for c in checklist_items if c.get("status") != "done"]
-    lines += ["", "OPEN CHECKLIST:"] + ([f"{c.get('id')}: {c.get('label')}"
-                                        + (f" (covered by {covered[c.get('id')]})" if c.get("id") in covered else "")
-                                        for c in open_items] or ["none"])
-    cards = consult.cards.all_cards()
-    lines += ["", "OPEN CARDS: " + ("; ".join(c["title"] for c in cards if c["status"] == "open") or "none")]
-    lines += ["DISMISSED (never repeat): " + ("; ".join(c["title"] for c in cards if c["status"] == "dismissed")
-                                             or "none")]
-    ids = [t.id for t in turns]
-    lines += ["", "VALID GROUNDING IDS: " + (", ".join(
-        [c.get("id") for c in open_items if c.get("id") not in covered] + [h.get("id") for h in hits]
-        + [f.get("rule_id") for f in fired]) or "none")
-        + (f"; observations may also cite {ids[0]}..{ids[-1]}" if ids else "")]
+    open_items = [c for c in checklist_items if c.get("status") != "done" and c.get("id") not in covered]
+    lines.append("OPEN CHECKLIST: " + (", ".join(f"{c.get('id')} ({c.get('label')})" for c in open_items[:10])
+                                       or "none"))
     return "\n".join(lines)
 
 
@@ -815,7 +1006,8 @@ def _question_for(item: dict) -> str | None:
 
 
 def fallback_cards(consult, reason: str) -> list[str]:
-    """<=2 "ask" cards from the idioms' clarifying questions and the open checklist (no LLM)."""
+    """At most one "ask" card from the idioms' clarifying questions and the open checklist (no LLM), only when no
+    "Ask next" question is open."""
     posted: list[str] = []
     try:
         open_items = [c for c in _checklist(consult) if c.get("status") != "done"]
@@ -841,6 +1033,8 @@ def fallback_cards(consult, reason: str) -> list[str]:
             if q:
                 cands.append((1.5, q, c.get("id"), f"Checklist: {c.get('label')} is still open.", sym_ev))
         cands.sort(key=lambda x: -x[0])
+        if any(c["kind"] == "ask" for c in consult.cards.open_cards()):
+            cands = []                           # one "Ask next" at a time: the open one stays
         seen: list[str] = []
         for _score, q, grounding, why, ev in cands:
             if len(posted) >= FALLBACK_MAX:
@@ -848,9 +1042,10 @@ def fallback_cards(consult, reason: str) -> list[str]:
             if not ev or any(norm_text(q) == s for s in seen):
                 continue
             seen.append(norm_text(q))
-            res = consult.cards.post("ask", q, why, ev, grounding, severity="info", ask_text=q, source="fallback",
-                                     t_min=consult.now_min())
-            if not res.startswith(("rejected", "duplicate")):
+            res = curator.offer(consult, [{"kind": "ask", "dimension": "safety", "title": q, "body": why,
+                                           "evidence": ev, "grounding": grounding, "ask_text": q, "severity": "info",
+                                           "confidence": curator.FALLBACK_CONFIDENCE}], source="fallback")[0]
+            if res.startswith("c"):
                 posted.append(res)
         consult.log("agent", f"fallback ({reason}): {len(posted)} ask card(s)" + (f" {', '.join(posted)}" if posted else ""))
     except Exception as e:  # noqa: BLE001
@@ -908,6 +1103,8 @@ def _record_metrics(consult, summary: dict) -> None:
          "latency_s": round(summary["latency_s"], 2), "extract_s": round(summary.get("extract_s", 0.0), 2),
          "agent_s": round(agent.get("latency_s", 0.0), 2), "agent_steps": agent.get("steps", 0),
          "agent_ran": bool(agent), "agent_skipped": summary.get("agent_skipped"),
+         "agent_cards": sum(1 for r in summary.get("curation") or [] if re.match(r"c\d+$", r)),
+         "held_back": sum(1 for r in summary.get("curation") or [] if r.startswith("held back")),
          "fallback": len(summary.get("fallback") or []),
          "input_tokens": ein + ain, "output_tokens": eout + aout,
          "extract_tokens": [ein, eout], "agent_tokens": [ain, aout],
@@ -1017,23 +1214,25 @@ def think_now(consult, flush: bool = False) -> dict:
             fired = _evaluate(consult, now)
             ids = [f.get("rule_id") for f in fired]
             summary["fired"] = ids
-            prev_fired = set(rt.last_fired)
             consult.log("tool", "check_safety_rules → " + (", ".join(ids) if ids else "none"))
             consult.cards.sync_rules(fired, now)
             rt.last_fired = set(ids)
 
             # 4. agent/fallback ask and missed cards whose checklist item is now done resolve themselves
-            #    (e.g. "Troponin not ordered" once the doctor orders it); rule cards resolve via sync_rules
+            #    (e.g. "Troponin not ordered" once the doctor orders it); rule cards resolve via sync_rules; the
+            #    open "Ask next" resolves when the doctor asks the same thing in their own words
             done = {c.get("id") for c in _checklist(consult) if c.get("status") == "done"}
             for c in consult.cards.open_cards():
                 if c["kind"] in ("ask", "missed") and c["source"] != "rules" and c["grounding"] in done:
                     consult.cards.resolve(c["id"], "checklist item done", now)
+            curator.resolve_asked(consult, speech)
 
-            # 5. agent / 6. fallback, only when the deterministic steps found something new
-            material = [d for d in news_diff if not d.startswith("asked:")]
-            news = bool(material or idiom_delta or set(ids) != prev_fired
-                        or any(t.role == "patient" and not is_trivial(t, consult) for t in speech))
-            if speech and not news:
+            # 5. clinical review (agent) + curation / 6. fallback, on every substantive turn: not courtesy turns,
+            #    not a doctor question still waiting for its answer (reviewed together with the answer)
+            waiting = {t.id for t in rt.deferred}
+            substantive = [t for t in speech if t.id not in waiting and not is_trivial(t, consult)]
+            summary["news"] = [d for d in news_diff if not d.startswith("asked:")][:12]
+            if speech and not substantive:
                 summary["agent_skipped"] = "nothing new"
                 consult.log("agent", "copilot skipped: nothing new in " + ", ".join(t.id for t in speech))
             elif speech:
@@ -1047,21 +1246,19 @@ def think_now(consult, flush: bool = False) -> dict:
                 if reason is None:
                     cancel = threading.Event()
                     task = _task_prompt(consult, speech, fired, _checklist(consult))
-                    rejected_before = sum(1 for a in consult.audit if a.get("action") == "rejected"
-                                          and a.get("source") == "agent")
-                    n_before = len([c for c in consult.cards.all_cards() if c["source"] == "agent"])
-                    res = agentkit.run_agent(build_tools(consult, cancel), task, consult,
+                    outcome: dict = {}
+                    res = agentkit.run_agent(build_tools(consult, cancel, outcome), task, consult,
                                              max_steps=AGENT_MAX_STEPS, timeout_s=AGENT_TIMEOUT_S,
                                              instructions=INSTRUCTIONS, cancel=cancel, label="copilot")
                     summary["agent"] = res
                     summary["agent_tokens"] = [res.get("input_tokens", 0), res.get("output_tokens", 0)]
+                    summary["curation"] = list(outcome.get("results") or [])
                     rt.agent_tokens += res.get("input_tokens", 0) + res.get("output_tokens", 0)
-                    n_after = len([c for c in consult.cards.all_cards() if c["source"] == "agent"])
-                    rejected = sum(1 for a in consult.audit if a.get("action") == "rejected"
-                                   and a.get("source") == "agent") - rejected_before
+                    results = summary["curation"]
                     if not res.get("ok"):
                         reason = "agent timed out" if res.get("timed_out") else "agent failed"
-                    elif n_after == n_before and (res.get("step_errors") or rejected):
+                    elif results and all(r.startswith(("rejected", "cancelled")) for r in results) \
+                            and not any("dismissed" in r for r in results):
                         reason = "agent made no valid card"
                 if reason is not None:
                     summary["fallback"] = fallback_cards(consult, reason)

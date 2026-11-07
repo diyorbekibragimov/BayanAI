@@ -125,17 +125,18 @@ def _task_text(messages) -> str:
 
 
 def _golden_step(messages):
-    """Fake gpt-oss: one final_answer call. Proposes the radiation/sweating question once the gyastrik idiom and the
-    chest-pain checklist are in the task, unless such a card is already open."""
+    """Fake gpt-oss: one final_answer call. Proposes the radiation/sweating question (quoting the patient) once the
+    gyastrik chest burning is in the transcript, unless such a question is already the open "Ask next"."""
     task = _task_text(messages)
-    utt = next((ln.split()[1] for ln in task.splitlines() if ln.startswith("* ") and "PATIENT" in ln), None)
-    grounding_line = next((ln for ln in task.splitlines() if ln.startswith("VALID GROUNDING IDS:")), "")
-    open_line = next((ln for ln in task.splitlines() if ln.startswith("OPEN CARDS:")), "")
-    if utt and "ask_pain_radiation" in grounding_line and "spread" not in open_line.lower():
+    new_patient = next((ln for ln in task.splitlines() if ln.startswith("* ") and "PATIENT" in ln
+                        and "chest is burning" in ln.lower()), None)
+    ask_line = next((ln for ln in task.splitlines() if ln.startswith("ASK NEXT:")), "")
+    if new_patient and "spread" not in ask_line.lower():
         return [("final_answer", {"cards": [{
-            "kind": "ask", "title": "Ask about radiation and sweating",
+            "kind": "ask", "dimension": "safety", "title": "Ask about radiation and sweating",
             "body": "'gyastrik' chest burning can mask cardiac pain; radiation and sweating not asked yet.",
-            "evidence": [utt], "grounding": "ask_pain_radiation",
+            "evidence": [{"utt": new_patient.split()[1], "quote": "My chest is burning, like gyastrik"}],
+            "ref": "ask_pain_radiation", "confidence": 0.9,
             "ask_text": "Does the burning spread to your arm, jaw or back, and do you sweat with it?",
             "severity": "caution"}]})]
     return [("final_answer", {"cards": []})]
@@ -251,8 +252,8 @@ def test_doctor_dismissed_card_does_not_return():
     c.cards.act(ask["id"], "dismiss", user="doctor")
     # the agent proposes the very same card again on the next clinical turn -> rejected, never reopened
     agentkit.set_model_factory(lambda: agentkit.scripted_model([[("final_answer", {"cards": [{
-        "kind": "ask", "title": ask["title"], "body": "again", "evidence": ["u002"], "grounding": ask["grounding"],
-        "ask_text": ask["ask_text"]}]})]]))
+        "kind": "ask", "dimension": "safety", "title": ask["title"], "body": "again", "confidence": 0.9,
+        "evidence": [{"utt": "u002", "quote": "My chest is burning"}], "ask_text": ask["ask_text"]}]})]]))
     c.set_scenario_time(1.5)
     c.add_turn("patient", "ne", "दुख्छ", english="It hurts a lot when I carry bricks.")
     copilot.think_now(c)
@@ -480,38 +481,48 @@ def _run_agent_with(c, script):
     return copilot.think_now(c)
 
 
-def test_reference_card_set_and_rule_coverage():
-    """The card set measured live on Cerebras (gpt-oss-120b, medium): two asks + "ECG not performed"."""
+def test_one_new_card_per_turn_and_rule_coverage():
+    """Two good questions and a "missed ECG" the rule card already shows: the ECG card is a duplicate of the rule
+    card, and only ONE question reaches the screen this turn (the more recent, so more valuable, one)."""
     c = _chest_consult()
     s = _run_agent_with(c, [[("final_answer", {"cards": [
-        {"kind": "ask", "title": "Ask about radiation", "body": "b", "evidence": ["u002"],
-         "grounding": "ask_pain_radiation", "ask_text": "Does the burning spread to your arm, jaw or back?"},
-        {"kind": "ask", "title": "Ask about exertion", "body": "b", "evidence": ["u003"],
-         "grounding": "ask_exertional_pattern", "ask_text": "Does it get worse with activity and ease with rest?"},
-        {"kind": "missed", "title": "ECG not performed", "body": "b", "evidence": ["u002"],
-         "grounding": "ecg_12lead", "severity": "caution"}]})]])
+        {"kind": "ask", "dimension": "safety", "title": "Ask about radiation", "body": "b", "confidence": 0.9,
+         "evidence": [{"utt": "u002", "quote": "My chest is burning"}],
+         "ask_text": "Does the burning spread to your arm, jaw or back?"},
+        {"kind": "ask", "dimension": "history", "title": "Ask about exertion", "body": "b", "confidence": 0.8,
+         "evidence": [{"utt": "u003", "quote": "worse when I carry things"}],
+         "ask_text": "Does it ease when you rest?"},
+        {"kind": "missed", "dimension": "safety", "title": "ECG not performed", "body": "b", "confidence": 0.9,
+         "evidence": [{"utt": "u002", "quote": "My chest is burning"}], "ref": "ecg_12lead",
+         "severity": "caution"}]})]])
     agent_cards = [x for x in c.cards.all_cards() if x["source"] == "agent"]
-    assert sorted(x["grounding"] for x in agent_cards) == ["ask_exertional_pattern", "ask_pain_radiation"]
-    assert all(x["severity"] == "info" for x in agent_cards)          # ask default severity
+    assert [x["ask_text"] for x in agent_cards] == ["Does it ease when you rest?"]
+    assert agent_cards[0]["severity"] == "info" and agent_cards[0]["dimension"] == "history"
     assert s["agent"]["steps"] == 1 and s["agent"]["ok"]
-    line = [t["text"] for t in c.trace if t["text"].startswith("final_answer(")][-1]
-    assert "covered" in line or "duplicate" in line                   # ECG card deduped against WORK-CHEST-04
+    assert any(r.startswith("held back: one new card per turn") for r in s["curation"])
+    assert any(r.startswith("duplicate (already on screen as rule WORK-CHEST") for r in s["curation"])
 
 
 def test_final_answer_fixable_error_gets_one_retry():
     c = _chest_consult()
     s = _run_agent_with(c, [
         [("final_answer", {"cards": [
-            {"title": "Ask about sweating", "evidence": ["u002"], "grounding": "ask_sweating_breathlessness",
-             "ask_text": "Do you sweat or feel short of breath when it comes?"},          # kind missing: inferred
-            {"kind": "missed", "title": "BP not recorded", "evidence": ["u002"], "grounding": "BP check"}]})],
+            {"kind": "missed", "dimension": "safety", "title": "BP not recorded", "evidence": ["u002"],
+             "confidence": 0.8},                                                       # no quote
+            {"title": "Ask about sweating", "dimension": "history", "confidence": 0.8,
+             "evidence": [{"utt": "u002", "quote": "I sweat a lot at night"}],          # invented quote
+             "ask_text": "Do you sweat or feel short of breath when it comes?"}]})],
         [("final_answer", {"cards": [
-            {"kind": "missed", "title": "BP not recorded", "evidence": ["u002"], "grounding": "bp"}]})],
+            {"kind": "missed", "dimension": "safety", "title": "BP not recorded", "confidence": 0.8,
+             "evidence": [{"utt": "u002", "quote": "chest is burning"}], "severity": "caution"}]})],
     ])
-    groundings = sorted(x["grounding"] for x in c.cards.all_cards() if x["source"] == "agent")
-    assert groundings == ["ask_sweating_breathlessness", "bp"]
+    shown = [x for x in c.cards.all_cards() if x["source"] == "agent"]
+    assert [x["title"] for x in shown] == ["BP not recorded"]
+    assert shown[0]["evidence"][0] == {"utt": "u002", "t_min": 1.2, "quote": "chest is burning"}
     assert s["agent"]["steps"] == 2 and s["agent"]["ok"] and not s["fallback"]
-    assert any("Fix and call final_answer again" in t["text"] for t in c.trace if t["kind"] == "agent")
+    assert any("Fix and call final_answer again" in t["text"] for t in c.trace)
+    reasons = [a["reason"] for a in c.audit if a["action"] == "rejected"]
+    assert any("has no quote" in r for r in reasons) and any("not found in the transcript" in r for r in reasons)
 
 
 def test_final_answer_tolerates_stringified_and_missing_cards():
@@ -519,11 +530,15 @@ def test_final_answer_tolerates_stringified_and_missing_cards():
     s = _run_agent_with(c, [[("final_answer", {})]])
     assert s["agent"]["ok"] and s["agent"]["steps"] == 1
     res = copilot.post_cards(c, json.dumps([{"kind": "observation", "title": "Dose stated twice", "body": "500 vs 50",
-                                             "evidence": "u002", "grounding": "u002"}]))
+                                             "evidence": "u002: chest is burning", "dimension": "consistency"}]))
     assert res[0].startswith("c")
+    # a quote in another utterance than the one cited is real: re-pointed, not rejected
+    res = copilot.post_cards(c, [{"kind": "observation", "title": "Worse with work", "dimension": "safety",
+                                  "confidence": 0.9, "evidence": [{"utt": "u002", "quote": "when I carry things"}]}])
+    assert res[0].startswith("c") and c.cards.get(res[0])["evidence"][0]["utt"] == "u003"
 
 
-def test_agent_prompt_is_compact_and_lists_valid_ids():
+def test_agent_prompt_is_a_case_review_not_a_list_of_ids():
     seen = []
 
     def factory():
@@ -538,12 +553,16 @@ def test_agent_prompt_is_compact_and_lists_valid_ids():
     system = _task_text(msgs[:1])
     assert "Here are a few examples using notional tools" not in system
     assert "Critical alerts come only from the deterministic rule engine" in system
+    for dim in ("safety:", "history:", "plan:", "communication:", "consistency:"):
+        assert dim in system
     assert 300 < len(system.split()) < 1500
     task = _task_text(msgs[1:])
-    vline = next(ln for ln in task.splitlines() if ln.startswith("VALID GROUNDING IDS:"))
-    assert "ask_pain_radiation" in vline and "npi-005" in vline and "WORK-CHEST-04" in vline
-    assert "ecg_12lead" not in vline                      # covered by WORK-CHEST-04
-    assert "(covered by WORK-CHEST-04)" in task
+    assert "VALID GROUNDING IDS" not in task                       # no cage: ids are optional context
+    assert task.index("CASE SUMMARY:") < task.index("TRANSCRIPT") < task.index("ON SCREEN NOW")
+    line = next(ln for ln in task.splitlines() if ln.startswith("OPEN CHECKLIST:"))
+    assert "ask_pain_radiation" in line and "ecg_12lead" not in line   # ECG is covered by WORK-CHEST-04
+    assert "npi-005" in next(ln for ln in task.splitlines() if ln.startswith("IDIOM HITS:"))
+    assert "WORK-CHEST-04" in next(ln for ln in task.splitlines() if ln.startswith("FIRED RULES:"))
 
 
 def test_yes_answer_to_a_question_is_not_trivial():

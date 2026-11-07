@@ -3,6 +3,9 @@
 One gpt-oss-120b call per think run: the last ~8 transcript turns as context, the NEW turns to extract from,
 and a compact summary of the current state. Output is a *delta* in the shape of `empty_state()` (lists of new
 items, each with evidence utterance ids and quotes) plus an optional {"remove": {"prescribed_meds": [...]}}.
+The same call also maintains the running CASE SUMMARY (`state["case"]`: chief complaint, key history, the
+doctor's working diagnosis / differential, the whole plan including unnamed medicines, findings the doctor states,
+the patient's understanding and affect), which the copilot reviews like a second clinician.
 `bayan.brain.merge.merge_delta` normalises and merges it. Unknown stays unknown: nulls are dropped here.
 """
 
@@ -13,6 +16,7 @@ import os
 import re
 
 from . import llm
+from .state import fmt_t
 
 try:   # enums shared with the validator (merge.py) so the extractor and the care plan agree
     from .merge import MED_DETAIL_FIELDS, MED_FOOD, MED_FORMS, MED_TIMES, MED_UNITS
@@ -27,7 +31,7 @@ except Exception:  # noqa: BLE001
 
 CONTEXT_TURNS = 6      # total transcript window (new turns + earlier context)
 EXTRACT_REASONING = os.environ.get("BAYAN_EXTRACT_REASONING", "medium")   # never "high"
-EXTRACT_MAX_TOKENS = int(os.environ.get("BAYAN_EXTRACT_MAX_TOKENS", "3000"))   # reasoning counts against it
+EXTRACT_MAX_TOKENS = int(os.environ.get("BAYAN_EXTRACT_MAX_TOKENS", "4000"))   # reasoning + the case summary count against it
 # Same model (gpt-oss-120b), cheaper host: Groq input is $0.15/1M vs Cerebras $0.35 (output equal), JSON-schema mode
 # verified live; it runs in the background, so Groq's lower throughput (~1.3 s vs ~0.9 s) never touches the talk loop.
 EXTRACT_PROVIDER = os.environ.get("BAYAN_EXTRACT_PROVIDER", "groq")   # BAYAN_BRAIN_LLM/_PROVIDER override (llm.brain_route)
@@ -80,6 +84,33 @@ _NUM = {"type": "number"}
 _STR = {"type": "string"}
 
 
+CASE_LISTS = ("history", "working_diagnosis", "differential", "plan", "exam_claims", "patient_understanding",
+              "patient_affect")
+PLAN_TYPES = ["medicine", "test", "advice", "disposition", "referral", "follow_up", "procedure"]
+
+
+NONE_OBSERVED = "none observed"
+
+
+def case_schema() -> dict:
+    item = {"type": "object", "properties": {"text": _STR, "evidence": _EV}, "required": ["text", "evidence"]}
+    return {"type": "object", "required": ["patient_affect", "patient_understanding", "exam_claims"], "properties": {
+        # first and required ("none observed" when there is nothing): providers that ignore `required` still tend
+        # to fill the fields they write first
+        "patient_affect": {"type": "array", "items": item},
+        "patient_understanding": {"type": "array", "items": item},
+        "exam_claims": {"type": "array", "items": item},
+        "chief_complaint": item,
+        "history": {"type": "array", "items": {"type": "object", "properties": {
+            "text": _STR, "present": {"type": "boolean"}, "evidence": _EV}, "required": ["text", "evidence"]}},
+        "working_diagnosis": {"type": "array", "items": item},
+        "differential": {"type": "array", "items": item},
+        "plan": {"type": "array", "items": {"type": "object", "properties": {
+            "type": {"type": "string", "enum": PLAN_TYPES}, "text": _STR, "evidence": _EV},
+            "required": ["type", "text", "evidence"]}},
+    }}
+
+
 def build_schema() -> dict:
     v = _vocab()
     med_props = {"drug": {"type": "string"}, "dose_mg": _NUM, "dose_raw": _STR, "frequency_per_day": _NUM,
@@ -96,6 +127,7 @@ def build_schema() -> dict:
     return {
         "type": "object",
         "properties": {
+            "case": case_schema(),          # first and required: written before the facts, so it is not skipped
             "allergies": {"type": "array", "items": {"type": "object", "properties": {
                 "substance": {"type": "string"}, "reaction": _STR,
                 "severity": {"type": "string", "enum": SEVERITY_VALUES},
@@ -130,6 +162,7 @@ def build_schema() -> dict:
             "questions_asked": {"type": "array", "items": {"type": "object", "properties": {
                 "topic": _code(_question_topics()), "evidence": _EV}, "required": ["topic"]}},
         },
+        "required": ["case"],
     }
 
 
@@ -180,7 +213,35 @@ questions_asked: topics the DOCTOR (or BAYAN for the doctor) asked in the NEW tu
 Edge cases: a bare "yes" answers the previous question - record what it affirms (Doctor: "Does it spread to your
 arm?" Patient: "Yes" -> symptom jaw_arm_pain, evidence both turns); a bare "no" records nothing. A companion speaking
 for the patient counts as the patient's report. Code-switching is normal: use the EN rendering when present; keep
-drug names exactly as said. BAYAN turns are questions the doctor approved."""
+drug names exactly as said. BAYAN turns are questions the doctor approved.
+
+case = the running CASE SUMMARY a senior clinician would keep, in short plain English (each text <= 15 words),
+only what the NEW turns add or change (the CURRENT CASE is already recorded; do not repeat it). Not limited to the
+codes above: record whatever the conversation is about. Fill it for EVERY new turn that says anything clinical, even
+when the same thing is also a fact above: a prescription is BOTH prescribed_meds AND case.plan, a mood complaint is
+BOTH a symptom AND case.patient_affect, the doctor naming the problem is case.working_diagnosis.
+- chief_complaint: the patient's main problem as they put it ("pain in the buttocks"); only if new or changed.
+- history: key positives (present true) and negatives the patient denies (present false), incl. context and
+  triggers ("sat on cold tiles before it started", "no fever").
+- working_diagnosis: what the DOCTOR says or clearly implies the problem is ("problem is in the nose", "common
+  cold"); differential: other possibilities the doctor names.
+- plan: every part of the doctor's plan, type medicine / test / advice / disposition / referral / follow_up /
+  procedure. Medicines even when unnamed ("nasal spray every day after lunch and dinner for three weeks"): say
+  what was said about name, strength, dose, route, frequency, duration, and nothing that was not said.
+- exam_claims (ALWAYS give it; [{"text": "none observed"}] when none): findings, vital signs or results the DOCTOR
+  states as fact ("says the patient has a very high temperature", "says blood pressure is fine"), whether or not
+  anything was measured.
+- patient_understanding (ALWAYS give it; [{"text": "none observed"}] when none): the patient's questions, confusion
+  or misunderstanding of what to do, or a clear teach-back.
+- patient_affect (ALWAYS give it; [{"text": "none observed"}] when none): mood, distress, hopelessness, fear,
+  shame, or safety cues, even said in passing or as an idiom.
+Judge the patient's ORIGINAL words ("said (xx): ..."), not only the EN rendering: a live rendering can soften or
+lose meaning; describe what the patient actually said. Two examples of the reasoning (not words to look for):
+  said (es): "Sí, entonces me pongo las gotas en la boca, ¿verdad?" after ear drops were prescribed -> the patient
+  thinks ear drops go in the mouth: patient_understanding "thinks the ear drops are taken by mouth".
+  said (hi): "काम तो चल रहा है, पर अब किसी चीज़ में मन नहीं लगता" (EN rendering: "work is fine, I'm just not
+  interested") -> patient_affect "loss of interest in everything (anhedonia)".
+Each item has evidence [{"utt", "quote"}] like the facts above."""
 
 
 def _compact_state(state: dict) -> str:
@@ -219,18 +280,60 @@ def _compact_state(state: dict) -> str:
     return "\n".join(parts) or "(empty)"
 
 
+_CASE_LABELS = (("history", "History"), ("working_diagnosis", "Working diagnosis (doctor)"),
+                ("differential", "Differential (doctor)"), ("plan", "Plan"),
+                ("exam_claims", "Findings the doctor states"), ("patient_understanding", "Patient understanding"),
+                ("patient_affect", "Patient affect / mood"))
+
+
+def _ev_ids(item: dict) -> str:
+    ids = list(dict.fromkeys(str(e.get("utt")) for e in item.get("evidence") or [] if isinstance(e, dict)
+                             and e.get("utt")))
+    return f" ({', '.join(ids[:3])})" if ids else ""
+
+
+def case_text(state: dict, max_items: int = 6) -> str:
+    """The running case summary as compact lines (the extractor's CURRENT CASE and the copilot's CASE SUMMARY)."""
+    case = state.get("case") or {}
+    lines = []
+    cc = case.get("chief_complaint") or {}
+    if cc.get("text"):
+        lines.append(f"Chief complaint: {cc['text']}{_ev_ids(cc)}")
+    for key, label in _CASE_LABELS:
+        items = [x for x in case.get(key) or [] if isinstance(x, dict) and x.get("text")][-max_items:]
+        if not items:
+            continue
+        def fmt(x):
+            sign = "" if key != "history" or x.get("present") is None else ("+ " if x.get("present") else "- ")
+            kind = f"{x['type']}: " if key == "plan" and x.get("type") else ""
+            return f"{sign}{kind}{x['text']}{_ev_ids(x)}"
+        lines.append(f"{label}: " + "; ".join(fmt(x) for x in items))
+    return "\n".join(lines) or "(empty)"
+
+
+def said_line(t) -> str:
+    """One transcript line for the brain prompts: the words AS SAID (the original language) and, when different, the
+    live English rendering, labelled so the model judges the original meaning, not only the rendering."""
+    en = t.english if t.english and t.english.strip() != (t.text or "").strip() else ""
+    if not en:
+        return t.line()
+    return (f"{t.id} [{fmt_t(t.t_min)}] {t.role.upper()} said ({t.lang}): {t.text} | EN rendering: {en}")
+
+
 def build_prompt(consult, new_turns: list) -> str:
     new_ids = {t.id for t in new_turns}
     with consult.lock:
         turns = [t for t in consult.turns if t.kind != "system"]
         state_txt = _compact_state(consult.state)
+        case_txt = case_text(consult.state)
     first_new = next((i for i, t in enumerate(turns) if t.id in new_ids), len(turns))
     n_ctx = max(0, CONTEXT_TURNS - len(new_turns))
     context = turns[max(0, first_new - n_ctx):first_new] if n_ctx else []
     topics = ", ".join(_question_topics())
-    ctx = "\n".join(t.line() for t in context) or "(none)"
-    new = "\n".join(t.line() for t in new_turns)
+    ctx = "\n".join(said_line(t) for t in context) or "(none)"
+    new = "\n".join(said_line(t) for t in new_turns)
     return (f"CURRENT STATE (already recorded; do not repeat unless it changed):\n{state_txt}\n\n"
+            f"CURRENT CASE (already recorded):\n{case_txt}\n\n"
             f"EARLIER TURNS (context only):\n{ctx}\n\nNEW TURNS (extract from these):\n{new}\n\n"
             f"question topics: {topics}\nReturn the JSON delta.")
 
@@ -420,6 +523,10 @@ def clean_delta(raw: dict, consult, new_turns: list) -> dict:
         if pat:
             delta["patient"] = pat
 
+    case = clean_case(raw.get("case"), ev)
+    if case:
+        delta["case"] = case
+
     topics = []
     for q in raw.get("questions_asked") or []:
         t = q.get("topic") if isinstance(q, dict) else q
@@ -428,6 +535,46 @@ def clean_delta(raw: dict, consult, new_turns: list) -> dict:
     if topics:
         delta["questions_asked"] = list(dict.fromkeys(topics))
     return delta
+
+
+_CASE_ROLE = {"chief_complaint": "patient", "history": "patient", "patient_understanding": "patient",
+              "patient_affect": "patient", "working_diagnosis": "doctor", "differential": "doctor", "plan": "doctor",
+              "exam_claims": "doctor"}
+
+
+def _case_text(x) -> str:
+    return " ".join(str(x or "").split())[:200]
+
+
+def clean_case(raw, ev: "_Ev") -> dict:
+    """The model's case delta -> {"chief_complaint": {...}, "<list>": [...]} with evidence on real turns."""
+    if not isinstance(raw, dict):
+        return {}
+    out: dict = {}
+    cc = raw.get("chief_complaint")
+    if isinstance(cc, str):
+        cc = {"text": cc}
+    if isinstance(cc, dict) and _case_text(cc.get("text")):
+        out["chief_complaint"] = {"text": _case_text(cc["text"]), "evidence": ev.fix(cc.get("evidence"), "patient")}
+    for key in CASE_LISTS:
+        items = []
+        for x in raw.get(key) or []:
+            if isinstance(x, str):
+                x = {"text": x}
+            if not isinstance(x, dict) or not _case_text(x.get("text")):
+                continue
+            if _case_text(x["text"]).lower().strip(" .") in (NONE_OBSERVED, "none", "n/a", "not observed"):
+                continue
+            item = {"text": _case_text(x["text"]), "evidence": ev.fix(x.get("evidence"), _CASE_ROLE[key])}
+            if key == "history" and isinstance(x.get("present"), bool):
+                item["present"] = x["present"]
+            if key == "plan":
+                t = str(x.get("type") or "").strip().lower()
+                item["type"] = t if t in PLAN_TYPES else "advice"
+            items.append(item)
+        if items:
+            out[key] = items
+    return out
 
 
 _CHEST_KEYWORDS = [

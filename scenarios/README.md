@@ -11,7 +11,11 @@ python scripts/simulate.py                          # everything, 4 consultation
 python scripts/simulate.py --only alg-01,chest-0    # id prefixes
 python scripts/simulate.py --lang ur --category allergy
 python scripts/simulate.py --rescore reports/sim/<run-id>   # re-score after editing expectations (no LLM calls)
+python scripts/simulate.py --category coherence,quiet --no-wrapup all --budget 0.15   # copilot only, capped spend
 ```
+
+`--no-wrapup <categories|all>` stops after the last turn (no end_visit / PDFs; the wrap-up and PDF checks are
+skipped). `--budget <$>` stops starting new scenarios once that much has been spent.
 
 Other models: set the app's own env vars (`BAYAN_LLM`, `BAYAN_LLM_PROVIDER`, `BAYAN_LLM_FALLBACK`,
 `BAYAN_AGENT_LLM`, `BAYAN_AGENT_PROVIDER`, `BAYAN_EXTRACT_PROVIDER`, `BAYAN_EXTRACT_FALLBACK`). Providers the
@@ -21,7 +25,7 @@ OpenAI-compatible endpoint (`model:provider`) by a shim inside the runner; app c
 ## File format
 
 One YAML list per category file (`allergy`, `dose`, `interactions`, `pregnancy`, `heat`, `chest`, `redflags`,
-`quiet`, `messy`). Each scenario:
+`quiet`, `messy`, `coherence`). Each scenario:
 
 | key | meaning |
 |---|---|
@@ -63,6 +67,11 @@ expect:
   state:          {prescribed_has: [...], prescribed_not: [...], allergy_has: [...], patient: {weight_kg: 16},
                    symptoms_has: [...], investigations_has: [ecg_12lead]}
   care_plan:      {meds_has: [...], meds_not: [...], avoid_has: [penicillin]}
+  themes:         # general clinical review (coherence.yaml): caught if ANY card shown in the visit matches
+    - {name: treatment does not fit the complaint, dimension: plan,
+       all: [[nasal, nose, spray], [buttock, complaint, fit, unrelated]]}   # every group matches the same card
+    - {name: low mood not followed up, dimension: communication, any: [mood, depress, " sad"]}  # " x" = word start
+  max_agent_cards: 1    # attention budget: agent cards shown during the whole visit
   pdf:            {patient_meds_not: [...], patient_meds_has: [...], patient_contains: [...],
                    patient_not_contains: [...], doctor_contains: [...], doctor_not_contains: [...]}
 ```

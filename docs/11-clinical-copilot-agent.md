@@ -45,7 +45,7 @@ The task prompt already contains the recent transcript (new turns marked), the c
 
 | Tool | Returns | Grounded in |
 |---|---|---|
-| `lookup_idiom(phrase, lang="")` | Literal meaning, likely meanings, red flags it can mask, clarifying questions, tags | `data/idiom_lexicon.json` (59 entries) |
+| `lookup_idiom(phrase, lang="")` | Literal meaning, likely meanings, red flags it can mask, clarifying questions, tags | `data/idiom_lexicon.json` (98 entries) |
 | `lookup_drug(name)` | Generic name, classes, the curated rules that mention it | `data/safety_rules.json` meta + rules |
 | `check_safety_rules()` | Rules firing on the current state (read-only) | Rule engine |
 | `final_answer(cards)` | Posts 0–2 cards through the card store and **ends the run** | Replaces smolagents' default `final_answer` |

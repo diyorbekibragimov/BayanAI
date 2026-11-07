@@ -9,6 +9,7 @@ null/"unknown". It returns the events the change implies so the caller knows whi
 from __future__ import annotations
 
 import contextlib
+import difflib
 import re
 from typing import Any, Iterable
 
@@ -954,6 +955,9 @@ def merge_delta(consult: Any, delta: dict) -> set[str]:
                 state["questions_asked"].append(q)
                 changed = True
 
+        if delta.get("case"):
+            changed = merge_case(state, delta["case"], consult, now) or changed
+
         changed = _derive_heat(state) or changed
 
         if changed:
@@ -964,6 +968,76 @@ def merge_delta(consult: Any, delta: dict) -> set[str]:
             events.discard(ON_PRESCRIBE)
             events.discard(ON_DISPOSITION)
         return events
+
+
+# ----------------------------------------------------------------------------- running case summary
+CASE_LISTS = ("history", "working_diagnosis", "differential", "plan", "exam_claims", "patient_understanding",
+              "patient_affect")
+CASE_MAX_ITEMS = 12          # per list: the oldest items drop off a very long visit
+
+
+def _case_key(text: Any) -> str:
+    return " ".join(re.findall(r"\w+", str(text or "").lower()))
+
+
+def _case_same(a: str, b: str) -> bool:
+    if not a or not b:
+        return False
+    if a == b or (len(a) > 12 and (a in b or b in a)):
+        return True
+    return difflib.SequenceMatcher(None, a, b).ratio() >= 0.85
+
+
+def merge_case(state: dict, case: dict, consult: Any = None, now: float | None = None) -> bool:
+    """Merge a case delta into state["case"]. Free-text items dedupe on normalised text (near-identical wording
+    merges its evidence); a history item whose present/absent flips is updated; a new chief complaint replaces the
+    old one (the old one stays in history). Never raises on odd shapes. Returns True if anything changed."""
+    from .state import empty_case
+    cur = state.setdefault("case", empty_case())
+    for k, v in empty_case().items():
+        cur.setdefault(k, v)
+    changed = False
+    cc = case.get("chief_complaint") if isinstance(case, dict) else None
+    if isinstance(cc, dict) and str(cc.get("text") or "").strip():
+        ev = normalise_evidence(cc.get("evidence"), consult)
+        old = cur.get("chief_complaint")
+        if old and _case_same(_case_key(old.get("text")), _case_key(cc["text"])):
+            changed = _merge_ev(old.setdefault("evidence", []), ev) or changed
+        else:
+            if old and old.get("text"):
+                cur["history"].append({"text": f"earlier complaint: {old['text']}", "present": True,
+                                       "evidence": list(old.get("evidence") or []), "t_min": old.get("t_min")})
+            cur["chief_complaint"] = {"text": str(cc["text"]).strip(), "evidence": ev,
+                                      "t_min": _earliest(ev) if _earliest(ev) is not None else now}
+            changed = True
+    for key in CASE_LISTS:
+        for raw in (case.get(key) or []) if isinstance(case, dict) else []:
+            if isinstance(raw, str):
+                raw = {"text": raw}
+            if not isinstance(raw, dict) or not str(raw.get("text") or "").strip():
+                continue
+            text = " ".join(str(raw["text"]).split())
+            ev = normalise_evidence(raw.get("evidence"), consult)
+            k = _case_key(text)
+            old = next((x for x in cur[key] if _case_same(_case_key(x.get("text")), k)
+                        and (key != "plan" or x.get("type") == raw.get("type"))), None)
+            if old is not None:
+                c = _merge_ev(old.setdefault("evidence", []), ev)
+                if key == "history" and isinstance(raw.get("present"), bool) and old.get("present") != raw["present"]:
+                    old["present"] = raw["present"]
+                    c = True
+                changed = changed or c
+                continue
+            item = {"text": text, "evidence": ev, "t_min": _earliest(ev) if _earliest(ev) is not None else now}
+            if key == "history" and isinstance(raw.get("present"), bool):
+                item["present"] = raw["present"]
+            if key == "plan":
+                item["type"] = str(raw.get("type") or "advice")
+            cur[key].append(item)
+            changed = True
+        if len(cur[key]) > CASE_MAX_ITEMS:
+            cur[key] = cur[key][-CASE_MAX_ITEMS:]
+    return changed
 
 
 # Symptoms that mean something more in a heat-exposed patient (the codes WORK-HEAT-01 tests for).

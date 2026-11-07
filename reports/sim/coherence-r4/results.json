@@ -1,0 +1,1785 @@
+{
+ "meta": {
+  "run_id": "coherence-r4",
+  "models": {
+   "llm": "openai/gpt-oss-120b",
+   "llm_provider": "cerebras",
+   "agent": "openai/gpt-oss-120b",
+   "agent_provider": "cerebras",
+   "brain": "openai/gpt-oss-120b",
+   "brain_provider": "default",
+   "extract_provider": "groq"
+  },
+  "wall_s": 70.10796689987183,
+  "n": 2,
+  "git": "085796e",
+  "dirty_app_files": 13,
+  "created": "2026-11-07T09:26:27"
+ },
+ "results": [
+  {
+   "id": "coh-01-nasal-spray-butt",
+   "title": "The user's live test: buttock pain after cold tiles and low mood; doctor prescribes nasal spray, patient asks if it goes in the butt, doctor claims a high temperature never measured",
+   "category": "coherence",
+   "patient_lang": "ru",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "patient",
+     "action": null,
+     "process_s": 3.18,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 3.18
+     },
+     "utt": "u003",
+     "english": "Hello, doctor. My bottom hurts.",
+     "translation": "",
+     "wait_s": 7.73,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.85,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.85
+     },
+     "utt": "u004",
+     "english": "I sat on a cold tile and probably chilled my butt.",
+     "translation": "",
+     "wait_s": 4.46,
+     "open_cards": [
+      "c001"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.89,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.89
+     },
+     "utt": "u005",
+     "english": "And also my heart feels somehow cold, I think I have no mood at all.",
+     "translation": "",
+     "wait_s": 4.75,
+     "open_cards": [
+      "c002"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.82,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.82
+     },
+     "utt": "u006",
+     "english": "I think it should be your nose. I'm gonna give you nasal sprays every day for the next three weeks after lunch and after dinner.",
+     "translation": "Я думаю, это должно быть ваш нос. Я буду давать вам назальные спреи каждый день в течение следующих трёх недель после обеда и после ужина.",
+     "wait_s": 5.82,
+     "open_cards": [
+      "c003",
+      "c002"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.87,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.87
+     },
+     "utt": "u007",
+     "english": "And why do I need this? Do I have to spray it into my butt?",
+     "translation": "",
+     "wait_s": 5.96,
+     "open_cards": [
+      "c004",
+      "c003",
+      "c002"
+     ]
+    },
+    {
+     "i": 5,
+     "t_min": 4.25,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.9,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.9
+     },
+     "utt": "u008",
+     "english": "You are not cold, you are very hot and have a really high temperature.",
+     "translation": "Вы не замёрзли, у вас очень высокая температура.",
+     "wait_s": 5.12,
+     "open_cards": [
+      "c004",
+      "c003",
+      "c002"
+     ]
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T09:25:17",
+   "wrapup": false,
+   "cards_live": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about red flag symptoms",
+     "body": "Bottom pain can be caused by serious conditions; need to rule out fever, urinary or bowel problems.",
+     "ask_text": "Do you have any fever, chills, or trouble passing urine or stool?",
+     "dimension": "safety",
+     "score": 0.48
+    },
+    {
+     "id": "c002",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about self-harm",
+     "body": "Patient reports having no mood at all, which may indicate depression; need to screen for suicidal thoughts now.",
+     "ask_text": "In the past few weeks, have you had thoughts of hurting yourself or that life is not worth living?",
+     "dimension": "safety",
+     "score": 0.51
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Nose diagnosis mismatch",
+     "body": "Doctor attributes the problem to the nose despite the patient only describing butt pain and low mood, with no nasal symptoms recorded.",
+     "ask_text": null,
+     "dimension": "consistency",
+     "score": 0.8
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Nasal spray mismatch",
+     "body": "The prescribed nasal spray for the nose does not address the patient's butt pain, so the treatment is inappropriate.",
+     "ask_text": null,
+     "dimension": "plan",
+     "score": 0.72
+    }
+   ],
+   "screen": "live",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {},
+   "agentic": null,
+   "care_plan": {
+    "lang": null,
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {}
+   },
+   "note_md": "",
+   "pdf": {
+    "patient": {
+     "path": null,
+     "exists": false
+    },
+    "doctor": {
+     "path": null,
+     "exists": false
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [],
+    "stopped_meds": [],
+    "symptoms": [
+     "back_pain",
+     "low_mood"
+    ],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [],
+    "questions_asked": []
+   },
+   "case": {
+    "chief_complaint": {
+     "text": "bottom pain",
+     "evidence": [
+      {
+       "utt": "u003",
+       "t_min": 0.5,
+       "quote": "My bottom hurts"
+      }
+     ],
+     "t_min": 0.5
+    },
+    "history": [],
+    "working_diagnosis": [
+     {
+      "text": "problem is in the nose",
+      "evidence": [
+       {
+        "utt": "u006",
+        "t_min": 2.75,
+        "quote": "I think it should be your nose"
+       }
+      ],
+      "t_min": 2.75
+     }
+    ],
+    "differential": [],
+    "plan": [],
+    "exam_claims": [],
+    "patient_understanding": [],
+    "patient_affect": []
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about red flag symptoms",
+     "body": "Bottom pain can be caused by serious conditions; need to rule out fever, urinary or bowel problems.",
+     "ask_text": "Do you have any fever, chills, or trouble passing urine or stool?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 0.5,
+     "dimension": "safety",
+     "confidence": 0.8,
+     "score": 0.48
+    },
+    {
+     "id": "c002",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about self-harm",
+     "body": "Patient reports having no mood at all, which may indicate depression; need to screen for suicidal thoughts now.",
+     "ask_text": "In the past few weeks, have you had thoughts of hurting yourself or that life is not worth living?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 2.0,
+     "dimension": "safety",
+     "confidence": 0.9,
+     "score": 0.51
+    },
+    {
+     "id": "c003",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Nose diagnosis mismatch",
+     "body": "Doctor attributes the problem to the nose despite the patient only describing butt pain and low mood, with no nasal symptoms recorded.",
+     "ask_text": null,
+     "grounding": "consistency",
+     "rule_ids": [],
+     "t_min": 2.75,
+     "dimension": "consistency",
+     "confidence": 0.8,
+     "score": 0.8
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "observation",
+     "severity": "caution",
+     "status": "open",
+     "title": "Nasal spray mismatch",
+     "body": "The prescribed nasal spray for the nose does not address the patient's butt pain, so the treatment is inappropriate.",
+     "ask_text": null,
+     "grounding": "plan",
+     "rule_ids": [],
+     "t_min": 3.5,
+     "dimension": "plan",
+     "confidence": 0.9,
+     "score": 0.72
+    }
+   ],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [
+      "c001",
+      "held back: score 0.36 < 0.40 (info x conf 0.6 x novelty 1.0 x recency 1.0)"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [
+      "c002"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [
+      "duplicate (merged into c002)",
+      "c003"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u007"
+     ],
+     "results": [
+      "c004"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u008"
+     ],
+     "results": [
+      "duplicate (merged into c002)"
+     ],
+     "skipped": null
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about red flag symptoms",
+     "reason": null,
+     "t_min": 0.5
+    },
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about red flag symptoms",
+     "reason": "superseded by a more useful next question",
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about self-harm",
+     "reason": null,
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c003",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Nose diagnosis mismatch",
+     "reason": null,
+     "t_min": 2.75
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "observation",
+     "source": "agent",
+     "title": "Nasal spray mismatch",
+     "reason": null,
+     "t_min": 3.5
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state → +back_pain, complaint: bottom pain",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 card: + info ask card c001: Ask about red flag symptoms [safety]",
+    "0.50 card: curate: c001 shown (score 0.48: info x conf 0.8 x novelty 1.0 x recency 1.0)",
+    "0.50 card: curate: 'Onset and character of pain' held back: score 0.36 < 0.40 (info x conf 0.6 x novelty 1.0 x recency 1.0)",
+    "0.50 tool: final_answer([ask 'Ask about red flag symptoms', ask 'Onset and character of pain']) → c001; held back: score 0.36 < 0.40 (info x conf 0.6 x novelty 1.0 x r…",
+    "0.50 agent: copilot: 1 step(s), 1 tool call(s), 2.3s, 2751/764 tok ($0.0015)",
+    "1.25 tool: update_state → no new facts",
+    "1.25 tool: check_safety_rules → none",
+    "1.25 tool: final_answer([]) → no cards",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 1.0s, 2816/353 tok ($0.0013)",
+    "2.00 tool: update_state → +low_mood",
+    "2.00 tool: check_safety_rules → none",
+    "2.00 card: ✓ retired c001: Ask about red flag symptoms (superseded)",
+    "2.00 card: + info ask card c002: Ask about self-harm [safety]",
+    "2.00 card: curate: c002 shown (score 0.51: info x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "2.00 tool: final_answer([ask 'Ask about self-harm']) → c002",
+    "2.00 agent: copilot: 1 step(s), 1 tool call(s), 1.1s, 2873/537 tok ($0.0014)",
+    "2.75 tool: update_state → dx: problem is in the nose",
+    "2.75 tool: check_safety_rules → none",
+    "2.75 card: + caution observation card c003: Nose diagnosis mismatch [consistency]",
+    "2.75 card: curate: c003 shown (score 0.80: caution x conf 0.8 x novelty 1.0 x recency 1.0)",
+    "2.75 tool: final_answer([ask 'Screen for self-harm', observation 'Nose diagnosis mismatch']) → duplicate (merged into c002); c003",
+    "2.75 agent: copilot: 1 step(s), 1 tool call(s), 1.3s, 2933/777 tok ($0.0016)",
+    "3.50 tool: update_state → no new facts",
+    "3.50 tool: check_safety_rules → none",
+    "3.50 card: + caution observation card c004: Nasal spray mismatch [plan]",
+    "3.50 card: curate: c004 shown (score 0.72: caution x conf 0.9 x novelty 1.0 x recency 0.8)",
+    "3.50 tool: final_answer([observation 'Nasal spray mismatch']) → c004",
+    "3.50 agent: copilot: 1 step(s), 1 tool call(s), 1.6s, 2992/1176 tok ($0.0019)",
+    "4.25 tool: update_state → no new facts",
+    "4.25 tool: check_safety_rules → none",
+    "4.25 tool: final_answer([ask 'Ask about self-harm']) → duplicate (merged into c002)",
+    "4.25 agent: copilot: 1 step(s), 1 tool call(s), 1.3s, 3031/876 tok ($0.0017)"
+   ],
+   "stats": {
+    "runs": 6,
+    "latency_s": [
+     6.5,
+     3.24,
+     3.53,
+     4.6,
+     4.74,
+     3.91
+    ],
+    "extract_tokens": [
+     30304,
+     4691
+    ],
+    "agent_tokens": [
+     17396,
+     4483
+    ],
+    "cost_usd": 0.023575500000000003
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 6.5,
+     "extract_s": 4.07,
+     "agent_s": 2.3,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 1,
+     "fallback": 0,
+     "input_tokens": 7672,
+     "output_tokens": 1649,
+     "extract_tokens": [
+      4921,
+      885
+     ],
+     "agent_tokens": [
+      2751,
+      764
+     ],
+     "cost_usd": 0.002938
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 3.24,
+     "extract_s": 2.26,
+     "agent_s": 0.98,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7794,
+     "output_tokens": 966,
+     "extract_tokens": [
+      4978,
+      613
+     ],
+     "agent_tokens": [
+      2816,
+      353
+     ],
+     "cost_usd": 0.002457
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 3.53,
+     "extract_s": 2.38,
+     "agent_s": 1.14,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7903,
+     "output_tokens": 1109,
+     "extract_tokens": [
+      5030,
+      572
+     ],
+     "agent_tokens": [
+      2873,
+      537
+     ],
+     "cost_usd": 0.002592
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 4.6,
+     "extract_s": 3.32,
+     "agent_s": 1.28,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 8006,
+     "output_tokens": 1581,
+     "extract_tokens": [
+      5073,
+      804
+     ],
+     "agent_tokens": [
+      2933,
+      777
+     ],
+     "cost_usd": 0.002973
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 4.74,
+     "extract_s": 3.1,
+     "agent_s": 1.63,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 8129,
+     "output_tokens": 2170,
+     "extract_tokens": [
+      5137,
+      994
+     ],
+     "agent_tokens": [
+      2992,
+      1176
+     ],
+     "cost_usd": 0.003445
+    },
+    {
+     "t_min": 4.25,
+     "kind": "think",
+     "turns": [
+      "u008"
+     ],
+     "latency_s": 3.91,
+     "extract_s": 2.61,
+     "agent_s": 1.29,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 8196,
+     "output_tokens": 1699,
+     "extract_tokens": [
+      5165,
+      823
+     ],
+     "agent_tokens": [
+      3031,
+      876
+     ],
+     "cost_usd": 0.00311
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 0,
+     "wall": 1794032728.727999,
+     "latency_s": 10.9,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about red flag symptoms",
+     "severity": "info"
+    },
+    "c002": {
+     "turn": 2,
+     "wall": 1794032739.687021,
+     "latency_s": 5.64,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about self-harm",
+     "severity": "info"
+    },
+    "c003": {
+     "turn": 3,
+     "wall": 1794032746.32246,
+     "latency_s": 6.64,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Nose diagnosis mismatch",
+     "severity": "caution"
+    },
+    "c004": {
+     "turn": 4,
+     "wall": 1794032753.1721349,
+     "latency_s": 6.84,
+     "source": "agent",
+     "kind": "observation",
+     "title": "Nasal spray mismatch",
+     "severity": "caution"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 0,
+     "latency_s": 10.9,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about red flag symptoms"
+    },
+    {
+     "card": "c001",
+     "turn": 2,
+     "latency_s": 5.64,
+     "status": "resolved",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about red flag symptoms"
+    },
+    {
+     "card": "c002",
+     "turn": 2,
+     "latency_s": 5.64,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about self-harm"
+    },
+    {
+     "card": "c003",
+     "turn": 3,
+     "latency_s": 6.64,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Nose diagnosis mismatch"
+    },
+    {
+     "card": "c004",
+     "turn": 4,
+     "latency_s": 6.84,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Nasal spray mismatch"
+    }
+   ],
+   "rules_seen": {},
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      7010,
+      631,
+      6
+     ],
+     "openai/gpt-oss-120b|groq": [
+      30304,
+      4691,
+      6
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      17396,
+      4483,
+      6,
+      8.635446071624756,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.01099,
+    "cost_agent_usd": 0.00945,
+    "cost_usd": 0.02044,
+    "llm_usage_delta": {
+     "calls": 18,
+     "prompt_tokens": 54710,
+     "completion_tokens": 9805
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 41.4,
+   "checks": [
+    {
+     "type": "no_flag",
+     "desc": "NOT card severity=critical source=agent",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[plan] treatment does not fit the complaint",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/observation[consistency] 'Nose diagnosis mismatch'; agent/observation[plan] 'Nasal spray mismatch'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[plan] prescription incomplete (no drug name, strength or dose)",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/ask[safety] 'Ask about red flag symptoms'; agent/ask[safety] 'Ask about self-harm'; agent/observation[consistency] 'Nose diagnosis mismatch'; agent/observation[plan] 'Nasal spray mismatch'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[communication] patient confused about how / where to use it",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/ask[safety] 'Ask about red flag symptoms'; agent/ask[safety] 'Ask about self-harm'; agent/observation[consistency] 'Nose diagnosis mismatch'; agent/observation[plan] 'Nasal spray mismatch'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[consistency] temperature claim not backed by a measurement / contradicts the patient",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "cards: agent/ask[safety] 'Ask about red flag symptoms'; agent/ask[safety] 'Ask about self-harm'; agent/observation[consistency] 'Nose diagnosis mismatch'; agent/observation[plan] 'Nasal spray mismatch'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "theme",
+     "desc": "[communication] low mood said in passing, not followed up",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "agent/ask[safety] 'Ask about self-harm'; agent/observation[consistency] 'Nose diagnosis mismatch'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  },
+  {
+   "id": "quiet-05-work-tension",
+   "title": "'A bit of tension at work', sleeping less (tension idiom); caution allowed, critical not",
+   "category": "quiet",
+   "patient_lang": "ne",
+   "doctor_lang": "en",
+   "turns": [
+    {
+     "i": 0,
+     "t_min": 0.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.8,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.79
+     },
+     "utt": "u003",
+     "english": "How can I help?",
+     "translation": "म कसरी मद्दत गर्न सक्छु?",
+     "wait_s": 1.23,
+     "open_cards": []
+    },
+    {
+     "i": 1,
+     "t_min": 1.25,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.9,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.89
+     },
+     "utt": "u004",
+     "english": "I have a little tension at work, doctor, and I’m sleeping a bit less. Otherwise everything is fine.",
+     "translation": "",
+     "wait_s": 9.57,
+     "open_cards": [
+      "c001",
+      "c003",
+      "c004"
+     ]
+    },
+    {
+     "i": 2,
+     "t_min": 2.0,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.94,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.94
+     },
+     "utt": "u005",
+     "english": "Any thoughts of harming yourself?",
+     "translation": "के तपाईंलाई आफैलाई हानी गर्ने विचार आएको छ?",
+     "wait_s": 1.22,
+     "open_cards": [
+      "c001",
+      "c003"
+     ]
+    },
+    {
+     "i": 3,
+     "t_min": 2.75,
+     "role": "patient",
+     "action": null,
+     "process_s": 0.92,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.92
+     },
+     "utt": "u006",
+     "english": "No, no, nothing like that. Family is fine.",
+     "translation": "",
+     "wait_s": 5.19,
+     "open_cards": [
+      "c001",
+      "c003",
+      "c005"
+     ]
+    },
+    {
+     "i": 4,
+     "t_min": 3.5,
+     "role": "doctor",
+     "action": null,
+     "process_s": 0.83,
+     "talk": {
+      "drugs": [],
+      "allergies": [],
+      "tests": [],
+      "s": 0.83
+     },
+     "utt": "u007",
+     "english": "Try to sleep at fixed times and avoid tea after 4 pm. Come back in two weeks if it's not better.",
+     "translation": "निश्चित समयमा सुत्ने प्रयास गर्नुहोस् र साँझ ४ बजेपछि चिया नखानुहोस्। यदि राम्रो नहुनु भएमा दुई हप्तामा फिर्ता आउनुहोस्।",
+     "wait_s": 6.59,
+     "open_cards": [
+      "c001",
+      "c003",
+      "c005"
+     ]
+    }
+   ],
+   "holds": [],
+   "errors": [],
+   "started": "2026-11-07T09:25:59",
+   "wrapup": false,
+   "cards_live": [
+    {
+     "id": "c001",
+     "source": "lexicon",
+     "kind": "idiom",
+     "severity": "caution",
+     "status": "open",
+     "title": "Idiom: tension (टेंशन / ٹینشن / টেনশন)",
+     "body": "Literal: tension. Likely meanings: Everyday stress and worry (high); Depressive or anxiety symptoms (rumination, sleeplessness, irritability) (medium); At the severe end, hopelessness or suicidality (low). Can mask: Suicidal ideation; Hypertension may be confused with 'tension' in some patients' speech; check whether they mean blood pressure.",
+     "ask_text": null,
+     "dimension": null,
+     "score": null
+    },
+    {
+     "id": "c002",
+     "source": "fallback",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "What does tension do to you: sleep, appetite, anger, body pain?",
+     "body": "'tension' can mask: Suicidal ideation; Hypertension may be confused with 'tension' in some patients' speech; check whether they mean blood pressure",
+     "ask_text": "What does tension do to you: sleep, appetite, anger, body pain?",
+     "dimension": "safety",
+     "score": 0.48
+    },
+    {
+     "id": "c003",
+     "source": "rules",
+     "kind": "missed",
+     "severity": "caution",
+     "status": "open",
+     "title": "Possibly missed workup · WORK-SUICIDE-01",
+     "body": "Possible suicidal ideation (“टेन्सन”, 01:15). No risk or psychosocial assessment documented.",
+     "ask_text": null,
+     "dimension": null,
+     "score": null
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about suicidal thoughts",
+     "body": "The patient reports tension and reduced sleep, which can be associated with suicidal ideation; you need to assess safety now.",
+     "ask_text": "Are you having any thoughts of harming yourself or ending your life?",
+     "dimension": "safety",
+     "score": 0.51
+    },
+    {
+     "id": "c005",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about suicide plan",
+     "body": "After ruling out thoughts, you need to assess intent and plan to ensure safety.",
+     "ask_text": "Do you have any plan to hurt yourself?",
+     "dimension": "safety",
+     "score": 0.51
+    }
+   ],
+   "screen": "live",
+   "warnings": [],
+   "review_warnings": [],
+   "wrapup_metrics": {},
+   "agentic": null,
+   "care_plan": {
+    "lang": null,
+    "medicines": [],
+    "avoid": [],
+    "red_flags": [],
+    "advice": [],
+    "follow_up": {}
+   },
+   "note_md": "",
+   "pdf": {
+    "patient": {
+     "path": null,
+     "exists": false
+    },
+    "doctor": {
+     "path": null,
+     "exists": false
+    }
+   },
+   "state": {
+    "allergies": [],
+    "current_meds": [],
+    "prescribed_meds": [],
+    "stopped_meds": [],
+    "symptoms": [],
+    "investigations": [],
+    "assessments": [],
+    "disposition": null,
+    "patient": {},
+    "idiom_hits": [
+     "mul-001"
+    ],
+    "questions_asked": [
+     "suicidal_thoughts"
+    ]
+   },
+   "case": {
+    "chief_complaint": {
+     "text": "tension at work and reduced sleep",
+     "evidence": [
+      {
+       "utt": "u004",
+       "t_min": 1.25,
+       "quote": "I have a little tension at work, doctor, and I’m sleeping a bit less. Otherwise everything is fine."
+      }
+     ],
+     "t_min": 1.25
+    },
+    "history": [
+     {
+      "text": "tension at work",
+      "evidence": [
+       {
+        "utt": "u004",
+        "t_min": 1.25,
+        "quote": "I have a little tension at work"
+       }
+      ],
+      "t_min": 1.25,
+      "present": true
+     },
+     {
+      "text": "reduced sleep",
+      "evidence": [
+       {
+        "utt": "u004",
+        "t_min": 1.25,
+        "quote": "I’m sleeping a bit less"
+       }
+      ],
+      "t_min": 1.25,
+      "present": true
+     },
+     {
+      "text": "no other symptoms",
+      "evidence": [
+       {
+        "utt": "u004",
+        "t_min": 1.25,
+        "quote": "Otherwise everything is fine"
+       }
+      ],
+      "t_min": 1.25,
+      "present": false
+     }
+    ],
+    "working_diagnosis": [],
+    "differential": [],
+    "plan": [],
+    "exam_claims": [],
+    "patient_understanding": [],
+    "patient_affect": [
+     {
+      "text": "feels stressed and has reduced sleep",
+      "evidence": [
+       {
+        "utt": "u004",
+        "t_min": 1.25,
+        "quote": "I have a little tension at work, doctor, and I’m sleeping a bit less."
+       }
+      ],
+      "t_min": 1.25
+     }
+    ]
+   },
+   "cards": [
+    {
+     "id": "c001",
+     "source": "lexicon",
+     "kind": "idiom",
+     "severity": "caution",
+     "status": "open",
+     "title": "Idiom: tension (टेंशन / ٹینشن / টেনশন)",
+     "body": "Literal: tension. Likely meanings: Everyday stress and worry (high); Depressive or anxiety symptoms (rumination, sleeplessness, irritability) (medium); At the severe end, hopelessness or suicidality (low). Can mask: Suicidal ideation; Hypertension may be confused with 'tension' in some patients' speech; check whether they mean blood pressure.",
+     "ask_text": null,
+     "grounding": "mul-001",
+     "rule_ids": [],
+     "t_min": 1.25,
+     "dimension": null,
+     "confidence": null,
+     "score": null
+    },
+    {
+     "id": "c002",
+     "source": "fallback",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "What does tension do to you: sleep, appetite, anger, body pain?",
+     "body": "'tension' can mask: Suicidal ideation; Hypertension may be confused with 'tension' in some patients' speech; check whether they mean blood pressure",
+     "ask_text": "What does tension do to you: sleep, appetite, anger, body pain?",
+     "grounding": "mul-001",
+     "rule_ids": [],
+     "t_min": 1.25,
+     "dimension": "safety",
+     "confidence": 0.8,
+     "score": 0.48
+    },
+    {
+     "id": "c003",
+     "source": "rules",
+     "kind": "missed",
+     "severity": "caution",
+     "status": "open",
+     "title": "Possibly missed workup · WORK-SUICIDE-01",
+     "body": "Possible suicidal ideation (“टेन्सन”, 01:15). No risk or psychosocial assessment documented.",
+     "ask_text": null,
+     "grounding": "WORK-SUICIDE-01",
+     "rule_ids": [
+      "WORK-SUICIDE-01"
+     ],
+     "t_min": 1.25,
+     "dimension": null,
+     "confidence": null,
+     "score": null
+    },
+    {
+     "id": "c004",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "resolved",
+     "title": "Ask about suicidal thoughts",
+     "body": "The patient reports tension and reduced sleep, which can be associated with suicidal ideation; you need to assess safety now.",
+     "ask_text": "Are you having any thoughts of harming yourself or ending your life?",
+     "grounding": "WORK-SUICIDE-01",
+     "rule_ids": [],
+     "t_min": 1.25,
+     "dimension": "safety",
+     "confidence": 0.85,
+     "score": 0.51
+    },
+    {
+     "id": "c005",
+     "source": "agent",
+     "kind": "ask",
+     "severity": "info",
+     "status": "open",
+     "title": "Ask about suicide plan",
+     "body": "After ruling out thoughts, you need to assess intent and plan to ensure safety.",
+     "ask_text": "Do you have any plan to hurt yourself?",
+     "grounding": "safety",
+     "rule_ids": [],
+     "t_min": 2.75,
+     "dimension": "safety",
+     "confidence": 0.85,
+     "score": 0.51
+    }
+   ],
+   "curation": [
+    {
+     "turns": [
+      "u003"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    },
+    {
+     "turns": [
+      "u004"
+     ],
+     "results": [
+      "c004"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u005"
+     ],
+     "results": [],
+     "skipped": "nothing new"
+    },
+    {
+     "turns": [
+      "u006"
+     ],
+     "results": [
+      "c005"
+     ],
+     "skipped": null
+    },
+    {
+     "turns": [
+      "u007"
+     ],
+     "results": [
+      "duplicate (merged into c005)"
+     ],
+     "skipped": null
+    }
+   ],
+   "audit": [
+    {
+     "card_id": "c001",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "caution",
+     "kind": "idiom",
+     "source": "lexicon",
+     "title": "Idiom: tension (टेंशन / ٹینشن / টেনশন)",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "fallback",
+     "title": "What does tension do to you: sleep, appetite, anger, body pain?",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c003",
+     "rule_id": "WORK-SUICIDE-01",
+     "action": "shown",
+     "severity": "caution",
+     "kind": "missed",
+     "source": "rules",
+     "title": "Possibly missed workup · WORK-SUICIDE-01",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c002",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "info",
+     "kind": "ask",
+     "source": "fallback",
+     "title": "What does tension do to you: sleep, appetite, anger, body pain?",
+     "reason": "superseded by a more useful next question",
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about suicidal thoughts",
+     "reason": null,
+     "t_min": 1.25
+    },
+    {
+     "card_id": "c004",
+     "rule_id": null,
+     "action": "resolved",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about suicidal thoughts",
+     "reason": "the doctor asked it (u005)",
+     "t_min": 2.0
+    },
+    {
+     "card_id": "c005",
+     "rule_id": null,
+     "action": "shown",
+     "severity": "info",
+     "kind": "ask",
+     "source": "agent",
+     "title": "Ask about suicide plan",
+     "reason": null,
+     "t_min": 2.75
+    }
+   ],
+   "trace_errors": [],
+   "trace": [
+    "0.50 tool: update_state deferred: u003 (question, batched with the answer)",
+    "0.50 tool: check_safety_rules → none",
+    "0.50 agent: copilot skipped: nothing new in u003",
+    "1.25 tool: lookup_idiom('टेन्सन') → mul-001 (talk loop)",
+    "1.25 card: + caution idiom card c001: Idiom: tension (टेंशन / ٹینشن / টেনশন) [mul-001]",
+    "1.25 card: + info ask card c002: What does tension do to you: sleep, appetite, anger, body pain? [mul-001]",
+    "1.25 card: curate: c002 shown (score 0.48: info x conf 0.8 x novelty 1.0 x recency 1.0)",
+    "1.25 tool: lookup_idiom('टेन्सन') → mul-001",
+    "1.25 tool: update_state → +idiom mul-001, complaint: tension at work and reduced sleep, hx: +tension at work, hx: +reduced sleep, hx: -no other symptoms, affect: feels stressed and has reduced sleep",
+    "1.25 tool: check_safety_rules → WORK-SUICIDE-01",
+    "1.25 card: + caution missed card c003: Possibly missed workup · WORK-SUICIDE-01 [WORK-SUICIDE-01]",
+    "1.25 card: ✓ retired c002: What does tension do to you: sleep, appetite, anger, body pa (superseded)",
+    "1.25 card: + info ask card c004: Ask about suicidal thoughts [WORK-SUICIDE-01]",
+    "1.25 card: curate: c004 shown (score 0.51: info x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "1.25 tool: final_answer([ask 'Ask about suicidal thoughts']) → c004",
+    "1.25 agent: copilot: 1 step(s), 1 tool call(s), 2.5s, 3005/473 tok ($0.0014)",
+    "2.00 tool: update_state deferred: u005 (question, batched with the answer)",
+    "2.00 tool: check_safety_rules → WORK-SUICIDE-01",
+    "2.00 card: ✓ resolved c004: Ask about suicidal thoughts (the doctor asked it (u005))",
+    "2.00 card: ✓ c004 resolved: the doctor asked about it in u005",
+    "2.00 agent: copilot skipped: nothing new in u005",
+    "2.75 tool: update_state → asked:suicidal_thoughts",
+    "2.75 tool: check_safety_rules → WORK-SUICIDE-01",
+    "2.75 card: + info ask card c005: Ask about suicide plan [safety]",
+    "2.75 card: curate: c005 shown (score 0.51: info x conf 0.85 x novelty 1.0 x recency 1.0)",
+    "2.75 tool: final_answer([ask 'Ask about suicide plan']) → c005",
+    "2.75 agent: copilot: 1 step(s), 1 tool call(s), 1.3s, 3039/791 tok ($0.0017)",
+    "3.50 tool: update_state → no new facts",
+    "3.50 tool: check_safety_rules → WORK-SUICIDE-01",
+    "3.50 tool: final_answer([ask 'Ask about suicide plan']) → duplicate (merged into c005)",
+    "3.50 agent: copilot: 1 step(s), 1 tool call(s), 1.1s, 3086/613 tok ($0.0015)"
+   ],
+   "stats": {
+    "runs": 5,
+    "latency_s": [
+     0.0,
+     8.36,
+     0.0,
+     3.99,
+     5.38
+    ],
+    "extract_tokens": [
+     15167,
+     3844
+    ],
+    "agent_tokens": [
+     9130,
+     1877
+    ],
+    "cost_usd": 0.012794699999999999
+   },
+   "think_metrics": [
+    {
+     "t_min": 0.5,
+     "kind": "think",
+     "turns": [
+      "u003"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 1.25,
+     "kind": "think",
+     "turns": [
+      "u004"
+     ],
+     "latency_s": 8.36,
+     "extract_s": 5.83,
+     "agent_s": 2.5,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 7975,
+     "output_tokens": 2598,
+     "extract_tokens": [
+      4970,
+      2125
+     ],
+     "agent_tokens": [
+      3005,
+      473
+     ],
+     "cost_usd": 0.003746
+    },
+    {
+     "t_min": 2.0,
+     "kind": "think",
+     "turns": [
+      "u005"
+     ],
+     "latency_s": 0.0,
+     "extract_s": 0.0,
+     "agent_s": 0.0,
+     "agent_steps": 0,
+     "agent_ran": false,
+     "agent_skipped": "nothing new",
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "extract_tokens": [
+      0,
+      0
+     ],
+     "agent_tokens": [
+      0,
+      0
+     ],
+     "cost_usd": 0.0
+    },
+    {
+     "t_min": 2.75,
+     "kind": "think",
+     "turns": [
+      "u006"
+     ],
+     "latency_s": 3.99,
+     "extract_s": 2.72,
+     "agent_s": 1.26,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 1,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 8116,
+     "output_tokens": 1526,
+     "extract_tokens": [
+      5077,
+      735
+     ],
+     "agent_tokens": [
+      3039,
+      791
+     ],
+     "cost_usd": 0.00297
+    },
+    {
+     "t_min": 3.5,
+     "kind": "think",
+     "turns": [
+      "u007"
+     ],
+     "latency_s": 5.38,
+     "extract_s": 4.26,
+     "agent_s": 1.12,
+     "agent_steps": 1,
+     "agent_ran": true,
+     "agent_skipped": null,
+     "agent_cards": 0,
+     "held_back": 0,
+     "fallback": 0,
+     "input_tokens": 8206,
+     "output_tokens": 1597,
+     "extract_tokens": [
+      5120,
+      984
+     ],
+     "agent_tokens": [
+      3086,
+      613
+     ],
+     "cost_usd": 0.003046
+    }
+   ],
+   "card_first_seen": {
+    "c001": {
+     "turn": 1,
+     "wall": 1794032762.154778,
+     "latency_s": 0.93,
+     "source": "lexicon",
+     "kind": "idiom",
+     "title": "Idiom: tension (टेंशन / ٹینشن / টেনশন)",
+     "severity": "caution"
+    },
+    "c002": {
+     "turn": 1,
+     "wall": 1794032762.154778,
+     "latency_s": 0.93,
+     "source": "fallback",
+     "kind": "ask",
+     "title": "What does tension do to you: sleep, appetite, anger, body pain?",
+     "severity": "info"
+    },
+    "c003": {
+     "turn": 1,
+     "wall": 1794032769.216046,
+     "latency_s": 7.99,
+     "source": "rules",
+     "kind": "missed",
+     "title": "Possibly missed workup · WORK-SUICIDE-01",
+     "severity": "caution"
+    },
+    "c004": {
+     "turn": 1,
+     "wall": 1794032771.69104,
+     "latency_s": 10.47,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about suicidal thoughts",
+     "severity": "info"
+    },
+    "c005": {
+     "turn": 3,
+     "wall": 1794032779.9568782,
+     "latency_s": 6.11,
+     "source": "agent",
+     "kind": "ask",
+     "title": "Ask about suicide plan",
+     "severity": "info"
+    }
+   },
+   "card_events": [
+    {
+     "card": "c001",
+     "turn": 1,
+     "latency_s": 0.93,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [],
+     "title": "Idiom: tension (टेंशन / ٹینشن / টেনশন)"
+    },
+    {
+     "card": "c002",
+     "turn": 1,
+     "latency_s": 0.93,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "What does tension do to you: sleep, appetite, anger, body pain?"
+    },
+    {
+     "card": "c003",
+     "turn": 1,
+     "latency_s": 7.99,
+     "status": "open",
+     "severity": "caution",
+     "rule_ids": [
+      "WORK-SUICIDE-01"
+     ],
+     "title": "Possibly missed workup · WORK-SUICIDE-01"
+    },
+    {
+     "card": "c002",
+     "turn": 1,
+     "latency_s": 10.47,
+     "status": "resolved",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "What does tension do to you: sleep, appetite, anger, body pain?"
+    },
+    {
+     "card": "c004",
+     "turn": 1,
+     "latency_s": 10.47,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about suicidal thoughts"
+    },
+    {
+     "card": "c004",
+     "turn": 2,
+     "latency_s": 2.15,
+     "status": "resolved",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about suicidal thoughts"
+    },
+    {
+     "card": "c005",
+     "turn": 3,
+     "latency_s": 6.11,
+     "status": "open",
+     "severity": "info",
+     "rule_ids": [],
+     "title": "Ask about suicide plan"
+    }
+   ],
+   "rules_seen": {
+    "WORK-SUICIDE-01": {
+     "turn": 1,
+     "latency_s": 7.99,
+     "card": "c003",
+     "severity": "caution",
+     "family": "missing_workup",
+     "message": "Possible suicidal ideation (“टेन्सन”, 01:15). No risk or psychosocial assessment documented."
+    }
+   },
+   "usage": {
+    "chat_by_provider": {
+     "openai/gpt-oss-120b|cerebras": [
+      5832,
+      514,
+      5
+     ],
+     "openai/gpt-oss-120b|groq": [
+      15167,
+      3844,
+      3
+     ]
+    },
+    "agent_by_label": {
+     "copilot": [
+      9130,
+      1877,
+      3,
+      4.878568410873413,
+      0
+     ]
+    },
+    "cost_chat_usd": 0.00758,
+    "cost_agent_usd": 0.0046,
+    "cost_usd": 0.01219,
+    "llm_usage_delta": {
+     "calls": 11,
+     "prompt_tokens": 30129,
+     "completion_tokens": 6235
+    }
+   },
+   "models": {
+    "llm": "openai/gpt-oss-120b",
+    "llm_provider": "cerebras",
+    "agent": "openai/gpt-oss-120b",
+    "agent_provider": "cerebras",
+    "brain": "openai/gpt-oss-120b",
+    "brain_provider": "default",
+    "extract_provider": "groq"
+   },
+   "wall_s": 28.2,
+   "checks": [
+    {
+     "type": "no_hold",
+     "desc": "not held: *",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "flag",
+     "desc": "idiom grounding=mul-001",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "lexicon/idiom/caution 'Idiom: tension (टेंशन / ٹینشن / টেনশন)'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "no_flag",
+     "desc": "NOT card severity=critical",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "budget",
+     "desc": "at most 1 agent card(s) shown",
+     "status": "FAIL",
+     "ok": false,
+     "evidence": "ask/info 'Ask about suicidal thoughts'; ask/info 'Ask about suicide plan'",
+     "gap": false,
+     "note": "",
+     "auto": false
+    },
+    {
+     "type": "run",
+     "desc": "no talk-loop / translation errors",
+     "status": "PASS",
+     "ok": true,
+     "evidence": "",
+     "gap": false,
+     "note": "",
+     "auto": true
+    }
+   ],
+   "unexpected_critical": []
+  }
+ ]
+}
