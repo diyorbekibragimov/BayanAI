@@ -9,3 +9,7 @@ reports/sim/*/png/
 reports/sim/*/out/
 reports/sim/*/raw.jsonl
 *.swp
+
+# Mixkit raw audio: licence forbids redistributing the files on their own (see docs/pitch/assets/audio/CREDITS.md)
+docs/pitch/assets/audio/*.mp3
+docs/pitch/assets/audio/sfx/
