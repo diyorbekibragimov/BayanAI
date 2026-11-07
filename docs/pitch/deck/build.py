@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import csv
 import html
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -492,7 +494,9 @@ def slides() -> list[str]:
     <div><p class="k">Flags</p><p class="d">Allergies, doses, interactions, missed workup, plans that don’t fit the complaint, patient confusion, mood cues.</p></div>
     <div><p class="k">Suggests</p><p class="d">One next question at a time, asked in the patient’s language with one tap.</p></div>
   </div>
-  {foot(3, "bayan/ui.py (37 languages); reasoning design: case summary, clinical review agent, attention filter.")}
+  <div class="shot s1"><img src="../assets/screens/01-start-en.png" alt="Start screen: choose the patient's language, Nepali selected"></div>
+  <div class="shot s2"><img src="../assets/screens/05-live-doctor-caption.png" alt="The doctor's question shown to the patient in Nepali, English beneath"></div>
+  {foot(3, "bayan/ui.py (37 languages); reasoning design: case summary, clinical review agent, attention filter. Screens: 01-start-en, 05-live-doctor-caption.")}
 </section>''')
 
     # 4 Demo
@@ -658,13 +662,20 @@ def slides() -> list[str]:
   {foot(13, "Limits we state up front: machine translation is not certified interpreting; Bayan covers the visits that today get a roommate or no one, not consent or bad news. Rules and idioms are cited but not yet clinician-reviewed; accuracy varies by language.")}
 </section>''')
     # Team
-    people = [("DI", "Diyorbek Ibragimov"), ("SL", "Sangyoon Lim"), ("MA", "Mohammed Al-Kuwari"), ("GC", "George Chkhaidze")]
+    people = [("DI", "Diyorbek Ibragimov", "diyorbek.jpg"), ("SL", "Sangyoon Lim", "sangyoon.jpg"),
+              ("MA", "Mohammed Al-Kuwari", "mohammed.jpg"), ("GC", "George Chkhaidze", "george.jpg")]
+
+    def avatar(i, n, photo):
+        if photo and (HERE.parent / "assets" / "team" / photo).exists():  # initials until the photo is added
+            return f'<img class="photo av" src="../assets/team/{photo}" alt="Photo of {n}">'
+        return f'<span class="pearl av"><b>{i}</b></span>'
+
     S.append(f'''
 <section class="slide s-team" data-title="Team">
   {brand()}
   <h2>Team</h2>
   <p class="lede">Team QH-129</p>
-  <div class="people">{"".join(f'<figure><span class="pearl av"><b>{i}</b></span><figcaption>{n}</figcaption></figure>' for i, n in people)}</div>
+  <div class="people">{"".join(f'<figure>{avatar(i, n, ph)}<figcaption>{n}</figcaption></figure>' for i, n, ph in people)}</div>
   {foot(0)}
 </section>''')
 
@@ -762,6 +773,14 @@ h2{position:absolute;left:128px;top:168px;width:1500px;font-size:68px;line-heigh
 /* 3 what bayan does */
 .s-does .lede{position:absolute;left:128px;top:262px;font-size:32px;color:var(--muted)}
 .four{position:absolute;left:128px;top:400px;width:1664px;display:grid;grid-template-columns:repeat(4,380px);column-gap:48px}
+.s-does .four{top:370px}
+/* screenshot strips: frame 808x320; each image scaled and offset so the useful band of the 1920x1080 screen fills it */
+.s-does .shot{position:absolute;top:695px;width:808px;height:320px;overflow:hidden;border-radius:16px;border:1px solid var(--rule);background:var(--bg);
+  box-shadow:0 30px 60px -40px rgba(23,52,48,.35)}
+.s-does .shot.s1{left:128px}.s-does .shot.s2{left:984px}
+.s-does .shot img{position:absolute;height:auto}
+.s-does .s1 img{width:835px;left:6px;top:-62px}
+.s-does .s2 img{width:930px;left:-61px;top:-178px}
 .four>div{border-top:1px solid var(--rule);padding-top:30px}
 .four .k{font-size:44px;font-weight:600;letter-spacing:-.01em}
 .four .d{margin-top:18px;font-size:28px;line-height:1.42;color:var(--muted)}
@@ -797,9 +816,9 @@ body.still .screen .poster{display:block}
 
 /* 5 held */
 .bleed{position:absolute;inset:0;width:1920px;height:1080px}
-.pausewrap{position:absolute;left:128px;top:330px;width:1120px;height:464px;overflow:hidden;border-radius:16px;background:var(--bg);border:1px solid var(--rule);box-sizing:content-box}
+.pausewrap{position:absolute;left:128px;top:330px;width:1120px;height:540px;overflow:hidden;border-radius:16px;background:var(--bg);border:1px solid var(--rule);box-sizing:content-box}
 .pausewrap img{display:block;width:1120px;height:auto}
-.heldcap{position:absolute;left:1316px;top:330px;width:476px;height:464px;display:flex;align-items:center;margin:0;font-size:30px;line-height:1.5;color:var(--ink)}
+.heldcap{position:absolute;left:1316px;top:330px;width:476px;height:540px;display:flex;align-items:center;margin:0;font-size:30px;line-height:1.5;color:var(--ink)}
 
 /* 6 outputs */
 .outs{position:absolute;left:128px;top:300px;display:flex;align-items:flex-start;gap:58px}
@@ -876,6 +895,8 @@ table.cmp{position:absolute;left:128px;top:330px;width:1664px;border-collapse:co
 .people figure{margin:0;display:flex;flex-direction:column;align-items:center}
 .pearl.av{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;
   box-shadow:0 40px 70px -40px rgba(31,111,178,.40),0 20px 40px -30px rgba(14,138,111,.35),inset 0 10px 24px rgba(255,255,255,.95)}
+.photo.av{width:220px;height:220px;border-radius:50%;object-fit:cover;object-position:50% 30%;display:block;
+  box-shadow:0 0 0 6px #fff,0 0 0 7px var(--rule),0 40px 70px -40px rgba(31,111,178,.40),0 20px 40px -30px rgba(14,138,111,.35)}
 .pearl.av b{font-size:64px;font-weight:600;color:var(--ink);letter-spacing:.01em}
 .people figcaption{margin-top:36px;font-size:32px;font-weight:600;text-align:center}
 
@@ -985,13 +1006,28 @@ def export() -> None:
                 await pg.evaluate(f"go({k})")
                 await pg.wait_for_timeout(250)
                 await pg.screenshot(path=str(prev / f"slide-{k + 1:02d}.png"))
+            # The PDF is one 2x raster per slide. A vector PDF from Chromium keeps blurred box-shadows, masks and
+            # blend modes that macOS Preview / Quick Look / PDFKit draw as solid coloured boxes (the pearl, cards,
+            # photos). Flattening makes every viewer show exactly what Chromium shows; text is not selectable.
+            hi = await b.new_page(viewport={"width": 1920, "height": 1080}, device_scale_factor=2)
+            await hi.goto(url + "?still#1")
+            await hi.evaluate("document.fonts.ready")
+            await hi.wait_for_load_state("networkidle")
+            tmp = Path(tempfile.mkdtemp(prefix="bayan-pdf-"))
+            for k in range(n):
+                await hi.evaluate(f"go({k})")
+                await hi.wait_for_timeout(250)
+                await hi.screenshot(path=str(tmp / f"{k + 1:02d}.jpg"), type="jpeg", quality=92)
+            pages = "".join(f'<img src="{k + 1:02d}.jpg">' for k in range(n))
+            (tmp / "pages.html").write_text(
+                "<!doctype html><style>@page{size:1920px 1080px;margin:0}html,body{margin:0}"
+                "img{display:block;width:1920px;height:1080px;break-after:page}</style>" + pages, encoding="utf-8")
             pdf = await b.new_page()
-            await pdf.goto(url + "?still")
-            await pdf.evaluate("document.fonts.ready")
+            await pdf.goto((tmp / "pages.html").as_uri())
             await pdf.wait_for_load_state("networkidle")
-            await pdf.emulate_media(media="print")
             await pdf.pdf(path=str(HERE.parent / "Bayan-pitch.pdf"), width="1920px", height="1080px",
                           print_background=True, margin={"top": "0", "right": "0", "bottom": "0", "left": "0"})
+            shutil.rmtree(tmp, ignore_errors=True)
             await b.close()
         print(f"wrote {n} previews to {prev} and {HERE.parent / 'Bayan-pitch.pdf'}")
 
